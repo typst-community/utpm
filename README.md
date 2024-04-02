@@ -19,8 +19,8 @@
     - [x] 📦 Install directly from the tool 
     - [x] 🔒 Portable installer (limited for now)
 - [x] 📃 List all your packages
-    - [x] 🗃️ In a form of a list `utpm list`
-    - [ ] 🌲 In a form of a tree `utpm tree`
+    - [ ] 🗃️ In a form of a list `utpm list`
+    - [x] 🌲 In a form of a tree `utpm tree`
 - [x] 💥 Customize your output (json or classic, `-j` in yours commands) 
 - [x] 🗄️ Delete and bulk delete your packages (`utpm unlink`, `utpm bulk-delete`)
 - [ ] 🚀 Publish it directly to Typst!
