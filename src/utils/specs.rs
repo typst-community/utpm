@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use strum::EnumString;
 
+use clap::{ValueEnum, self};
+
 /// The file `typst.toml` itself
 #[derive(Serialize, Deserialize)]
 pub struct TypstConfig {
@@ -126,8 +128,9 @@ impl Package {
     }
 }
 
-#[derive(Debug,Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
 #[strum(serialize_all = "lowercase")]
+#[clap(rename_all="lower")]
 pub enum Discipline {    
     Agriculture,
     Anthropology,
@@ -138,6 +141,7 @@ pub enum Discipline {
     Chemistry,
     Communication,
     #[strum(serialize = "computer-science")]
+    #[clap(rename_all="kebab-case")]
     ComputerScience,
     Design,
     Drawing,
@@ -179,7 +183,8 @@ impl fmt::Display for Discipline {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
+#[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
+#[clap(rename_all="lower")]
 #[strum(serialize_all = "lowercase")]
 pub enum Categorie {
     Components,

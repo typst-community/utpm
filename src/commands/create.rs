@@ -3,19 +3,19 @@ use std::{
     io::Write,
 };
 
-use inquire::{required, validator::Validation, Confirm, Text};
+use inquire::{required, validator::Validation, Select, Text};
 use owo_colors::OwoColorize;
 use semver::Version;
 
 use crate::utils::{
     paths::{check_path_file, get_current_dir},
-    state::{ResponseKind::*, Responses, Result},
     specs::{Extra, Package, TypstConfig},
+    state::{ResponseKind::*, Responses, Result},
 };
 
 use super::CreateArgs;
 
-pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
+pub fn run(cmd: &mut CreateArgs, res: &mut Responses) -> Result<bool> {
     let curr = get_current_dir()?;
     let typ = curr.clone() + "/typst.toml";
 
@@ -34,9 +34,11 @@ pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
         keywords: cmd.keywords.to_owned(),
         compiler: cmd.compiler.to_owned(),
         exclude: cmd.exclude.to_owned(),
-        categories: None,
-        disciplines: None,
+        categories: cmd.categories.to_owned(),
+        disciplines: cmd.disciplines.to_owned(),
     };
+
+    //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
 
     if check_path_file(&typ) && !cmd.force {
         res.push(Message("Nothing to do".into()));
@@ -52,12 +54,24 @@ pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
     }
 
     if !cmd.cli {
-        let public = Confirm::new("Do you want to make your package public? Questions are on authors, license, description").prompt()?;
-        let more = public && Confirm::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files").prompt()?;
-        let extra_opts = Confirm::new(
+        let choice = vec!["yes", "no"];
+        let public = Select::new("Do you want to make your package public? Questions are on authors, license, description", choice.clone()).prompt()?;
+        let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", choice.clone()).prompt()?;
+        let extra_opts = Select::new(
             "Do you want to specify informations of utpm? Questions are on the namespace",
+            choice.clone(),
         )
         .prompt()?;
+        let template = Select::new("Do you want to create a template?", choice.clone()).prompt()?;
+        let popu = Select::new(
+            "Do you want to populate your package? Files like index.typ will be created",
+            choice.clone(),
+        )
+        .prompt()?;
+
+        if popu == "yes" {
+            cmd.populate = true;
+        }
 
         pkg.name = Text::new("Name: ")
             .with_validator(required!("This field is required"))
@@ -87,7 +101,7 @@ pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
             .with_default("main.typ")
             .prompt()?;
 
-        if public {
+        if public == "yes" {
             pkg.authors = Some(
                 Text::new("Authors: ")
                     .with_help_message("e.g. Thumus,Somebody,Somebody Else")
@@ -124,7 +138,7 @@ pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
                     .prompt()?,
             );
         }
-        if more {
+        if more == "yes" {
             pkg.repository = Some(
                 Text::new("URL of the repository: ")
                     .with_help_message("e.g. https://github.com/Thumuss/utpm")
@@ -168,7 +182,7 @@ pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
             );
         }
 
-        if extra_opts {
+        if extra_opts == "yes" {
             extra.namespace = Some(
                 Text::new("Namespace: ")
                     .with_help_message("e.g. backup/mypassword.txt,.env")
@@ -176,6 +190,10 @@ pub fn run(cmd: &CreateArgs, res: &mut Responses) -> Result<bool> {
                     .prompt()?
                     .to_string(),
             )
+        }
+
+        if template == "yes" {
+            //todo
         }
     }
 

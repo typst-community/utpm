@@ -78,10 +78,12 @@ The main focus will be :
   - [ ] Implementation
 - [ ] Compatibility with older version of typst
 - [ ] Fix current bugs
+- [ ] Use `tracing-subscriber` as a logger (thanks @frozolotl)
+- [ ] Improve `README`: add more example, an explanation, ... (thanks @Pachi)
+- [ ] Add `utpm publish` command, like [this repository](https://github.com/tingerrr/alabaster) (thanks @tingerrr)
 
 If we got time, I'll add theses things:
 - [ ] Docker, Compose and Kubernetes files (and examples)
-- [ ] `Context`, it will change the actual structure of handling json and errors.
 - [ ] ENV compatible.
 - [ ] get along with `typst init`
 - [ ] tree and list for `list` commands

@@ -1,45 +1,52 @@
-# Unofficial Typst Package Manager
+<div align="center">
 
-> Alias "utpm"
+![UTPM logo](./logo.svg)
 
-# What is that?
+> _Unofficial typst package manager_
 
-UTPM is a package manager for [local](https://github.com/typst/packages#local-packages) and remote packages.
-The goal is to manage packages to use the new feature of typst, [importing other packages from different folders](https://typst.app/docs/reference/scripting/#packages)
+**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **remote** packages. Create quickly new _projects_ and _templates_ from a **singular tool**, and then **publish** it _directly_ to **Typst**!
 
-# How to use it?
+</div>
 
-You need two things, first create an `typst.toml` file by using `utpm create`:
+## 🔥 Features
 
-```bash
-$ utpm create
-```
+- [x] ✨ Create packages automatically (`utpm create`)
+    - [x] ⏯️ Interactive
+    - [x] ⌨️ Cli version
+- [x] 🛠 Put your package directly into your local packages (`utpm link`)
+    - 💻 Link without copying! (`utpm link --no-copy`)
+- [x] 🌐 Dependencies outsite typst!
+    - [x] 📦 Install directly from the tool 
+    - [x] 🔒 Portable installer (limited for now)
+- [x] 📃 List all your packages
+    - [x] 🗃️ In a form of a list `utpm list`
+    - [ ] 🌲 In a form of a tree `utpm tree`
+- [x] 💥 Customize your output (json or classic, `-j` in yours commands) 
+- [x] 🗄️ Delete and bulk delete your packages (`utpm unlink`, `utpm bulk-delete`)
+- [ ] 🚀 Publish it directly to Typst!
 
-Modify this file to match your project and finally, you need to copy the directory to the "special" directory by using `utpm link`: 
+***And others!***
 
-```bash
-$ utpm link
-```
+## 🔎 How to use it?
 
-# Install
+### The basic workflow
+
+
+
+*Firstly you'll need* 
+
+
+## ⚡ Install
 
 You will need Cargo and Rust.
 
 Simpliest way :
 
 ```bash
-git clone https://github.com/Thumuss/utpm.git &&
-cd utpm &&
-cargo install --path .
+cargo install --git https://github.com/Thumuss/utpm
 ```
 
-There is a `build.sh` to install/update the project.
-
-# TODO:
-
-See TODO.md
-
-# Contribution
+## Contribution
 
 If you want to help me dev this package, simply make an issue or a PR
 
