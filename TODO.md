@@ -67,26 +67,28 @@ This update will introduce documentations, a better handling error system, JSON 
 
 ## V4 (2024.03.10)
 
+> Last update: 05.06.2024
+
 As of today (2024.03.10), a new version of typst has been released (`v0.11.0-rc1 (fe94bd85)`) with a new template system.
 For now on, this version of utpm will focus on both adapting the new system and being compatible with the previous system.
 
 If time isn't running out, I'll add quality of life improvements such as a `Context` system, new commands to go along with the `typst init` command and Dockerise everything (kubernetes included).
 
 The main focus will be : 
-- [ ] Add templates in `utpm`
+- [ ] Add templates in `utpm` (transfer to [typst-project]("https://github.com/tingerrr/typst-project"))
   - [X] Struct
   - [ ] Implementation
 - [ ] Compatibility with older version of typst
-- [ ] Fix current bugs
 - [ ] Use `tracing-subscriber` as a logger (thanks @frozolotl)
 - [ ] Improve `README`: add more example, an explanation, ... (thanks @Pachi)
 - [ ] Add `utpm publish` command, like [this repository](https://github.com/tingerrr/alabaster) (thanks @tingerrr)
 
-If we got time, I'll add theses things:
+Optional, not needed in this PR but will be added in the future :
 - [ ] Docker, Compose and Kubernetes files (and examples)
 - [ ] ENV compatible.
 - [ ] get along with `typst init`
 - [ ] tree and list for `list` commands
+- [ ] Transform "portable" to "CI" binary
 
 #### Appendix
 
