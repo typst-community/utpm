@@ -25,11 +25,11 @@ name = "utpm"
 path = "src/main.rs"
 
 [[bin]]
-name = "utpm-portable"
-path = "src/portable.rs"
+name = "utpm-CI"
+path = "src/ci.rs"
 
 [features]
-portable = []
+ci = []
 
 # For future dependencies check and other things, it will be usefull
 # Reduce size

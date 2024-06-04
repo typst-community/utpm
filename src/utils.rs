@@ -8,13 +8,13 @@ pub mod state;
 
 /// Copy all subdirectories from a point to an other
 /// From https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
-/// Edited to prepare a portable version
+/// Edited to prepare a ci version
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
     for entry in fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
-        if ty.is_dir() && entry.file_name() != "utpmp" && entry.file_name() != "install" {
+        if ty.is_dir() && entry.file_name() != ".utpm" && entry.file_name() != "install" {
             copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
         } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;

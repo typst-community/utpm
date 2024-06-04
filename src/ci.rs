@@ -8,7 +8,7 @@ mod commands;
 #[allow(unused)]
 mod utils;
 
-/// Simple version of a portable installer
+/// Simple version of a ci installer
 fn main() {
     let args: Vec<String> = env::args().collect();
     let force = args.contains(&"--force".to_string()) || args.contains(&"-f".to_string());
