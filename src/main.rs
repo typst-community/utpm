@@ -3,7 +3,7 @@ pub mod utils;
 
 use clap::Parser;
 use commands::{
-    bulk_delete, create, install, link, tree, package_path, unlink, Cli, Commands,
+    bulk_delete, create, install, link, list, package_path, tree, unlink, Cli, Commands
 };
 
 use utils::state::Error;
@@ -15,6 +15,7 @@ fn main() {
         Commands::Create(cmd) => create::run(&mut cmd.clone()),
         Commands::Link(cmd) => link::run(cmd, None),
         Commands::Tree => tree::run(),
+        Commands::List => list::run(),
         Commands::PackagesPath => package_path::run(),
         Commands::Unlink(cmd) => unlink::run(cmd),
         Commands::BulkDelete(cmd) => bulk_delete::run(cmd),

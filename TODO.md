@@ -75,7 +75,7 @@ For now on, this version of utpm will focus on both adapting the new system and 
 If time isn't running out, I'll add quality of life improvements such as a `Context` system, new commands to go along with the `typst init` command and Dockerise everything (kubernetes included).
 
 The main focus will be : 
-- [ ] Add templates in `utpm` (transfer to [typst-project]("https://github.com/tingerrr/typst-project"))
+- [ ] Add templates in `utpm` (transfer to [typst-project](https://github.com/tingerrr/typst-project))
   - [X] Struct
   - [ ] Implementation
 - [ ] Compatibility with older version of typst
@@ -87,7 +87,7 @@ Optional, not needed in this PR but will be added in the future :
 - [ ] Docker, Compose and Kubernetes files (and examples)
 - [ ] ENV compatible.
 - [ ] get along with `typst init`
-- [ ] tree and list for `list` commands
+- [x] tree and list for `list` commands
 - [ ] Transform "portable" to "CI" binary
 
 #### Appendix

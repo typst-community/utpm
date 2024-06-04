@@ -6,6 +6,7 @@ pub mod link;
 pub mod tree;
 pub mod package_path;
 pub mod unlink;
+pub mod list;
 
 use clap::{Parser, Subcommand};
 
@@ -151,6 +152,10 @@ pub enum Commands {
 
     /// List all of packages from your dir, in a form of a tree
     Tree,
+
+    /// List all of packages from your dir, in a form of a list
+    List,
+
     /// Display path to typst packages folder
     PackagesPath,
 
