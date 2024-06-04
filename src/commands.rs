@@ -170,8 +170,4 @@ pub enum Commands {
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
-
-    /// Output everything into a json format. Available on every commands.
-    #[arg(short = 'j', long, global = true)]
-    pub json: bool,
 }

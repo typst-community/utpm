@@ -10,12 +10,12 @@ use semver::Version;
 use crate::utils::{
     paths::{check_path_file, get_current_dir},
     specs::{Extra, Package, TypstConfig},
-    state::{ResponseKind::*, Responses, Result},
+    state::Result,
 };
 
 use super::CreateArgs;
 
-pub fn run(cmd: &mut CreateArgs, res: &mut Responses) -> Result<bool> {
+pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
     let curr = get_current_dir()?;
     let typ = curr.clone() + "/typst.toml";
 
@@ -41,16 +41,15 @@ pub fn run(cmd: &mut CreateArgs, res: &mut Responses) -> Result<bool> {
     //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
 
     if check_path_file(&typ) && !cmd.force {
-        res.push(Message("Nothing to do".into()));
         return Ok(false);
     }
 
     if cmd.force {
-        res.push(Message(format!(
+        println!(
             "{} {}",
             "WARNING:".bold().yellow(),
             "--force is a dangerous flag, use it cautiously".bold()
-        )));
+        );
     }
 
     if !cmd.cli {
@@ -221,9 +220,9 @@ pub fn run(cmd: &mut CreateArgs, res: &mut Responses) -> Result<bool> {
     }
 
     TypstConfig::new(pkg, Some(extra), None).write(&typ); //todo: add template // typst.toml
-    res.push(Message(format!(
+    println!(
         "{}",
         "File created to {typ}".bold().to_string()
-    )));
+    );
     Ok(true)
 }
