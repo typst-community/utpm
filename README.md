@@ -33,7 +33,54 @@
 
 
 
-*Firstly you'll need* 
++ *Firstly you'll need to [create](#create) your `typst.toml` file!*
++ *Then, edit your file! Like `index.typ` or `lib.typ`*
++ *Finally, [link](#link) your new package to typst!*
+
+### Commands
+
+
+#### 🗄️ Bulk Delete
+
+*A command to delete multiple packages at once!*
+
+![bulk-delete.gif](./tapes/bulk_delete.gif)
+
+<div id="create"> 
+
+#### ✨ Create
+
+</div>
+
+#### ❓ Help
+
+#### 📦 Install
+
+<div id="link"> 
+
+#### 🛠 Link
+
+</div>
+
+#### 🗃️ List
+
+![list.gif](./tapes/list.gif)
+
+
+#### 🚦 Package Path
+
+![package-path.gif](./tapes/package_path.gif)
+
+
+#### 🌲 Tree
+
+*A simple command to show all your packages install in your local dir like a tree!*
+
+![bulk-delete.gif](./tapes/tree.gif)
+
+#### 🗄️ Unlink
+
+![unlink.gif](./tapes/unlink.gif)
 
 
 ## ⚡ Install
