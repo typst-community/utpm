@@ -1,0 +1,42 @@
+on:
+  push:
+    branches:
+      - dev*
+
+jobs:
+  pre-release:
+    name: Nightly-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            archive: zip
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            archive: zip
+          - target: wasm32-wasi
+            archive: zip tar.gz
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and release
+        uses: rust-build/rust-build.action@v1.4.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          RUSTTARGET: ${{ matrix.target }}
+          EXTRA_FILES: "README.md LICENSE"
+          SRC_DIR: "src"
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+          MINIFY: "yes"
+      - name: Create a Release
+        uses: "marvinpinto/action-automatic-releases@latest"        
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          title: auto_release
+          prerelease: true,
+          files: |
+            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
+        
