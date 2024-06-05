@@ -46,7 +46,6 @@ jobs:
         run: |
           cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
           cross build --bin utpm -p utpm --release --target ${{ matrix.target }}
-
       - name: Set up MinGW on Windows
         uses: egor-tensin/setup-mingw@v2
         if: ${{ matrix.os == 'windows-latest' }}
@@ -78,7 +77,7 @@ jobs:
             cp target/${{ matrix.target }}/release/utpm $directory
             tar cJf $directory.tar.xz $directory
           fi
-
+          
       - name: "Setup SHA"
         uses: benjlevesque/short-sha@v3.0
         id: short-sha
@@ -99,4 +98,4 @@ jobs:
           tag_name: ${{ steps.extract_branch.outputs.branch }}-${{ steps.short-sha.outputs.sha }}
           generate_release_notes: true
           files: |
-            utpm-${{ matrix.target }}.*        
+            utpm-${{ matrix.target }}.*  
