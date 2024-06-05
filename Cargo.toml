@@ -15,11 +15,11 @@ inquire = "0.6.2"
 semver = { version = "1.0.18", features = ["serde"] }
 spdx = { version = "0.10.2", features = ["text"] }
 clap = { version = "4.4.2", features = ["derive"] }
-git2 = "0.18.0"
+git2 = { version = "0.18.0", features = ["vendored-libgit2"] }
 owo-colors = "3.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
 typst-project = { git = "https://github.com/tingerrr/typst-project" }
-openssl = { version = "0.10", features = ["vendored"] }
+#openssl = { version = "0.10", features = ["vendored"] }
 
 [[bin]]
 name = "utpm"
