@@ -49,8 +49,10 @@ jobs:
 
       - name: Run Cargo
         if: ${{ !matrix.cross }}
-        run: cargo build -p utpm --release --target ${{ matrix.target }}
-
+        run: |
+          cargo update -p cc --precise 1.0.83
+          cargo build -p utpm --release --target ${{ matrix.target }}
+          
       - name: Create artifact directory
         shell: bash
         run: |

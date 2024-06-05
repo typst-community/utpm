@@ -19,6 +19,7 @@ git2 = "0.18.0"
 owo-colors = "3.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
 typst-project = { git = "https://github.com/tingerrr/typst-project" }
+openssl = { version = "0.10", features = ["vendored"] }
 
 [[bin]]
 name = "utpm"
