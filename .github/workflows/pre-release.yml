@@ -49,7 +49,7 @@ jobs:
 
       - name: Set up MinGW on Windows
         uses: egor-tensin/setup-mingw@v2
-        if: ${{ matrix.os == "windows-latest"}}
+        if: ${{ matrix.os == 'windows-latest' }}
         with:
           platform: x64
 
