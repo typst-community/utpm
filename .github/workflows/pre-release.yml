@@ -50,7 +50,7 @@ jobs:
       - name: Run Cargo
         if: ${{ !matrix.cross }}
         run: |
-          cargo update -p cc --precise 1.0.83
+          cargo update -p cc --precise 1.0.98
           cargo build -p utpm --release --target ${{ matrix.target }}
           
       - name: Create artifact directory
@@ -59,11 +59,11 @@ jobs:
           directory=utpm-${{ matrix.target }}
           mkdir $directory
           cp README.md LICENSE $directory
-          if [ -f target/${{ matrix.target }}/release/typst.exe ]; then
+          if [ -f target/${{ matrix.target }}/release/utpm.exe ]; then
             cp target/${{ matrix.target }}/release/typst.exe $directory
             7z a -r $directory.zip $directory
           else
-            cp target/${{ matrix.target }}/release/typst $directory
+            cp target/${{ matrix.target }}/release/utpm $directory
             tar cJf $directory.tar.xz $directory
           fi
 
