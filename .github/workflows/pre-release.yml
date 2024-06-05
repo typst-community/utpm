@@ -3,6 +3,10 @@ on:
     branches:
       - dev*
 
+env:
+  CARGO_TERM_COLOR: always
+
+
 jobs:
   pre-release:
     name: Nightly-release
@@ -36,7 +40,8 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           title: auto_release
-          prerelease: true,
+          prerelease: true
           files: |
             ${{ steps.compile.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
         
