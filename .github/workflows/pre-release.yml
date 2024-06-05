@@ -45,13 +45,13 @@ jobs:
         if: ${{ matrix.cross }}
         run: |
           cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
-          cross build -p utpm --release --target ${{ matrix.target }}
+          cross build --bin utpm -p utpm --release --target ${{ matrix.target }}
 
       - name: Run Cargo
         if: ${{ !matrix.cross }}
         run: |
-          cargo update -p cc --precise 1.0.98
-          cargo build -p utpm --release --target ${{ matrix.target }}
+          cargo install cargo-zigbuild
+          cargo zigbuild --bin utpm -p utpm --release --target ${{ matrix.target }}
           
       - name: Create artifact directory
         shell: bash
@@ -67,12 +67,16 @@ jobs:
             tar cJf $directory.tar.xz $directory
           fi
 
+      - uses: benjlevesque/short-sha@v3.0
+        id: short-sha
+        with:
+          length: 6
       - name: Create a Release
         uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: true
-          tag_name: ${{ github.sha }}
+          tag_name: $SHA
           generate_release_notes: true
           files: |
             utpm-${{ matrix.target }}.*        
