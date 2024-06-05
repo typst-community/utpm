@@ -18,35 +18,59 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-pc-windows-gnu
-            archive: zip
-          - target: x86_64-unknown-linux-musl
-            archive: tar.gz
-          - target: x86_64-apple-darwin
-            archive: zip
-          - target: wasm32-wasi
-            archive: zip tar.gz
+        - target: x86_64-unknown-linux-musl
+          os: ubuntu-latest
+          cross: true
+        - target: aarch64-unknown-linux-musl
+          os: ubuntu-latest
+          cross: true
+        - target: armv7-unknown-linux-musleabi
+          os: ubuntu-latest
+          cross: true
+        - target: x86_64-apple-darwin
+          os: macos-latest
+          cross: false
+        - target: aarch64-apple-darwin
+          os: macos-latest
+          cross: false
+        - target: x86_64-pc-windows-msvc
+          os: windows-latest
+          cross: false
     steps:
       - uses: actions/checkout@v4
-      - name: Compile and release
-        uses: rust-build/rust-build.action@v1.4.5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: dtolnay/rust-toolchain@1.77.0
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: "README.md LICENSE"
-          SRC_DIR: "src"
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          MINIFY: "yes"
-          UPLOAD_MODE: none
+          target: ${{ matrix.target }}        
+      - name: Run Cross
+        if: ${{ matrix.cross }}
+        run: |
+          cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
+          cross build -p utpm --release --target ${{ matrix.target }} --features self-update,vendor-openssl
+
+      - name: Run Cargo
+        if: ${{ !matrix.cross }}
+        run: cargo build -p utpm --release --target ${{ matrix.target }} --features self-update
+
+      - name: Create artifact directory
+        shell: bash
+        run: |
+          directory=utpm-${{ matrix.target }}
+          mkdir $directory
+          cp README.md LICENSE $directory
+          if [ -f target/${{ matrix.target }}/release/typst.exe ]; then
+            cp target/${{ matrix.target }}/release/typst.exe $directory
+            7z a -r $directory.zip $directory
+          else
+            cp target/${{ matrix.target }}/release/typst $directory
+            tar cJf $directory.tar.xz $directory
+          fi
+
       - name: Create a Release
         uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: true
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ github.sha }}
           generate_release_notes: true
           files: |
-            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
-        
+            utpm-${{ matrix.target }}.*        
