@@ -47,6 +47,12 @@ jobs:
           cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
           cross build --bin utpm -p utpm --release --target ${{ matrix.target }}
 
+      - name: Install zig
+        if: ${{ matrix.os == 'macos-latest' || matrix.os == 'windows-latest' }}
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: master
+
       - name: Run Cargo
         if: ${{ !matrix.cross }}
         run: |
