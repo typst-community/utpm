@@ -39,30 +39,17 @@ jobs:
     steps:
       - uses: actions/checkout@main
       - uses: dtolnay/rust-toolchain@master
-        # if: ${{ matrix.cross }}
         with:
           target: ${{ matrix.target }}
           toolchain: stable 6 months ago
 
-      # Windows & mac
-      # - uses: sfackler/actions/rustup@master
-      #   if: ${{ !matrix.cross }}
-      # - run: rustup target add aarch64-apple-darwin
-      #   if: ${{  }}
-      # # Windows
-      # - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-      #   if: ${{ matrix.os == 'windows-latest' }}
-      # - run: vcpkg install openssl:x64-windows-static-md
-      #   if: ${{ matrix.os == 'windows-latest' }}
-      # # End windows
-
-      - name: Run Cross
+      - name: Run Cargo | Cross
         if: ${{ matrix.cross }}
         run: |
           cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
           cross build --bin utpm -p utpm --release --target ${{ matrix.target }}
 
-      - name: Run Cargo
+      - name: Run Cargo | ${{ matrix.os }}
         if: ${{ !matrix.cross }}
         run: |
           cargo build --bin utpm -p utpm --release --target ${{ matrix.target }}
@@ -74,7 +61,7 @@ jobs:
           mkdir $directory
           cp README.md LICENSE $directory
           if [ -f target/${{ matrix.target }}/release/utpm.exe ]; then
-            cp target/${{ matrix.target }}/release/typst.exe $directory
+            cp target/${{ matrix.target }}/release/utpm.exe $directory
             7z a -r $directory.zip $directory
           else
             cp target/${{ matrix.target }}/release/utpm $directory
@@ -91,7 +78,6 @@ jobs:
         shell: bash
         run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
         id: extract_branch
-
 
       - name: Create a Release
         uses: softprops/action-gh-release@v2
