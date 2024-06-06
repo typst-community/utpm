@@ -79,7 +79,17 @@ jobs:
         run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
         id: extract_branch
 
-      - name: Create a Release
+      - name: Create a Pre-Release [${{ steps.short-sha.outputs.sha }}]
+        uses: softprops/action-gh-release@v2
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          tag_name: ${{ steps.extract_branch.outputs.branch }}-${{ steps.short-sha.outputs.sha }}
+          generate_release_notes: true
+          files: |
+            utpm-${{ matrix.target }}.*  
+
+      - name: Create a Pre-Release [Latest]
         uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"

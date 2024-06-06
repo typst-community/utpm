@@ -75,7 +75,7 @@ jobs:
           token: ${{ github.token }}
           branch: main
 
-      - name: Create a Release
+      - name: Create a Release [${{ steps.semver.outputs.next }}]
         uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
@@ -84,3 +84,14 @@ jobs:
           generate_release_notes: true
           files: |
             utpm-${{ matrix.target }}.*  
+
+      - name: Create a Release [Latest]
+        uses: softprops/action-gh-release@v2
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          tag_name: latest
+          generate_release_notes: true
+          files: |
+            utpm-${{ matrix.target }}.*  
+      
