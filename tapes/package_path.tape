@@ -4,7 +4,7 @@ Require utpm
 
 Output "package_path.gif"
 
-Type@100ms "utpm help"
+Type@100ms "utpm package_path"
 
 Sleep 500ms
 
