@@ -42,7 +42,10 @@ jobs:
         with:
           target: ${{ matrix.target }}
           toolchain: stable 6 months ago
-      
+
+      - name: Install Deps [Mac]
+        run: |
+          brew install openssl-dev
       - name: Run Cross
         if: ${{ matrix.cross }}
         run: |
