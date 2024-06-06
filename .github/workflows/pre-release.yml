@@ -37,14 +37,10 @@ jobs:
           os: windows-latest
           cross: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.77.0
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@master
         with:
           target: ${{ matrix.target }}  
-      
-      - name: Install Dependencies [Windows]
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: vcpkg integrate install      
       
       - name: Run Cross
         if: ${{ matrix.cross }}
