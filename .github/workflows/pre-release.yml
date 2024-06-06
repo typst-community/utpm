@@ -13,7 +13,7 @@ permissions:
 jobs:
   pre-release:
     name: Nightly-release
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,20 +39,22 @@ jobs:
     steps:
       - uses: actions/checkout@main
       - uses: dtolnay/rust-toolchain@master
-        if: ${{ matrix.cross }}
+        # if: ${{ matrix.cross }}
         with:
           target: ${{ matrix.target }}
           toolchain: stable 6 months ago
 
       # Windows & mac
-      - uses: sfackler/actions/rustup@master
-        if: ${{ !matrix.cross }}
-      # Windows
-      - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-        if: ${{ matrix.os == 'windows-latest' }}
-      - run: vcpkg install openssl:x64-windows-static-md
-        if: ${{ matrix.os == 'windows-latest' }}
-      # End windows
+      # - uses: sfackler/actions/rustup@master
+      #   if: ${{ !matrix.cross }}
+      # - run: rustup target add aarch64-apple-darwin
+      #   if: ${{  }}
+      # # Windows
+      # - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #   if: ${{ matrix.os == 'windows-latest' }}
+      # - run: vcpkg install openssl:x64-windows-static-md
+      #   if: ${{ matrix.os == 'windows-latest' }}
+      # # End windows
 
       - name: Run Cross
         if: ${{ matrix.cross }}
