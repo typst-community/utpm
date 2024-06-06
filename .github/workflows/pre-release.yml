@@ -94,7 +94,7 @@ jobs:
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: true
-          tag_name: ${{ steps.extract_branch.outputs.branch }}-${{ steps.short-sha.outputs.sha }}
+          tag_name: nightly-latest
           generate_release_notes: true
           files: |
             utpm-${{ matrix.target }}.*  
