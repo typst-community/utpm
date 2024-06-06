@@ -1,5 +1,5 @@
 Set Width 600
-Set Height 550
+Set Height 400
 Require utpm
 
 Output list.gif

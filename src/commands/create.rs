@@ -222,7 +222,7 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
     TypstConfig::new(pkg, Some(extra), None).write(&typ); //todo: add template // typst.toml
     println!(
         "{}",
-        "File created to {typ}".bold().to_string()
+        format!("File created to {typ}").bold().to_string()
     );
     Ok(true)
 }
