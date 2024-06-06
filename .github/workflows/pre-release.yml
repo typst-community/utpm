@@ -39,13 +39,21 @@ jobs:
     steps:
       - uses: actions/checkout@main
       - uses: dtolnay/rust-toolchain@master
+        if: ${{ matrix.cross }}
         with:
           target: ${{ matrix.target }}
           toolchain: stable 6 months ago
 
-      - name: Install Deps [Mac]
-        run: |
-          brew install openssl-dev
+      # Windows & mac
+      - uses: sfackler/actions/rustup@master
+        if: ${{ !matrix.cross }}
+      # Windows
+      - run: echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+        if: ${{ matrix.os == 'windows-latest' }}
+      - run: vcpkg install openssl:x64-windows-static-md
+        if: ${{ matrix.os == 'windows-latest' }}
+      # End windows
+
       - name: Run Cross
         if: ${{ matrix.cross }}
         run: |
