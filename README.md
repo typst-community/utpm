@@ -90,7 +90,7 @@ _Generate a help message_
 
 #### 🚦 Package Path
 
-![package-path.gif](./tapes/package_path.gif)
+![packages-path.gif](./tapes/packages-path.gif)
 
 </div>
 <div id="tree">
