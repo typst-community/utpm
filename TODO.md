@@ -80,7 +80,7 @@ The main focus will be :
   - [ ] Implementation
 - [ ] Compatibility with older version of typst
 - [ ] Use `tracing-subscriber` as a logger (thanks @frozolotl)
-- [ ] Improve `README`: add more example, an explanation, ... (thanks @Pachi)
+- [X] Improve `README`: add more example, an explanation, ... (thanks @Pachi)
 - [ ] Add `utpm publish` command, like [this repository](https://github.com/tingerrr/alabaster) (thanks @tingerrr)
 
 Optional, not needed in this PR but will be added in the future :

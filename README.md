@@ -11,77 +11,105 @@
 ## 🔥 Features
 
 - [x] ✨ Create packages automatically (`utpm create`)
-    - [x] ⏯️ Interactive
-    - [x] ⌨️ Cli version
+  - [x] ⏯️ Interactive
+  - [x] ⌨️ Cli version
 - [x] 🛠 Put your package directly into your local packages (`utpm link`)
-    - 💻 Link without copying! (`utpm link --no-copy`)
+  - 💻 Link without copying! (`utpm link --no-copy`)
 - [x] 🌐 Dependencies outsite typst!
-    - [x] 📦 Install directly from the tool 
-    - [x] 🔒 Portable installer (limited for now)
+  - [x] 📦 Install directly from the tool
+  - [x] 🔒 Portable installer (limited for now)
 - [x] 📃 List all your packages
-    - [ ] 🗃️ In a form of a list `utpm list`
-    - [x] 🌲 In a form of a tree `utpm tree`
-- [x] 💥 Customize your output (json or classic, `-j` in yours commands) 
+  - [x] 🗃️ In a form of a list `utpm list`
+  - [x] 🌲 In a form of a tree `utpm tree`
+- [x] 💥 Customize your output (json or classic, `-j` in yours commands)
 - [x] 🗄️ Delete and bulk delete your packages (`utpm unlink`, `utpm bulk-delete`)
 - [ ] 🚀 Publish it directly to Typst!
 
-***And others!***
+**_And others!_**
 
 ## 🔎 How to use it?
 
 ### The basic workflow
 
-
-
-+ *Firstly you'll need to [create](#create) your `typst.toml` file!*
-+ *Then, edit your file! Like `index.typ` or `lib.typ`*
-+ *Finally, [link](#link) your new package to typst!*
+- _Firstly you'll need to [create](#create) your `typst.toml` file!_
+- _Then, edit your file! Like `index.typ` or `lib.typ`_
+- _Finally, [link](#link) your new package to typst!_
 
 ### Commands
 
-
 #### 🗄️ Bulk Delete
 
-*A command to delete multiple packages at once!*
+<!-- TODO: GIF -->
+
+_A command to delete multiple packages at once!_
 
 ![bulk-delete.gif](./tapes/bulk_delete.gif)
 
-<div id="create"> 
+<div id="create">
 
 #### ✨ Create
+_Create a `typst.toml` to make a package_
+
+![create_cli.gif](./tapes/create_cli.gif)
+<!-- TODO: GIF v2 -->
 
 </div>
+<div id="help">
+
 
 #### ❓ Help
 
-#### 📦 Install
-
-<div id="link"> 
-
-#### 🛠 Link
+_Generate a help message_
+![help.gif](./tapes/help.gif)
 
 </div>
+<div id="install">
+
+#### 📦 Install
+![install.gif](./tapes/install.gif)
+<!-- TODO: GIF & text-->
+
+</div>
+<div id="link">
+
+#### 🛠 Link
+![link.gif](./tapes/link.gif)
+<!-- TODO: GIF & text-->
+
+</div>
+<div id="list">
 
 #### 🗃️ List
+<!-- TODO: text -->
 
 ![list.gif](./tapes/list.gif)
 
+</div>
+<div id="package-path">
+<!-- TODO: text -->
 
 #### 🚦 Package Path
 
-![package-path.gif](./tapes/package_path.gif)
+![packages-path.gif](./tapes/packages-path.gif)
 
+</div>
+<div id="tree">
 
 #### 🌲 Tree
 
-*A simple command to show all your packages install in your local dir like a tree!*
+_A simple command to show all your packages install in your local dir like a tree!_
 
-![bulk-delete.gif](./tapes/tree.gif)
+![tree.gif](./tapes/tree.gif)
+
+</div>
+<div id="unlink">
+<!-- TODO: GIF -->
 
 #### 🗄️ Unlink
 
 ![unlink.gif](./tapes/unlink.gif)
 
+</div>
 
 ## ⚡ Install
 

@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - main
+      - dev*
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   pre-release:
-    name: Production-release
+    name: Nightly-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -68,30 +68,33 @@ jobs:
             tar cJf $directory.tar.xz $directory
           fi
           
-      - name: Get Next Version
-        id: semver
-        uses: ietf-tools/semver-action@v1
+      - name: "Setup SHA"
+        uses: benjlevesque/short-sha@v3.0
+        id: short-sha
         with:
-          token: ${{ github.token }}
-          branch: main
-
-      - name: Create a Release [${{ steps.semver.outputs.next }}]
-        uses: softprops/action-gh-release@v2
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          tag_name: ${{ steps.semver.outputs.next }}
-          generate_release_notes: true
-          files: |
-            utpm-${{ matrix.target }}.*  
-
-      - name: Create a Release [Latest]
-        uses: softprops/action-gh-release@v2
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          tag_name: latest
-          generate_release_notes: true
-          files: |
-            utpm-${{ matrix.target }}.*  
+          length: 6
       
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - name: Create a Pre-Release [${{ steps.short-sha.outputs.sha }}]
+        uses: softprops/action-gh-release@v2
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          tag_name: ${{ steps.extract_branch.outputs.branch }}-${{ steps.short-sha.outputs.sha }}
+          generate_release_notes: true
+          files: |
+            utpm-${{ matrix.target }}.*  
+
+      - name: Create a Pre-Release [Latest]
+        uses: softprops/action-gh-release@v2
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          tag_name: nightly-latest
+          generate_release_notes: true
+          files: |
+            utpm-${{ matrix.target }}.*  
