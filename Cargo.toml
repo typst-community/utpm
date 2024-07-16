@@ -10,7 +10,7 @@ dirs = "5.0"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "1.0"
-toml = { version = "0.7.5", features = ["display"] }
+toml = { version = "^0.8.14", features = ["display"] }
 inquire = "0.6.2"
 semver = { version = "1.0.18", features = ["serde"] }
 spdx = { version = "0.10.2", features = ["text"] }
@@ -26,7 +26,7 @@ name = "utpm"
 path = "src/main.rs"
 
 [[bin]]
-name = "utpm-CI"
+name = "utpm-ci"
 path = "src/ci.rs"
 
 [features]
