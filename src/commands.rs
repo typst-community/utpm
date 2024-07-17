@@ -9,8 +9,7 @@ pub mod unlink;
 pub mod list;
 
 use clap::{Parser, Subcommand};
-
-use crate::utils::specs::{Categorie, Discipline};
+use typst_project::manifest::{categories::Category, disciplines::Discipline};
 
 #[derive(Parser, Clone, Debug)]
 pub struct CreateArgs {
@@ -75,7 +74,7 @@ pub struct CreateArgs {
     populate: bool,
 
     #[arg(short = 'C', long)]
-    categories: Option<Vec<Categorie>>,
+    categories: Option<Vec<Category>>,
 
     #[arg(short = 'D', long)]
     disciplines: Option<Vec<Discipline>>,

@@ -19,6 +19,17 @@ pub enum ErrorKind {
     Questions,
     Git,
     SemVer,
+    General,
+
+    Author,
+    Website,
+    Email,
+    GithubHandle,
+
+    Ident,
+    License,
+
+    Serialize
 }
 
 
@@ -87,29 +98,26 @@ impl fmt::Display for Error {
     }
 }
 
-
-//TODO: impl errors.
-
-impl From<IError> for Error {
-    fn from(err: IError) -> Error {
-        Error::new(ErrorKind::IO, err.to_string())
-    }
+// From `https://github.com/tingerrr/typst-project/blob/e19fb3d68b10fce7d2366f4e5969edac6e2f7d34/src/manifest.rs#L182`
+macro_rules! impl_from {
+    ($err:ty => $var:ident) => {
+        impl From<$err> for Error {
+            fn from(err: $err) -> Self {
+                Error::new(ErrorKind::$var, err.to_string())
+            }
+        }
+    };
 }
+impl_from!(semver::Error => SemVer);
+impl_from!(git2::Error => Git);
+impl_from!(inquire::InquireError => Questions);
+impl_from!(IError => IO);
+impl_from!(typst_project::manifest::Error => General);
+impl_from!(typst_project::manifest::author::ParseAuthorError => Author);
+impl_from!(typst_project::manifest::author::ParseWebsiteError => Website);
+impl_from!(typst_project::manifest::author::ParseEmailError => Email);
+impl_from!(typst_project::manifest::author::ParseGitHubHandleError => GithubHandle);
+impl_from!(typst_project::manifest::ident::ParseIdentError => Ident);
+impl_from!(typst_project::manifest::license::ParseLicenseError => License);
 
-impl From<inquire::InquireError> for Error {
-    fn from(err: inquire::InquireError) -> Error {
-        Error::new(ErrorKind::Questions, err.to_string())
-    }
-}
-
-impl From<git2::Error> for Error {
-    fn from(err: git2::Error) -> Error {
-        Error::new(ErrorKind::Git, err.to_string())
-    }
-}
-
-impl From<semver::Error> for Error {
-    fn from(err: semver::Error) -> Error {
-        Error::new(ErrorKind::SemVer, err.to_string())
-    }
-}
+impl_from!(toml::ser::Error => Serialize);

@@ -1,15 +1,29 @@
 use std::{
-    fs::{create_dir_all, File},
+    collections::{BTreeMap, HashSet},
+    fs::{self, create_dir_all, File},
     io::Write,
+    path::PathBuf,
+    str::FromStr,
 };
 
 use inquire::{required, validator::Validation, Select, Text};
 use owo_colors::OwoColorize;
 use semver::Version;
+use toml::Table;
+use typst_project::manifest::{
+    author::{Author, Website},
+    categories::Category,
+    disciplines::Discipline,
+    ident::Ident,
+    license::License,
+    package::Package,
+    tool::Tool,
+    Manifest,
+};
 
 use crate::utils::{
     paths::{check_path_file, get_current_dir},
-    specs::{Extra, Package, TypstConfig},
+    specs::Extra,
     state::Result,
 };
 
@@ -22,20 +36,64 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
     let mut extra = Extra::default();
     extra.namespace = cmd.namespace.to_owned();
 
+    let mut authors: HashSet<Author> = HashSet::new();
+    // temp
+    if let Some(auts) = &cmd.authors {
+        for e in auts {
+            authors.insert(Author::from_str(&e)?);
+        }
+    }
+
+    let mut keywords: HashSet<String> = HashSet::new();
+    // temp
+    if let Some(auts) = &cmd.keywords {
+        for e in auts {
+            keywords.insert(e.clone());
+        }
+    }
+
+    let mut exclude: HashSet<PathBuf> = HashSet::new();
+    // temp
+    if let Some(auts) = &cmd.exclude {
+        for e in auts {
+            exclude.insert(e.into());
+        }
+    }
+
+    let mut categories: HashSet<Category> = HashSet::new();
+    // temp
+    if let Some(auts) = &cmd.categories {
+        for e in auts {
+            categories.insert(*e);
+        }
+    }
+
+    let mut disciplines: HashSet<Discipline> = HashSet::new();
+    // temp
+    if let Some(auts) = &cmd.disciplines {
+        for e in auts {
+            disciplines.insert(*e);
+        }
+    }
+
     let mut pkg = Package {
-        name: cmd.name.to_owned().unwrap_or("temp".into()),
+        name: Ident::from_str(cmd.name.to_owned().unwrap_or("temp".into()).as_str())?,
         version: cmd.version.to_owned(),
-        entrypoint: cmd.entrypoint.to_owned(),
-        authors: cmd.authors.to_owned(),
-        license: cmd.license.to_owned(),
-        description: cmd.description.to_owned(),
-        repository: cmd.repository.to_owned(),
-        homepage: cmd.homepage.to_owned(),
-        keywords: cmd.keywords.to_owned(),
+        entrypoint: cmd.entrypoint.to_owned().into(),
+        authors,
+        license: License::from_str(cmd.license.to_owned().unwrap_or("MIT".into()).as_str())?,
+        description: cmd.description.to_owned().unwrap_or("".into()),
+        repository: Some(
+            Website::from_str(cmd.repository.to_owned().unwrap_or("".into()).as_str())?,
+        ),
+        homepage: Some(
+            Website::from_str(cmd.homepage.to_owned().unwrap_or("".into()).as_str())?,
+        ),
+        keywords,
         compiler: cmd.compiler.to_owned(),
-        exclude: cmd.exclude.to_owned(),
-        categories: cmd.categories.to_owned(),
-        disciplines: cmd.disciplines.to_owned(),
+        exclude,
+        categories,
+        disciplines,
     };
 
     //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
@@ -72,10 +130,13 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
             cmd.populate = true;
         }
 
-        pkg.name = Text::new("Name: ")
-            .with_validator(required!("This field is required"))
-            .with_help_message("e.g. my_example")
-            .prompt()?;
+        pkg.name = Ident::from_str(
+            Text::new("Name: ")
+                .with_validator(required!("This field is required"))
+                .with_help_message("e.g. my_example")
+                .prompt()?
+                .as_str(),
+        )?;
 
         pkg.version = Version::parse(
             Text::new("Version: ")
@@ -94,23 +155,23 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
                 .as_str(),
         )?;
 
-        pkg.entrypoint = Text::new("Entrypoint: ")
-            .with_validator(required!("This field is required"))
-            .with_help_message("e.g. main.typ")
-            .with_default("main.typ")
-            .prompt()?;
+        pkg.entrypoint = PathBuf::from(
+            Text::new("Entrypoint: ")
+                .with_validator(required!("This field is required"))
+                .with_help_message("e.g. main.typ")
+                .with_default("main.typ")
+                .prompt()?,
+        );
 
         if public == "yes" {
-            pkg.authors = Some(
-                Text::new("Authors: ")
-                    .with_help_message("e.g. Thumus,Somebody,Somebody Else")
-                    .prompt()?
-                    .split(",")
-                    .map(|f| f.to_string())
-                    .collect::<Vec<String>>(),
-            );
+            pkg.authors = Text::new("Authors: ")
+                .with_help_message("e.g. Thumus,Somebody,Somebody Else")
+                .prompt()?
+                .split(",")
+                .map(|f| Author::from_str(f.to_string().as_str()).unwrap())
+                .collect::<HashSet<Author>>();
 
-            pkg.license = Some(
+            pkg.license = License::from_str(
                 Text::new("License: ")
                     .with_help_message("e.g. MIT")
                     .with_default("Unlicense")
@@ -128,34 +189,38 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
                         }
                         Err(_) => Ok(Validation::Invalid("Can't parse your expression".into())),
                     })
-                    .prompt()?,
-            );
+                    .prompt()?
+                    .as_str(),
+            )?;
 
-            pkg.description = Some(
-                Text::new("description: ")
-                    .with_help_message("e.g. A package")
-                    .prompt()?,
-            );
+            pkg.description = Text::new("description: ")
+                .with_help_message("e.g. A package")
+                .prompt()?;
         }
         if more == "yes" {
             pkg.repository = Some(
-                Text::new("URL of the repository: ")
-                    .with_help_message("e.g. https://github.com/Thumuss/utpm")
-                    .prompt()?,
+                Website::from_str(
+                    Text::new("URL of the repository: ")
+                        .with_help_message("e.g. https://github.com/Thumuss/utpm")
+                        .prompt()?
+                        .as_str(),
+                )?,
             );
             pkg.homepage = Some(
-                Text::new("Homepage: ")
-                    .with_help_message("e.g. anything")
-                    .prompt()?,
+                Website::from_str(
+                    Text::new("Homepage: ")
+                        .with_help_message("e.g. anything")
+                        .prompt()?
+                        .as_str(),
+                )?,
             );
-            pkg.keywords = Some(
-                Text::new("Keywords: ")
-                    .with_help_message("e.g. Typst,keyword")
-                    .prompt()?
-                    .split(",")
-                    .map(|f| f.to_string())
-                    .collect::<Vec<String>>(),
-            );
+            pkg.keywords = Text::new("Keywords: ")
+                .with_help_message("e.g. Typst,keyword")
+                .prompt()?
+                .split(",")
+                .map(|f| f.to_string())
+                .collect::<HashSet<String>>();
+
             pkg.compiler = Some(Version::parse(
                 Text::new("Compiler version required: ")
                     .with_help_message("e.g. 0.7.0")
@@ -170,15 +235,13 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
                     .prompt()?
                     .as_str(),
             )?);
-            pkg.exclude = Some(
-                Text::new("Exclude: ")
-                    .with_help_message("e.g. backup/mypassword.txt,.env")
-                    .prompt()?
-                    .split(",")
-                    .filter(|f| f.len() > 0)
-                    .map(|f| f.to_string())
-                    .collect::<Vec<String>>(),
-            );
+            pkg.exclude = Text::new("Exclude: ")
+                .with_help_message("e.g. backup/mypassword.txt,.env")
+                .prompt()?
+                .split(",")
+                .filter(|f| f.len() > 0)
+                .map(|f| PathBuf::from_str(f).unwrap())
+                .collect::<HashSet<PathBuf>>();
         }
 
         if extra_opts == "yes" {
@@ -198,13 +261,12 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
 
     if cmd.populate {
         let mut file = File::create(curr.clone() + "/README.md")?; // README.md
-        file.write_all(("# ".to_string() + pkg.name.clone().as_str()).as_bytes())?;
-        if let Some(license) = &pkg.license {
-            if let Some(exp) = spdx::license_id(license.as_str()) {
-                file = File::create(curr.clone() + "/LICENSE")?; // LICENSE
-                file.write_all(exp.text().as_bytes())?;
-            }
+        file.write_all(("# ".to_string() + &pkg.name.clone()).as_bytes())?;
+        if let Some(exp) = spdx::license_id(pkg.license.to_string().as_str()) {
+            file = File::create(curr.clone() + "/LICENSE")?; // LICENSE
+            file.write_all(exp.text().as_bytes())?;
         }
+
         create_dir_all(curr.clone() + "/examples")?; // examples
         let examples = curr.clone() + "/examples";
         file = File::create(examples + "/tests.typ")?; // examples/texts.typ
@@ -218,11 +280,16 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
         file = File::create(pkg.entrypoint.clone())?; // main.typ
         file.write_all(b"// This file is generated by UTPM (https://github.com/Thumuss/utpm)")?;
     }
+    let mut keys: BTreeMap<String, Table> = BTreeMap::new();
+    keys.insert("utpm".into(), Table::try_from(extra)?);
+    let manif = Manifest {
+        package: pkg,
+        tool: Some(Tool { keys }),
+        template: None,
+    };
 
-    TypstConfig::new(pkg, Some(extra), None).write(&typ); //todo: add template // typst.toml
-    println!(
-        "{}",
-        format!("File created to {typ}").bold().to_string()
-    );
+    let tomlfy: String = toml::to_string_pretty(&manif).unwrap();
+    fs::write("./typst.toml", tomlfy)?;
+    println!("{}", format!("File created to {typ}").bold().to_string());
     Ok(true)
 }

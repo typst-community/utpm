@@ -7,12 +7,13 @@ use crate::{
             check_path_dir, check_path_file, d_packages, datalocalutpm, get_current_dir,
             get_ssh_dir,
         },
-        specs::{Extra, TypstConfig},
+        specs::Extra,
         state::{Error, ErrorKind, Result},
     },
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
 use owo_colors::OwoColorize;
+use typst_project::manifest::Manifest;
 
 use super::{link, InstallArgs};
 
@@ -72,13 +73,16 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         return Err(Error::empty(ErrorKind::ConfigFile));
     }
 
-    let file = TypstConfig::load(&typstfile);
-    let utpm = file.utpm;
-    let namespace = utpm
-        .clone()
-        .unwrap_or(Extra::new(None, Some("local".to_string()), None))
-        .namespace
-        .unwrap_or("local".into());
+    let file = Manifest::try_find(&typstfile).unwrap().unwrap();
+    let utpm = if let Some(value) = file.tool {
+        value
+            .get_section("utpm")
+            .unwrap()
+            .unwrap_or(Extra::default())
+    } else {
+        Extra::default()
+    };
+    let namespace = utpm.namespace.unwrap_or("local".into());
 
     if check_path_dir(&format!(
         "{}/{}/{}/{}",
@@ -95,25 +99,23 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     }
 
     println!("{}", format!("Installing {}...", file.package.name).bold());
-    if let Some(fl) = utpm {
-        if let Some(vec_depend) = fl.dependencies {
-            let mut y = 0;
-            let vec_of_dependencies = vec_depend
-                .iter()
-                .map(|a| -> Result<bool> {
-                    y += 1;
-                    let ins = InstallArgs {
-                        force: cmd.force,
-                        url: Some(a.to_string()),
-                    };
-                    init(&ins, i * vec_depend.len() + y)?;
-                    Ok(true)
-                })
-                .collect::<Vec<Result<bool>>>();
+    if let Some(vec_depend) = utpm.dependencies {
+        let mut y = 0;
+        let vec_of_dependencies = vec_depend
+            .iter()
+            .map(|a| -> Result<bool> {
+                y += 1;
+                let ins = InstallArgs {
+                    force: cmd.force,
+                    url: Some(a.to_string()),
+                };
+                init(&ins, i * vec_depend.len() + y)?;
+                Ok(true)
+            })
+            .collect::<Vec<Result<bool>>>();
 
-            for result_dependencies in vec_of_dependencies {
-                result_dependencies?;
-            }
+        for result_dependencies in vec_of_dependencies {
+            result_dependencies?;
         }
     }
 
