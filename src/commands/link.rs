@@ -15,7 +15,7 @@ use super::LinkArgs;
 pub fn run(cmd: &LinkArgs, path: Option<String>) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 
-    let config = Manifest::try_find(&(curr.clone() + "/typst.toml")).unwrap().unwrap();
+    let config = Manifest::try_find(&(curr.clone() + "/typst.toml"))?.unwrap();
     let namespace = if let Some(value) = config.tool {
         value
             .get_section("utpm")

@@ -15,7 +15,7 @@ pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
             yes: true,
             namespace: cmd.namespace.to_owned(),
             version: if name_and_version.len() > 1 {
-                Some(semver::Version::parse(name_and_version[1].as_str()).unwrap())
+                Some(semver::Version::parse(name_and_version[1].as_str())?)
             } else {
                 None
             },

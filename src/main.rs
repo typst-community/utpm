@@ -11,7 +11,7 @@ use utils::state::Error;
 fn main() {
     let x = Cli::parse();
 
-    let _: Result<bool, Error> = match &x.command {
+    let res: Result<bool, Error> = match &x.command {
         Commands::Create(cmd) => create::run(&mut cmd.clone()),
         Commands::Link(cmd) => link::run(cmd, None),
         Commands::Tree => tree::run(),
@@ -21,4 +21,9 @@ fn main() {
         Commands::BulkDelete(cmd) => bulk_delete::run(cmd),
         Commands::Install(cmd) => install::run(cmd),
     };
+
+    match res {
+        Ok(_) => {},
+        Err(val) => println!("{}", val),
+    }
 }
