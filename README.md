@@ -123,7 +123,6 @@ cargo install --git https://github.com/Thumuss/utpm
 
 ## Contribution
 
-<!-- ndlr: on peut également dire "if you want to help me with developing this package" si ça sonne mieux pour toi -->
 If you want to help me develop this package, simply make an issue or a PR!
 
 By using this app, you contribute to it, thank you! <3
