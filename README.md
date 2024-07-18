@@ -14,7 +14,7 @@
   - [x] ⏯️ Interactive
   - [x] ⌨️ CLI version
 - [x] 🛠 Put your package directly into your local packages (`utpm link`)
-  - 💻 Link without copying! (`utpm link --no-copy`)
+  - [ ] 💻 Link without copying! (`utpm link --no-copy`)
 - [x] 🌐 Dependencies outsite typst!
   - [x] 📦 Install directly from the tool
   - [x] 🔒 Portable installer (limited for now)
