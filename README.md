@@ -115,7 +115,6 @@ _A simple command to show all packages installed in your local dir like a tree!_
 
 You will need Cargo and Rust.
 
-<!-- ndlr: simplest est un mot correct mais ça sonne pas super bien donc j'ai remplacé par easiest -->
 The easiest way to install utpm using Cargo is:
 
 ```bash
