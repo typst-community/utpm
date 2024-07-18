@@ -21,7 +21,6 @@
 - [x] 📃 List all your packages
   - [x] 🗃️ As a list `utpm list`
   - [x] 🌲 As a tree `utpm tree`
-<!-- ndlr: la formulation du bullet point juste en dessous me parait un peu bizarre mais jsp exactement ce que tu voulais dire donc je l'ai principalement laissée tranquille -->
 - [x] 💥 Customize your output (json or classic, `-j` in your commands)
 - [x] 🗄️ Delete and bulk delete your packages (`utpm unlink`, `utpm bulk-delete`)
 - [ ] 🚀 Publish it directly to Typst!
