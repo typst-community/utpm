@@ -3,6 +3,8 @@ use std::{
     fs::{read, read_dir, symlink_metadata},
 };
 
+use dirs::cache_dir;
+
 use super::state::{Error, ErrorKind, Result};
 
 #[cfg(not(feature = "CI"))]
@@ -27,6 +29,14 @@ pub fn get_home_dir() -> Result<String> {
     }
 }
 
+pub fn get_cache_dir() -> Result<String> {
+    Ok(cache_dir()
+        .unwrap_or("~/.cache".into())
+        .to_str()
+        .unwrap_or("~/.cache")
+        .into())
+}
+
 pub fn get_ssh_dir() -> Result<String> {
     Ok(get_home_dir()? + "/.ssh")
 }
@@ -34,6 +44,10 @@ pub fn get_ssh_dir() -> Result<String> {
 #[cfg(feature = "CI")]
 pub fn get_data_dir() -> String {
     get_current_dir().unwrap_or("./".to_string()) + "/.utpm"
+}
+
+pub fn c_packages() -> Result<String> {
+    Ok(get_cache_dir()? + "/typst/packages")
 }
 
 pub fn d_packages() -> String {
@@ -80,4 +94,3 @@ pub fn check_existing_symlink(path: &String) -> bool {
     };
     x.file_type().is_symlink()
 }
-

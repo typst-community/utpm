@@ -14,8 +14,8 @@ fn main() {
     let res: Result<bool, Error> = match &x.command {
         Commands::Create(cmd) => create::run(&mut cmd.clone()),
         Commands::Link(cmd) => link::run(cmd, None),
-        Commands::Tree => tree::run(),
-        Commands::List => list::run(),
+        Commands::Tree(cmd) => tree::run(cmd),
+        Commands::List(cmd) => list::run(cmd),
         Commands::PackagesPath => package_path::run(),
         Commands::Unlink(cmd) => unlink::run(cmd),
         Commands::BulkDelete(cmd) => bulk_delete::run(cmd),

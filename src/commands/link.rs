@@ -4,7 +4,7 @@ use typst_project::manifest::Manifest;
 
 use crate::utils::{
     copy_dir_all,
-    paths::{check_path_dir, d_packages, get_current_dir},
+    paths::{c_packages, check_path_dir, d_packages, get_current_dir},
     specs::Extra,
     state::{Error, ErrorKind, Result},
     symlink_all,
@@ -18,8 +18,7 @@ pub fn run(cmd: &LinkArgs, path: Option<String>) -> Result<bool> {
     let config = Manifest::try_find(&(curr.clone() + "/typst.toml"))?.unwrap();
     let namespace = if let Some(value) = config.tool {
         value
-            .get_section("utpm")
-            .unwrap()
+            .get_section("utpm")?
             .unwrap_or(Extra::default())
             .namespace
             .unwrap_or("local".into())
@@ -29,7 +28,11 @@ pub fn run(cmd: &LinkArgs, path: Option<String>) -> Result<bool> {
 
     let name = config.package.name;
     let version = config.package.version;
-    let path = format!("{}/{}/{}/{}", d_packages(), namespace, name, version);
+    let path = if namespace != "preview" {
+        format!("{}/{}/{}/{}", d_packages(), namespace, name, version)
+    } else {
+        format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
+    };
     let binding = "Info:".yellow();
     let info = binding.bold();
     if check_path_dir(&path) && !cmd.force {
