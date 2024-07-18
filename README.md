@@ -12,26 +12,27 @@
 
 - [x] ✨ Create packages automatically (`utpm create`)
   - [x] ⏯️ Interactive
-  - [x] ⌨️ Cli version
+  - [x] ⌨️ CLI version
 - [x] 🛠 Put your package directly into your local packages (`utpm link`)
   - 💻 Link without copying! (`utpm link --no-copy`)
 - [x] 🌐 Dependencies outsite typst!
   - [x] 📦 Install directly from the tool
   - [x] 🔒 Portable installer (limited for now)
 - [x] 📃 List all your packages
-  - [x] 🗃️ In a form of a list `utpm list`
-  - [x] 🌲 In a form of a tree `utpm tree`
-- [x] 💥 Customize your output (json or classic, `-j` in yours commands)
+  - [x] 🗃️ As a list `utpm list`
+  - [x] 🌲 As a tree `utpm tree`
+<!-- ndlr: la formulation du bullet point juste en dessous me parait un peu bizarre mais jsp exactement ce que tu voulais dire donc je l'ai principalement laissée tranquille -->
+- [x] 💥 Customize your output (json or classic, `-j` in your commands)
 - [x] 🗄️ Delete and bulk delete your packages (`utpm unlink`, `utpm bulk-delete`)
 - [ ] 🚀 Publish it directly to Typst!
 
-**_And others!_**
+**_And many other features!_**
 
 ## 🔎 How to use it?
 
 ### The basic workflow
 
-- _Firstly you'll need to [create](#create) your `typst.toml` file!_
+- _Firstly, you'll need to [create](#create) your `typst.toml` file!_
 - _Then, edit your file! Like `index.typ` or `lib.typ`_
 - _Finally, [link](#link) your new package to typst!_
 
@@ -97,7 +98,7 @@ _Generate a help message_
 
 #### 🌲 Tree
 
-_A simple command to show all your packages install in your local dir like a tree!_
+_A simple command to show all packages installed in your local dir like a tree!_
 
 ![tree.gif](./tapes/tree.gif)
 
@@ -115,7 +116,8 @@ _A simple command to show all your packages install in your local dir like a tre
 
 You will need Cargo and Rust.
 
-Simpliest way :
+<!-- ndlr: simplest est un mot correct mais ça sonne pas super bien donc j'ai remplacé par easiest -->
+The easiest way to install utpm using Cargo is:
 
 ```bash
 cargo install --git https://github.com/Thumuss/utpm
@@ -123,6 +125,7 @@ cargo install --git https://github.com/Thumuss/utpm
 
 ## Contribution
 
-If you want to help me dev this package, simply make an issue or a PR
+<!-- ndlr: on peut également dire "if you want to help me with developing this package" si ça sonne mieux pour toi -->
+If you want to help me develop this package, simply make an issue or a PR!
 
 By using this app, you contribute to it, thank you! <3
