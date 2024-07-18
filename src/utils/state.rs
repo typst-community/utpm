@@ -29,7 +29,8 @@ pub enum ErrorKind {
     Ident,
     License,
 
-    Serialize
+    Serialize,
+    Deserialize,
 }
 
 
@@ -121,3 +122,4 @@ impl_from!(typst_project::manifest::ident::ParseIdentError => Ident);
 impl_from!(typst_project::manifest::license::ParseLicenseError => License);
 
 impl_from!(toml::ser::Error => Serialize);
+impl_from!(toml::de::Error => Deserialize);

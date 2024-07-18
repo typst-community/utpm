@@ -101,6 +101,17 @@ pub struct LinkArgs {
 }
 
 #[derive(Parser, Clone, Debug)]
+pub struct ListTreeArgs {
+    /// Will list all packages including @preview
+    #[arg(short, long)]
+    pub all: bool,
+
+    /// List all subdirectory you want 
+    #[arg(short, long, num_args = 1..)]
+    pub include: Option<Vec<String>>,
+}
+
+#[derive(Parser, Clone, Debug)]
 pub struct UnlinkArgs {
     /// The name of the package
     name: Option<String>,
@@ -150,10 +161,10 @@ pub enum Commands {
     Link(LinkArgs),
 
     /// List all of packages from your dir, in a form of a tree
-    Tree,
+    Tree(ListTreeArgs),
 
     /// List all of packages from your dir, in a form of a list
-    List,
+    List(ListTreeArgs),
 
     /// Display path to typst packages folder
     PackagesPath,
