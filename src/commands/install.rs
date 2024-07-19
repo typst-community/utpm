@@ -36,16 +36,28 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     if let Some(x) = &cmd.url {
         fs::create_dir_all(&path)?;
         let sshpath = get_ssh_dir()?;
-        let ed = sshpath.clone() + "/id_ed25519";
-        let rsa = sshpath + "/id_rsa";
-        let val = if check_path_file(&ed) { ed } else { rsa };
+        let ed: String = sshpath.clone() + "/id_ed25519";
+        let rsa: String = sshpath + "/id_rsa";
+        let val: String = match env::var("UTPM_KEYPATH") {
+            Ok(val) => val,
+            Err(_) => {
+                if check_path_file(&ed) {
+                    ed
+                } else {
+                    rsa
+                }
+            }
+        };
         if x.starts_with("git") {
             let mut callbacks = RemoteCallbacks::new();
             callbacks.credentials(|_, username_from_url, _| {
-                match Cred::ssh_key_from_agent(username_from_url.unwrap_or("git")) {
+                let binding = env::var("UTPM_USERNAME")
+                    .unwrap_or(username_from_url.unwrap_or("git").to_string());
+                let username = binding.as_str();
+                match Cred::ssh_key_from_agent(username) {
                     Ok(cred) => Ok(cred),
                     Err(_) => Cred::ssh_key(
-                        username_from_url.unwrap_or("git"),
+                        username,
                         None,
                         Path::new(&val),
                         Some(
@@ -72,13 +84,9 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     if !check_path_file(&typstfile) {
         return Err(Error::empty(ErrorKind::ConfigFile));
     }
-
-    let file = Manifest::try_find(&typstfile).unwrap().unwrap();
+    let file = Manifest::try_find(&path)?.unwrap();
     let utpm = if let Some(value) = file.tool {
-        value
-            .get_section("utpm")
-            .unwrap()
-            .unwrap_or(Extra::default())
+        value.get_section("utpm")?.unwrap_or(Extra::default())
     } else {
         Extra::default()
     };
@@ -97,6 +105,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         );
         return Ok(true);
     }
+
 
     println!("{}", format!("Installing {}...", file.package.name).bold());
     if let Some(vec_depend) = utpm.dependencies {
@@ -124,7 +133,6 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             force: cmd.force,
             no_copy: false,
         };
-
         link::run(&lnk, Some(path.clone()))?; //TODO: change here too
         fs::remove_dir_all(&path)?;
         println!(
