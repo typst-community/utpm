@@ -13,7 +13,7 @@ fn main() {
 
     let res: Result<bool, Error> = match &x.command {
         Commands::Create(cmd) => create::run(&mut cmd.clone()),
-        Commands::Link(cmd) => link::run(cmd, None),
+        Commands::Link(cmd) => link::run(cmd, None, true),
         Commands::Tree(cmd) => tree::run(cmd),
         Commands::List(cmd) => list::run(cmd),
         Commands::PackagesPath => package_path::run(),
