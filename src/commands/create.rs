@@ -299,7 +299,7 @@ pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
         template: None,
     };
 
-    let tomlfy: String = toml::to_string_pretty(&manif).unwrap();
+    let tomlfy: String = toml::to_string_pretty(&manif)?;
     fs::write("./typst.toml", tomlfy)?;
     println!("{}", format!("File created to {typ}").bold().to_string());
     Ok(true)
