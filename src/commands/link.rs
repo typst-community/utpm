@@ -15,7 +15,10 @@ use super::LinkArgs;
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 
-    let config = Manifest::try_find(&curr)?.unwrap();
+    let config = match Manifest::try_find(&curr)? {
+        Some(val) => Ok(val),
+        None => Err(Error::empty(ErrorKind::Manifest)),
+    }?;
     let namespace = if let Some(value) = config.tool {
         value
             .get_section("utpm")?

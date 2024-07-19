@@ -27,9 +27,9 @@ use crate::utils::{
     state::Result,
 };
 
-use super::CreateArgs;
+use super::CreateInitArgs;
 
-pub fn run(cmd: &mut CreateArgs) -> Result<bool> {
+pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
     let typ = curr.clone() + "/typst.toml";
 

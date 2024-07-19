@@ -31,8 +31,9 @@ pub enum ErrorKind {
 
     Serialize,
     Deserialize,
-}
 
+    Manifest,
+}
 
 impl ErrorKind {
     pub fn message(&self) -> String {
@@ -46,6 +47,7 @@ impl ErrorKind {
             ErrorKind::ConfigFile => {
                 "There is no typst.toml in this directory. Try to `utpm create -p` to create a package.".into()
             }
+            ErrorKind::Manifest => "There is no `typst.toml` here!".into(),
             ErrorKind::AlreadyExist(name, version, info) => format!("This package ({name}:{version}) already exist!\n{info} Put --force to force the copy or change the version in 'typst.toml'"),
             ErrorKind::UnknowError(s) => s.into(),
             _ => "".into(),

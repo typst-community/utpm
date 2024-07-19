@@ -3,16 +3,16 @@ pub mod bulk_delete;
 pub mod create;
 pub mod install;
 pub mod link;
-pub mod tree;
-pub mod package_path;
-pub mod unlink;
 pub mod list;
+pub mod package_path;
+pub mod tree;
+pub mod unlink;
 
 use clap::{Parser, Subcommand};
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
 
 #[derive(Parser, Clone, Debug)]
-pub struct CreateArgs {
+pub struct CreateInitArgs {
     /// Desactivate interactive session
     #[arg(short = 'm', long, requires = "ni")]
     cli: bool,
@@ -35,6 +35,7 @@ pub struct CreateArgs {
 
     /// Authors of the project
     #[arg(short, long)]
+    #[clap(value_delimiter = ',')]
     authors: Option<Vec<String>>,
 
     /// License
@@ -55,6 +56,7 @@ pub struct CreateArgs {
 
     /// Keywords to find your project
     #[arg(short, long)]
+    #[clap(value_delimiter = ',')]
     keywords: Option<Vec<String>>,
 
     /// Minimum compiler version
@@ -63,6 +65,7 @@ pub struct CreateArgs {
 
     /// Excludes files
     #[arg(short = 'x', long)]
+    #[clap(value_delimiter = ',')]
     exclude: Option<Vec<String>>,
 
     /// Namespace
@@ -74,9 +77,11 @@ pub struct CreateArgs {
     populate: bool,
 
     #[arg(short = 'C', long)]
+    #[clap(value_delimiter = ',')]
     categories: Option<Vec<Category>>,
 
     #[arg(short = 'D', long)]
+    #[clap(value_delimiter = ',')]
     disciplines: Option<Vec<Discipline>>,
 
     #[arg(long, requires = "template")]
@@ -106,7 +111,7 @@ pub struct ListTreeArgs {
     #[arg(short, long)]
     pub all: bool,
 
-    /// List all subdirectory you want 
+    /// List all subdirectory you want
     #[arg(short, long, num_args = 1..)]
     pub include: Option<Vec<String>>,
 }
@@ -136,6 +141,7 @@ pub struct UnlinkArgs {
 #[derive(Parser, Clone, Debug)]
 pub struct BulkDeleteArgs {
     /// Names of your packages, use version with this syntax: mypackage:1.0.0
+    #[clap(value_delimiter = ',')]
     names: Vec<String>,
 
     /// The namespace you want to bulk-delete
@@ -153,30 +159,71 @@ pub struct InstallArgs {
     pub force: bool,
 }
 
+/// Commands to use packages related to typst
 #[derive(Subcommand, Debug)]
-pub enum Commands {
-    /// Create a file for your project (typst.toml)
-    Create(CreateArgs),
-    /// Link your project to your dirs
-    Link(LinkArgs),
-
+pub enum Packages {
     /// List all of packages from your dir, in a form of a tree
+    #[command(visible_alias = "t")]
     Tree(ListTreeArgs),
 
     /// List all of packages from your dir, in a form of a list
+    #[command(visible_alias = "l")]
     List(ListTreeArgs),
 
     /// Display path to typst packages folder
-    PackagesPath,
+    #[command(visible_alias = "p")]
+    Path,
 
     /// Delete package previously install with utpm
+    #[command(visible_alias = "u")]
     Unlink(UnlinkArgs),
 
-    /// Delete a bunch of packages
+    #[command(visible_alias = "bd")]
     BulkDelete(BulkDeleteArgs),
+}
+
+/// Commands to create, edit, delete your workspace for your package.
+#[derive(Subcommand, Debug)]
+pub enum Workspace {
+    /// Link your project to your dirs
+    #[command(visible_alias = "l")]
+    Link(LinkArgs),
+
+    /// Create a file for your project (typst.toml)
+    /// (deprecated, use `utpm workspace init`)
+    #[command(visible_alias = "c")]
+    Create(CreateInitArgs),
 
     /// Install all dependencies from the `typst.toml`
+    #[command(visible_alias = "i")]
     Install(InstallArgs),
+
+    /// WIP
+    #[command(visible_alias = "a")]
+    Add,
+
+    /// WIP
+    #[command(visible_alias = "d")]
+    Delete,
+
+    /// Create your workspace to start a typst package
+    Init(CreateInitArgs),
+
+    /// WIP
+    #[command(visible_alias = "p")]
+    Publish,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Commands {
+
+    #[command(subcommand)]
+    #[command(visible_alias = "ws")]
+    Workspace(Workspace),
+
+    #[command(subcommand)]
+    #[command(visible_alias = "pkg")]
+    Packages(Packages),
 }
 
 #[derive(Parser)]
