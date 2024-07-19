@@ -12,7 +12,7 @@ use crate::utils::{
 
 use super::LinkArgs;
 
-pub fn run(cmd: &LinkArgs, path: Option<String>) -> Result<bool> {
+pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 
     let config = Manifest::try_find(&curr)?.unwrap();
@@ -51,16 +51,20 @@ pub fn run(cmd: &LinkArgs, path: Option<String>) -> Result<bool> {
 
     if cmd.no_copy {
         symlink_all(&curr, &path)?;
-        println!(
-            "Project linked to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
-            path, namespace, name, version
-        );
+        if pt {
+            println!(
+                "Project linked to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
+                path, namespace, name, version
+            );
+        }
     } else {
         copy_dir_all(&curr, &path)?;
-        println!(
-            "Project copied to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
-            path, namespace, name, version
-        );
+        if pt {
+            println!(
+                "Project copied to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
+                path, namespace, name, version
+            );
+        }
     }
     Ok(true)
 }

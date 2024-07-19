@@ -133,7 +133,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             force: cmd.force,
             no_copy: false,
         };
-        link::run(&lnk, Some(path.clone()))?; //TODO: change here too
+        link::run(&lnk, Some(path.clone()), false)?; //TODO: change here too
         fs::remove_dir_all(&path)?;
         println!(
             "{}",
