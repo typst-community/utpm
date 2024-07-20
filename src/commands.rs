@@ -7,6 +7,7 @@ pub mod list;
 pub mod package_path;
 pub mod tree;
 pub mod unlink;
+pub mod add;
 
 use clap::{Parser, Subcommand};
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
@@ -159,6 +160,12 @@ pub struct InstallArgs {
     pub force: bool,
 }
 
+#[derive(Parser, Clone, Debug)]
+pub struct AddArgs {
+    /// The url or path of your repository. 
+    pub uri: String,
+}
+
 /// Commands to use packages related to typst
 #[derive(Subcommand, Debug)]
 pub enum Packages {
@@ -200,7 +207,7 @@ pub enum Workspace {
 
     /// WIP
     #[command(visible_alias = "a")]
-    Add,
+    Add(AddArgs),
 
     /// WIP
     #[command(visible_alias = "d")]

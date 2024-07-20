@@ -3,8 +3,7 @@ pub mod utils;
 
 use clap::Parser;
 use commands::{
-    bulk_delete, create, install, link, list, package_path, tree, unlink, Cli, Commands, Packages,
-    Workspace,
+    add, bulk_delete, create, install, link, list, package_path, tree, unlink, Cli, Commands, Packages, Workspace
 };
 
 use utils::state::Error;
@@ -17,7 +16,7 @@ fn main() {
             Workspace::Link(cmd) => link::run(cmd, None, true),
             Workspace::Create(cmd) => create::run(&mut cmd.clone()),
             Workspace::Install(cmd) => install::run(cmd),
-            Workspace::Add => todo!(),
+            Workspace::Add(cmd) => add::run(cmd),
             Workspace::Delete => todo!(),
             Workspace::Init(cmd) => create::run(&mut cmd.clone()),
             Workspace::Publish => todo!(),
