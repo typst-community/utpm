@@ -29,7 +29,9 @@ fn main() {
             Packages::BulkDelete(cmd) => bulk_delete::run(cmd),
         },
     };
-    
+
+    //Commands::Install(cmd) => ,
+
     match res {
         Ok(_) => {}
         Err(val) => println!("{}", val),
