@@ -7,7 +7,7 @@ use crate::{manifest, utils::{
     paths::get_current_dir,
     specs::Extra,
     state::{Error, ErrorKind, Result},
-}};
+}, write_manifest};
 
 use super::{install, AddArgs, InstallArgs};
 
@@ -47,8 +47,7 @@ pub fn run(cmd: &AddArgs) -> Result<bool> {
         config.tool = Some(Tool { keys });
     }
 
-    let tomlfy: String = toml::to_string_pretty(&config)?;
-    fs::write("./typst.toml", tomlfy)?;
+    write_manifest!(&config);
     
     install::run(&InstallArgs { force: false, url: Some(cmd.uri.clone())})?;
 

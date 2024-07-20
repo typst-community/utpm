@@ -13,3 +13,15 @@ macro_rules! manifest {
         }?
     }
 }
+
+#[macro_export]
+macro_rules! write_manifest {
+    ($var:expr => $path:expr) => {
+        let tomlfy: String = toml::to_string_pretty($var)?;
+        fs::write($path, tomlfy)?
+    };
+    ($var:expr) => {
+        let tomlfy: String = toml::to_string_pretty($var)?;
+        fs::write("./typst.toml", tomlfy)?
+    }
+}

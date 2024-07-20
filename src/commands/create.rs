@@ -21,11 +21,11 @@ use typst_project::manifest::{
     Manifest,
 };
 
-use crate::utils::{
+use crate::{utils::{
     paths::{check_path_file, get_current_dir},
     specs::Extra,
     state::Result,
-};
+}, write_manifest};
 
 use super::CreateInitArgs;
 
@@ -299,8 +299,8 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
         template: None,
     };
 
-    let tomlfy: String = toml::to_string_pretty(&manif)?;
-    fs::write("./typst.toml", tomlfy)?;
+    write_manifest!(&manif);
+    
     println!("{}", format!("File created to {typ}").bold().to_string());
     Ok(true)
 }
