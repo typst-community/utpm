@@ -28,7 +28,10 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
             let mut extra: Extra = toml::from_str(toml::to_string(ex)?.as_str())?; //Todo: change this hack
             if let Some(mut dependencies) = extra.dependencies.clone() {
                 for e in &cmd.uri {
-                    dependencies.push(e.clone());
+                    match dependencies.iter().position(|x| x == e) {
+                        Some(_) => (),
+                        None => dependencies.push(e.clone())
+                    };
                 }
                 extra.dependencies = Some(dependencies);
             } else {

@@ -217,7 +217,7 @@ pub enum Workspace {
     #[command(visible_alias = "a")]
     Add(AddArgs),
 
-    /// WIP
+    /// Delete dependencies
     #[command(visible_alias = "d")]
     Delete(DeleteArgs),
 
