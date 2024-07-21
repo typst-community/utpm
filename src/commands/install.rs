@@ -1,15 +1,12 @@
 use std::{env, fs, path::Path};
 
 use crate::{
-    commands::LinkArgs,
-    utils::{
-        paths::{
+    commands::LinkArgs, manifest, utils::{
+        copy_dir_all, paths::{
             check_path_dir, check_path_file, d_packages, datalocalutpm, get_current_dir,
             get_ssh_dir,
-        },
-        specs::Extra,
-        state::{Error, ErrorKind, Result},
-    },
+        }, specs::Extra, state::{Error, ErrorKind, Result}
+    }
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
 use owo_colors::OwoColorize;
@@ -75,23 +72,30 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             let mut builder = RepoBuilder::new();
             builder.fetch_options(fo);
             builder.clone(&x, Path::new(&path))?;
-        } else {
+        } else if x.starts_with("http") {
             Repository::clone(&x, &path)?;
+        } else {
+            copy_dir_all(&x, &path)?;
         }
     };
 
     let typstfile = path.clone() + "/typst.toml";
     if !check_path_file(&typstfile) {
-        return Err(Error::empty(ErrorKind::ConfigFile));
+        let origin = cmd.url.clone().unwrap_or("/".into());
+        //Err(Error::new(ErrorKind::ConfigFile, format!("From: {path} <{origin}>\nTips: Delete \"{origin}\" with `utpm workspace delete {origin}`")));
+        println!(
+            "{}",
+            format!("x {}", origin).yellow()
+        );
+        return Ok(false);
     }
-    let file = Manifest::try_find(&path)?.unwrap();
+    let file = manifest!(&path);
     let utpm = if let Some(value) = file.tool {
         value.get_section("utpm")?.unwrap_or(Extra::default())
     } else {
         Extra::default()
     };
     let namespace = utpm.namespace.unwrap_or("local".into());
-
     if check_path_dir(&format!(
         "{}/{}/{}/{}",
         d_packages(),
@@ -127,7 +131,6 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             result_dependencies?;
         }
     }
-
     if !cmd.url.is_none() {
         let lnk = LinkArgs {
             force: cmd.force,

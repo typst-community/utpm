@@ -2,21 +2,21 @@ use owo_colors::OwoColorize;
 use std::fs;
 use typst_project::manifest::Manifest;
 
-use crate::utils::{
+use crate::{manifest, utils::{
     copy_dir_all,
     paths::{c_packages, check_path_dir, d_packages, get_current_dir},
     specs::Extra,
     state::{Error, ErrorKind, Result},
     symlink_all,
-};
+}};
 
 use super::LinkArgs;
 
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 
-    let config = Manifest::try_find(&curr)?.unwrap();
-    let namespace = if let Some(value) = config.tool {
+    let config = manifest!(&curr)
+;    let namespace = if let Some(value) = config.tool {
         value
             .get_section("utpm")?
             .unwrap_or(Extra::default())
