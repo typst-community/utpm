@@ -8,6 +8,7 @@ pub mod package_path;
 pub mod tree;
 pub mod unlink;
 pub mod add;
+pub mod delete;
 
 use clap::{Parser, Subcommand};
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
@@ -153,6 +154,7 @@ pub struct BulkDeleteArgs {
 #[derive(Parser, Clone, Debug)]
 pub struct InstallArgs {
     /// If you want to install a specific package
+    #[arg(num_args = 1..)]
     pub url: Option<String>,
 
     /// Passed force to all link commands
@@ -161,9 +163,15 @@ pub struct InstallArgs {
 }
 
 #[derive(Parser, Clone, Debug)]
+pub struct DeleteArgs {
+    /// URIs to remove.
+    pub uri: Vec<String>,
+}
+
+#[derive(Parser, Clone, Debug)]
 pub struct AddArgs {
     /// The url or path of your repository. 
-    pub uri: String,
+    pub uri: Vec<String>,
 }
 
 /// Commands to use packages related to typst
@@ -205,13 +213,13 @@ pub enum Workspace {
     #[command(visible_alias = "i")]
     Install(InstallArgs),
 
-    /// WIP
+    /// Add dependencies and then install them
     #[command(visible_alias = "a")]
     Add(AddArgs),
 
     /// WIP
     #[command(visible_alias = "d")]
-    Delete,
+    Delete(DeleteArgs),
 
     /// Create your workspace to start a typst package
     Init(CreateInitArgs),

@@ -81,7 +81,13 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
 
     let typstfile = path.clone() + "/typst.toml";
     if !check_path_file(&typstfile) {
-        return Err(Error::empty(ErrorKind::ConfigFile));
+        let origin = cmd.url.clone().unwrap_or("/".into());
+        //Err(Error::new(ErrorKind::ConfigFile, format!("From: {path} <{origin}>\nTips: Delete \"{origin}\" with `utpm workspace delete {origin}`")));
+        println!(
+            "{}",
+            format!("x {}", origin).yellow()
+        );
+        return Ok(false);
     }
     let file = manifest!(&path);
     let utpm = if let Some(value) = file.tool {

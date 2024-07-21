@@ -33,6 +33,8 @@ pub enum ErrorKind {
     Deserialize,
 
     Manifest,
+
+    NotEnoughArgs,
 }
 
 impl ErrorKind {
@@ -50,6 +52,7 @@ impl ErrorKind {
             ErrorKind::Manifest => "There is no `typst.toml` here!".into(),
             ErrorKind::AlreadyExist(name, version, info) => format!("This package ({name}:{version}) already exist!\n{info} Put --force to force the copy or change the version in 'typst.toml'"),
             ErrorKind::UnknowError(s) => s.into(),
+            ErrorKind::NotEnoughArgs => "There is not enough args:".into(),
             _ => "".into(),
         }
     }
@@ -91,7 +94,17 @@ impl Error {
     }
 
     pub fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_str())
+        if self.message.is_none() {
+            write!(f, "{}", self.to_str())
+        } else {
+            write!(
+                f,
+                "{}: {}\n{}",
+                format!("{} Error", self.kind.to_string()).red(),
+                self.kind.message().bold(),
+                self.message.clone().unwrap().bright_black()
+            )
+        }
     }
 }
 
