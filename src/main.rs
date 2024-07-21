@@ -30,8 +30,6 @@ fn main() {
         },
     };
 
-    //Commands::Install(cmd) => ,
-
     match res {
         Ok(_) => {}
         Err(val) => println!("{}", val),
