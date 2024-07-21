@@ -29,7 +29,7 @@ fn main() {
             Packages::BulkDelete(cmd) => bulk_delete::run(cmd),
         },
     };
-
+    
     match res {
         Ok(_) => {}
         Err(val) => println!("{}", val),
