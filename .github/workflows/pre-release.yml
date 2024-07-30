@@ -41,7 +41,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           target: ${{ matrix.target }}
-          toolchain: stable 6 months ago
+          toolchain: stable
 
       - name: Run Cargo | Cross
         if: ${{ matrix.cross }}
