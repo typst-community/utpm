@@ -18,7 +18,7 @@ clap = { version = "4.4.2", features = ["derive"] }
 git2 = "0.18.0"
 owo-colors = "3.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
-typst-project = { git = "https://github.com/tingerrr/typst-project" }
+typst-project = { git = "https://github.com/tingerrr/typst-project", rev = "8462942ef0c783acf339e715b5e24b2dba423de1" }
 openssl = { version = "0.10", features = ["vendored"] }
 tracing = { version = "0.1.40", features = ["attributes"] }
 tracing-subscriber = "0.3.18"
