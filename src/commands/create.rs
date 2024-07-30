@@ -21,11 +21,14 @@ use typst_project::manifest::{
     Manifest,
 };
 
-use crate::{utils::{
-    paths::{check_path_file, get_current_dir},
-    specs::Extra,
-    state::Result,
-}, write_manifest};
+use crate::{
+    utils::{
+        paths::{check_path_file, get_current_dir},
+        specs::Extra,
+        state::Result,
+    },
+    write_manifest,
+};
 
 use super::CreateInitArgs;
 
@@ -300,7 +303,7 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     };
 
     write_manifest!(&manif);
-    
+
     println!("{}", format!("File created to {typ}").bold().to_string());
     Ok(true)
 }

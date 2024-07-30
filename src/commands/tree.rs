@@ -26,13 +26,13 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
             match package_read(&format!("{}/local/{}", typ, e)) {
                 Ok(_) => true,
                 Err(_) => namespace_read(&format!("{}/{}", typ, e))?,
-            };        }
+            };
+        }
         Ok(true)
     } else {
         read(typ)
     }
 }
-
 
 fn read(typ: String) -> Result<bool> {
     let dirs = fs::read_dir(&typ)?;

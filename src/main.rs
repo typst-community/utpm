@@ -3,7 +3,8 @@ pub mod utils;
 
 use clap::Parser;
 use commands::{
-    add, bulk_delete, create, delete, install, link, list, package_path, tree, unlink, Cli, Commands, Packages, Workspace
+    add, bulk_delete, create, delete, install, link, list, package_path, tree, unlink, Cli,
+    Commands, Packages, Workspace,
 };
 
 use utils::state::Error;

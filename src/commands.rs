@@ -1,14 +1,14 @@
 // Linker
+pub mod add;
 pub mod bulk_delete;
 pub mod create;
+pub mod delete;
 pub mod install;
 pub mod link;
 pub mod list;
 pub mod package_path;
 pub mod tree;
 pub mod unlink;
-pub mod add;
-pub mod delete;
 
 use clap::{Parser, Subcommand};
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
@@ -170,7 +170,7 @@ pub struct DeleteArgs {
 
 #[derive(Parser, Clone, Debug)]
 pub struct AddArgs {
-    /// The url or path of your repository. 
+    /// The url or path of your repository.
     pub uri: Vec<String>,
 }
 
@@ -231,7 +231,6 @@ pub enum Workspace {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-
     #[command(subcommand)]
     #[command(visible_alias = "ws")]
     Workspace(Workspace),
