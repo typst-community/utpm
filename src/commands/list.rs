@@ -9,7 +9,7 @@ use crate::utils::{
 use super::ListTreeArgs;
 
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
-    let typ: String = d_packages();
+    let typ: String = d_packages()?;
     println!("{}", "A list of your packages (WIP)\n".bold());
     if cmd.all {
         let preview: String = c_packages()?;

@@ -32,7 +32,7 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let name = config.package.name;
     let version = config.package.version;
     let path = if namespace != "preview" {
-        format!("{}/{}/{}/{}", d_packages(), namespace, name, version)
+        format!("{}/{}/{}/{}", d_packages()?, namespace, name, version)
     } else {
         format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
     };

@@ -1,22 +1,22 @@
 use std::{
     env::{self, current_dir},
     fs::{read, read_dir, symlink_metadata},
+    path,
 };
 
 use dirs::cache_dir;
 
 use super::state::{Error, ErrorKind, Result};
 
-#[cfg(not(feature = "CI"))]
-pub fn get_data_dir() -> String {
+pub fn get_data_dir() -> Result<String> {
     match env::var("UTPM_DATA_DIR") {
-        Ok(str) => str,
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => match dirs::data_local_dir() {
             Some(dir) => match dir.to_str() {
-                Some(string) => String::from(string),
-                None => String::from("/.local/share"), //default on linux
+                Some(string) => Ok(String::from(string)),
+                None => Ok(String::from("/.local/share")), //default on linux
             },
-            None => String::from("/.local/share"),
+            None => Ok(String::from("/.local/share")),
         },
     }
 }
@@ -24,7 +24,7 @@ pub fn get_data_dir() -> String {
 pub fn get_home_dir() -> Result<String> {
     let err_hd = Error::empty(ErrorKind::HomeDir);
     match env::var("UTPM_HOME_DIR") {
-        Ok(str) => Ok(str),
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => match dirs::home_dir() {
             Some(val) => match val.to_str() {
                 Some(v) => Ok(String::from(v)),
@@ -37,7 +37,7 @@ pub fn get_home_dir() -> Result<String> {
 
 pub fn get_cache_dir() -> Result<String> {
     match env::var("UTPM_CACHE_DIR") {
-        Ok(str) => Ok(str),
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => Ok(cache_dir()
             .unwrap_or("~/.cache".into())
             .to_str()
@@ -48,37 +48,32 @@ pub fn get_cache_dir() -> Result<String> {
 
 pub fn get_ssh_dir() -> Result<String> {
     match env::var("UTPM_SSH_DIR") {
-        Ok(str) => Ok(str),
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => Ok(get_home_dir()? + "/.ssh"),
     }
-}
-
-#[cfg(feature = "CI")]
-pub fn get_data_dir() -> String {
-    get_current_dir().unwrap_or("./".to_string()) + "/.utpm"
 }
 
 pub fn c_packages() -> Result<String> {
     Ok(get_cache_dir()? + "/typst/packages")
 }
 
-pub fn d_packages() -> String {
-    get_data_dir() + "/typst/packages"
+pub fn d_packages() -> Result<String> {
+    Ok(get_data_dir()? + "/typst/packages")
 }
 
-pub fn datalocalutpm() -> String {
-    get_data_dir() + "/utpm"
+pub fn datalocalutpm() -> Result<String> {
+    Ok(get_data_dir()? + "/utpm")
 }
 
-pub fn d_utpm() -> String {
-    d_packages() + "/utpm"
+pub fn d_utpm() -> Result<String> {
+    Ok(d_packages()? + "/utpm")
 }
 
 //TODO: env
 pub fn get_current_dir() -> Result<String> {
     println!("test");
     match env::var("UTPM_CURRENT_DIR") {
-        Ok(str) => Ok(str),
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => match current_dir() {
             Ok(val) => match val.to_str() {
                 Some(v) => Ok(String::from(v)),
