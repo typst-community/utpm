@@ -39,7 +39,7 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
         }
 
         fs::remove_dir_all(
-            d_packages()
+            d_packages()?
                 + format!(
                     "/{}/{}/{}",
                     new_namespace,
@@ -64,7 +64,7 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
             return Ok(false);
         }
 
-        fs::remove_dir_all(d_packages() + format!("/{new_namespace}").as_str())?;
+        fs::remove_dir_all(d_packages()? + format!("/{new_namespace}").as_str())?;
     } else if let Some(nm) = &cmd.name {
         let ans = if !(cmd.yes) {
             Confirm::new("Are you sure to delete this? This is irreversible.")
@@ -79,7 +79,7 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
             return Ok(false);
         }
 
-        fs::remove_dir_all(d_packages() + format!("/{}/{}", new_namespace, nm).as_str())?;
+        fs::remove_dir_all(d_packages()? + format!("/{}/{}", new_namespace, nm).as_str())?;
     }
     println!("{}", "Removed!".bold());
 

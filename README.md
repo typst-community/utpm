@@ -1,6 +1,6 @@
 <div align="center">
 
-![UTPM logo](./logo.svg)
+![UTPM logo](./assets/logo.svg)
 
 > _Unofficial typst package manager_
 
@@ -19,19 +19,19 @@
 
 ## 🔥 Features
 
-- [x] ✨ Create packages automatically (`utpm create`)
+- [x] ✨ Create packages automatically (`utpm ws create`)
   - [x] ⏯️ Interactive
   - [x] ⌨️ CLI version
-- [x] 🛠 Put your package directly into your local packages (`utpm link`)
-  - [x] 💻 Link without copying! (`utpm link --no-copy`)
+- [x] 🛠 Put your package directly into your local packages (`utpm ws link`)
+  - [x] 💻 Link without copying! (`utpm ws link --no-copy`)
 - [x] 🌐 Dependencies outsite typst!
   - [x] 📦 Install directly from the tool
   - [x] 🔒 Portable installer (limited for now)
 - [x] 📃 List all your packages
-  - [x] 🗃️ As a list `utpm list`
-  - [x] 🌲 As a tree `utpm tree`
-- [x] 💥 Customize your output (json or classic, `-j` in your commands)
-- [x] 🗄️ Delete and bulk delete your packages (`utpm unlink`, `utpm bulk-delete`)
+  - [x] 🗃️ As a list `utpm pkg list`
+  - [x] 🌲 As a tree `utpm pkg tree`
+- [ ] 💥 Customize your output (json or classic, `-j` in your commands)
+- [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
 - [ ] 🚀 Publish it directly to Typst!
 
 **_And many other features!_**
@@ -52,14 +52,14 @@
 
 _A command to delete multiple packages at once!_
 
-![bulk-delete.gif](./tapes/bulk_delete.gif)
+![bulk-delete.gif](./assets/gifs/bulk_delete.gif)
 
 <div id="create">
 
 #### ✨ Create
 _Create a `typst.toml` to make a package_
 
-![create_cli.gif](./tapes/create_cli.gif)
+![create_cli.gif](./assets/gifs/create_cli.gif)
 <!-- TODO: GIF v2 -->
 
 </div>
@@ -69,20 +69,20 @@ _Create a `typst.toml` to make a package_
 #### ❓ Help
 
 _Generate a help message_
-![help.gif](./tapes/help.gif)
+![help.gif](./assets/gifs/help.gif)
 
 </div>
 <div id="install">
 
 #### 📦 Install
-![install.gif](./tapes/install.gif)
+![install.gif](./assets/gifs/install.gif)
 <!-- TODO: GIF & text-->
 
 </div>
 <div id="link">
 
 #### 🛠 Link
-![link.gif](./tapes/link.gif)
+![link.gif](./assets/gifs/link.gif)
 <!-- TODO: GIF & text-->
 
 </div>
@@ -91,7 +91,7 @@ _Generate a help message_
 #### 🗃️ List
 <!-- TODO: text -->
 
-![list.gif](./tapes/list.gif)
+![list.gif](./assets/gifs/list.gif)
 
 </div>
 <div id="package-path">
@@ -99,7 +99,7 @@ _Generate a help message_
 
 #### 🚦 Package Path
 
-![packages-path.gif](./tapes/packages-path.gif)
+![packages-path.gif](./assets/gifs/packages-path.gif)
 
 </div>
 <div id="tree">
@@ -108,7 +108,7 @@ _Generate a help message_
 
 _A simple command to show all packages installed in your local dir like a tree!_
 
-![tree.gif](./tapes/tree.gif)
+![tree.gif](./assets/gifs/tree.gif)
 
 </div>
 <div id="unlink">
@@ -116,7 +116,7 @@ _A simple command to show all packages installed in your local dir like a tree!_
 
 #### 🗄️ Unlink
 
-![unlink.gif](./tapes/unlink.gif)
+![unlink.gif](./assets/gifs/unlink.gif)
 
 </div>
 
@@ -127,10 +127,10 @@ You will need Cargo and Rust.
 The easiest way to install utpm using Cargo is:
 
 ```bash
-cargo install --git https://github.com/Thumuss/utpm
+$ cargo install --git https://github.com/Thumuss/utpm
 ```
 
-## Contribution
+## ❤️ Contribution
 
 If you want to help me develop this package, simply make an issue or a PR!
 

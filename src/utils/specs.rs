@@ -21,11 +21,10 @@ impl Extra {
     pub fn new(namespace: Option<String>, dependencies: Option<Vec<String>>) -> Self {
         Self {
             namespace,
-            dependencies
+            dependencies,
         }
     }
 }
-
 
 // #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
 // #[strum(serialize_all = "lowercase")]

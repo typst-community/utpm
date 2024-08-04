@@ -1,12 +1,17 @@
 use std::{env, fs, path::Path};
 
 use crate::{
-    commands::LinkArgs, manifest, utils::{
-        copy_dir_all, paths::{
+    commands::LinkArgs,
+    manifest,
+    utils::{
+        copy_dir_all,
+        paths::{
             check_path_dir, check_path_file, d_packages, datalocalutpm, get_current_dir,
             get_ssh_dir,
-        }, specs::Extra, state::{Error, ErrorKind, Result}
-    }
+        },
+        specs::Extra,
+        state::{Error, ErrorKind, Result},
+    },
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
 use owo_colors::OwoColorize;
@@ -15,7 +20,7 @@ use typst_project::manifest::Manifest;
 use super::{link, InstallArgs};
 
 pub fn run(cmd: &InstallArgs) -> Result<bool> {
-    let path = format!("{}/tmp", datalocalutpm());
+    let path = format!("{}/tmp", datalocalutpm()?);
     if check_path_dir(&path) {
         fs::remove_dir_all(path)?;
     }
@@ -27,7 +32,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let path = if cmd.url.is_none() {
         get_current_dir()?
     } else {
-        format!("{}/tmp/{}", datalocalutpm(), i)
+        format!("{}/tmp/{}", datalocalutpm()?, i)
     };
 
     if let Some(x) = &cmd.url {
@@ -83,10 +88,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
         //Err(Error::new(ErrorKind::ConfigFile, format!("From: {path} <{origin}>\nTips: Delete \"{origin}\" with `utpm workspace delete {origin}`")));
-        println!(
-            "{}",
-            format!("x {}", origin).yellow()
-        );
+        println!("{}", format!("x {}", origin).yellow());
         return Ok(false);
     }
     let file = manifest!(&path);
@@ -98,7 +100,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let namespace = utpm.namespace.unwrap_or("local".into());
     if check_path_dir(&format!(
         "{}/{}/{}/{}",
-        d_packages(),
+        d_packages()?,
         namespace,
         &file.package.name,
         &file.package.version
@@ -109,7 +111,6 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         );
         return Ok(true);
     }
-
 
     println!("{}", format!("Installing {}...", file.package.name).bold());
     if let Some(vec_depend) = utpm.dependencies {

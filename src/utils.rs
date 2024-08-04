@@ -2,10 +2,10 @@ use std::{fs, path::Path};
 
 use std::io;
 
+pub mod macros;
 pub mod paths;
 pub mod specs;
 pub mod state;
-pub mod macros;
 
 /// Copy all subdirectories from a point to an other
 /// From https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust

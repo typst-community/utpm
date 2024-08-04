@@ -6,7 +6,9 @@ use typst_project::manifest::Manifest;
 use crate::{
     manifest,
     utils::{
-        paths::get_current_dir, specs::Extra, state::{Error, ErrorKind, Result}
+        paths::get_current_dir,
+        specs::Extra,
+        state::{Error, ErrorKind, Result},
     },
     write_manifest,
 };
@@ -15,7 +17,7 @@ use super::DeleteArgs;
 
 pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
     let mut config = manifest!();
- 
+
     if let Some(mut tool) = config.clone().tool {
         if let Some(ex) = tool.keys.get("utpm") {
             let mut extra: Extra = toml::from_str(toml::to_string(ex)?.as_str())?; //Todo: change this hack
@@ -25,8 +27,8 @@ pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
                         Some(val) => {
                             dep.remove(val);
                             println!("Removed");
-                        },
-                        None => println!("Can't remove it")
+                        }
+                        None => println!("Can't remove it"),
                     };
                 }
                 extra.dependencies = Some(dep);

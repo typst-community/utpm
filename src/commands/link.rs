@@ -2,21 +2,24 @@ use owo_colors::OwoColorize;
 use std::fs;
 use typst_project::manifest::Manifest;
 
-use crate::{manifest, utils::{
-    copy_dir_all,
-    paths::{c_packages, check_path_dir, d_packages, get_current_dir},
-    specs::Extra,
-    state::{Error, ErrorKind, Result},
-    symlink_all,
-}};
+use crate::{
+    manifest,
+    utils::{
+        copy_dir_all,
+        paths::{c_packages, check_path_dir, d_packages, get_current_dir},
+        specs::Extra,
+        state::{Error, ErrorKind, Result},
+        symlink_all,
+    },
+};
 
 use super::LinkArgs;
 
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 
-    let config = manifest!(&curr)
-;    let namespace = if let Some(value) = config.tool {
+    let config = manifest!(&curr);
+    let namespace = if let Some(value) = config.tool {
         value
             .get_section("utpm")?
             .unwrap_or(Extra::default())
@@ -29,7 +32,7 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let name = config.package.name;
     let version = config.package.version;
     let path = if namespace != "preview" {
-        format!("{}/{}/{}/{}", d_packages(), namespace, name, version)
+        format!("{}/{}/{}/{}", d_packages()?, namespace, name, version)
     } else {
         format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
     };

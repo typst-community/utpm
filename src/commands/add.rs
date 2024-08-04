@@ -30,7 +30,7 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
                 for e in &cmd.uri {
                     match dependencies.iter().position(|x| x == e) {
                         Some(_) => (),
-                        None => dependencies.push(e.clone())
+                        None => dependencies.push(e.clone()),
                     };
                 }
                 extra.dependencies = Some(dependencies);
@@ -45,7 +45,6 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
                     toml::to_string(&Extra::new(None, Some(cmd.uri.clone())))?.as_str(),
                 )?,
             );
-
         }
         config.tool = Some(tool);
     } else {

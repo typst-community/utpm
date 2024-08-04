@@ -9,7 +9,7 @@ use crate::utils::{
 use super::ListTreeArgs;
 
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
-    let typ: String = d_packages();
+    let typ: String = d_packages()?;
     println!("{}", "Tree listing of your packages\n".bold());
     if cmd.all {
         let preview: String = c_packages()?;
@@ -26,13 +26,13 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
             match package_read(&format!("{}/local/{}", typ, e)) {
                 Ok(_) => true,
                 Err(_) => namespace_read(&format!("{}/{}", typ, e))?,
-            };        }
+            };
+        }
         Ok(true)
     } else {
         read(typ)
     }
 }
-
 
 fn read(typ: String) -> Result<bool> {
     let dirs = fs::read_dir(&typ)?;

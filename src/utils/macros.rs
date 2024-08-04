@@ -11,7 +11,7 @@ macro_rules! manifest {
             Some(val) => Ok(val),
             None => Err(Error::empty(ErrorKind::Manifest)),
         }?
-    }
+    };
 }
 
 #[macro_export]
@@ -23,5 +23,5 @@ macro_rules! write_manifest {
     ($var:expr) => {
         let tomlfy: String = toml::to_string_pretty($var)?;
         fs::write("./typst.toml", tomlfy)?
-    }
+    };
 }
