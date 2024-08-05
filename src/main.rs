@@ -2,16 +2,21 @@ pub mod commands;
 pub mod utils;
 
 use clap::Parser;
+
 use commands::{
-    add, bulk_delete, create, delete, install, link, list, package_path, tree, unlink, Cli,
-    Commands, Packages, Workspace,
+    add, bulk_delete, create, delete, generate, install, link, list, package_path, tree, unlink,
+    Cli, Commands, Packages, Workspace,
 };
 
 use utils::state::Error;
 
-fn main() {
-    let x = Cli::parse();
+use tracing::{info, Level};
+use tracing_subscriber;
 
+fn main() {
+    tracing_subscriber::fmt::init();
+
+    let x = Cli::parse();
     let res: Result<bool, Error> = match &x.command {
         Commands::Workspace(w) => match w {
             Workspace::Link(cmd) => link::run(cmd, None, true),
@@ -29,6 +34,7 @@ fn main() {
             Packages::Unlink(cmd) => unlink::run(cmd),
             Packages::BulkDelete(cmd) => bulk_delete::run(cmd),
         },
+        Commands::Generate(cmd) => generate::run(cmd),
     };
 
     match res {

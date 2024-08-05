@@ -108,6 +108,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap_complete"
+version = "4.5.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8670053e87c316345e384ca1f3eba3006fc6355ed8b8a1140d104e109e3df34"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "clap_derive"
 version = "4.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -975,7 +984,7 @@ dependencies = [
 [[package]]
 name = "typst-project"
 version = "0.1.0"
-source = "git+https://github.com/tingerrr/typst-project#8462942ef0c783acf339e715b5e24b2dba423de1"
+source = "git+https://github.com/tingerrr/typst-project?rev=8462942ef0c783acf339e715b5e24b2dba423de1#8462942ef0c783acf339e715b5e24b2dba423de1"
 dependencies = [
  "bitflags 2.6.0",
  "email_address",
@@ -1051,6 +1060,7 @@ name = "utpm"
 version = "3.0.0"
 dependencies = [
  "clap",
+ "clap_complete",
  "dirs",
  "git2",
  "inquire",

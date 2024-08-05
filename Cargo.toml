@@ -22,6 +22,7 @@ typst-project = { git = "https://github.com/tingerrr/typst-project", rev = "8462
 openssl = { version = "0.10", features = ["vendored"] }
 tracing = { version = "0.1.40", features = ["attributes"] }
 tracing-subscriber = "0.3.18"
+clap_complete = "4.5.12"
 
 [[bin]]
 name = "utpm"

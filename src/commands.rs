@@ -3,6 +3,7 @@ pub mod add;
 pub mod bulk_delete;
 pub mod create;
 pub mod delete;
+pub mod generate;
 pub mod install;
 pub mod link;
 pub mod list;
@@ -11,9 +12,10 @@ pub mod tree;
 pub mod unlink;
 
 use clap::{Parser, Subcommand};
+use clap_complete::Shell;
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct CreateInitArgs {
     /// Desactivate interactive session
     #[arg(short = 'm', long, requires = "ni")]
@@ -96,7 +98,7 @@ pub struct CreateInitArgs {
     template_thumbnail: Option<String>,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct LinkArgs {
     /// Force the copy of the dir / creation of the symlink
     #[arg(short, long)]
@@ -107,7 +109,7 @@ pub struct LinkArgs {
     pub no_copy: bool,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct ListTreeArgs {
     /// Will list all packages including @preview
     #[arg(short, long)]
@@ -118,7 +120,14 @@ pub struct ListTreeArgs {
     pub include: Option<Vec<String>>,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
+pub struct GenerateArgs {
+    /// The type of your shell
+    #[arg(value_enum)]
+    generator: Shell,
+}
+
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct UnlinkArgs {
     /// The name of the package
     name: Option<String>,
@@ -140,7 +149,7 @@ pub struct UnlinkArgs {
     yes: bool,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct BulkDeleteArgs {
     /// Names of your packages, use version with this syntax: mypackage:1.0.0
     #[clap(value_delimiter = ',')]
@@ -151,7 +160,7 @@ pub struct BulkDeleteArgs {
     namespace: Option<String>,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct InstallArgs {
     /// If you want to install a specific package
     #[arg(num_args = 1..)]
@@ -162,20 +171,20 @@ pub struct InstallArgs {
     pub force: bool,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct DeleteArgs {
     /// URIs to remove.
     pub uri: Vec<String>,
 }
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Clone, Debug, PartialEq)]
 pub struct AddArgs {
     /// The url or path of your repository.
     pub uri: Vec<String>,
 }
 
 /// Commands to use packages related to typst
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, PartialEq)]
 pub enum Packages {
     /// List all of packages from your dir, in a form of a tree
     #[command(visible_alias = "t")]
@@ -198,7 +207,7 @@ pub enum Packages {
 }
 
 /// Commands to create, edit, delete your workspace for your package.
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, PartialEq)]
 pub enum Workspace {
     /// Link your project to your dirs
     #[command(visible_alias = "l")]
@@ -229,7 +238,7 @@ pub enum Workspace {
     Publish,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
     #[command(subcommand)]
     #[command(visible_alias = "ws")]
@@ -238,9 +247,13 @@ pub enum Commands {
     #[command(subcommand)]
     #[command(visible_alias = "pkg")]
     Packages(Packages),
+
+    /// Generate shell completion
+    #[command(visible_alias = "gen")]
+    Generate(GenerateArgs),
 }
 
-#[derive(Parser)]
+#[derive(Parser, Debug, PartialEq)]
 #[command(author = "Thumus", version = "3.0.0")]
 /// An unofficial typst package manager for your projects.
 pub struct Cli {
