@@ -1,4 +1,5 @@
 use owo_colors::OwoColorize;
+use tracing::instrument;
 use std::fs;
 
 use crate::utils::{
@@ -8,6 +9,7 @@ use crate::utils::{
 
 use super::ListTreeArgs;
 
+#[instrument]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
     let typ: String = d_packages()?;
     println!("{}", "A list of your packages (WIP)\n".bold());

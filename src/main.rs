@@ -10,9 +10,10 @@ use commands::{
 
 use utils::state::Error;
 
-use tracing::{info, Level};
+use tracing::{error, info, instrument, Level};
 use tracing_subscriber;
 
+#[instrument]
 fn main() {
     tracing_subscriber::fmt::init();
 
@@ -39,6 +40,6 @@ fn main() {
 
     match res {
         Ok(_) => {}
-        Err(val) => println!("{}", val),
+        Err(val) => error!("{}", val),
     }
 }

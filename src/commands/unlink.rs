@@ -1,6 +1,7 @@
 use inquire::Confirm;
 use owo_colors::OwoColorize;
 use std::fs;
+use tracing::instrument;
 
 use crate::utils::{
     paths::d_packages,
@@ -9,6 +10,7 @@ use crate::utils::{
 
 use super::UnlinkArgs;
 
+#[instrument]
 pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let mut new_namespace = String::from("local");
     if let Some(nspace) = &cmd.namespace {

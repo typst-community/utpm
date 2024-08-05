@@ -1,5 +1,6 @@
 use owo_colors::OwoColorize;
 use std::fs;
+use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
 
 use super::LinkArgs;
 
+#[instrument]
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 

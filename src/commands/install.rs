@@ -15,10 +15,12 @@ use crate::{
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
 use owo_colors::OwoColorize;
+use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use super::{link, InstallArgs};
 
+#[instrument]
 pub fn run(cmd: &InstallArgs) -> Result<bool> {
     let path = format!("{}/tmp", datalocalutpm()?);
     if check_path_dir(&path) {
@@ -28,6 +30,7 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
     Ok(true)
 }
 
+#[instrument]
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let path = if cmd.url.is_none() {
         get_current_dir()?

@@ -1,7 +1,9 @@
 [package]
+build = "build.rs"
 name = "utpm"
 version = "3.0.0"
 edition = "2021"
+links = "git2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -23,6 +25,7 @@ openssl = { version = "0.10", features = ["vendored"] }
 tracing = { version = "0.1.40", features = ["attributes"] }
 tracing-subscriber = "0.3.18"
 clap_complete = "4.5.12"
+shadow-rs = "0.31.1"
 
 [[bin]]
 name = "utpm"

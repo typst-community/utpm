@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, fs};
 
 use toml::map::Map;
+use tracing::instrument;
 use typst_project::manifest::{tool::Tool, Manifest};
 
 use crate::{
@@ -15,8 +16,10 @@ use crate::{
 
 use super::{install, AddArgs, InstallArgs};
 
+#[instrument]
 pub fn run(cmd: &mut AddArgs) -> Result<bool> {
     let mut config: Manifest = manifest!();
+    
     if cmd.uri.len() == 0 {
         return Err(Error::new(
             ErrorKind::NotEnoughArgs,

@@ -10,6 +10,7 @@ use inquire::{required, validator::Validation, Select, Text};
 use owo_colors::OwoColorize;
 use semver::Version;
 use toml::Table;
+use tracing::{info, instrument, trace, warn};
 use typst_project::manifest::{
     author::{Author, Website},
     categories::Category,
@@ -32,16 +33,27 @@ use crate::{
 
 use super::CreateInitArgs;
 
+#[instrument]
 pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
+    info!("Current dir: {}", curr);
     let typ = curr.clone() + "/typst.toml";
+    info!("Current typst file: {}", typ);
 
     let mut extra = Extra::default();
     extra.namespace = cmd.namespace.to_owned();
-
+    trace!(
+        "Namespace extracted? {}",
+        if extra.namespace.is_none() {
+            "no".into()
+        } else {
+            format!("yes: {}", extra.namespace.clone().unwrap())
+        }
+    );
     let mut authors: HashSet<Author> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.authors {
+        trace!("Authors extracted from cli");
         for e in auts {
             authors.insert(Author::from_str(&e)?);
         }
@@ -50,6 +62,7 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let mut keywords: HashSet<String> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.keywords {
+        trace!("Keywords extracted from cli");
         for e in auts {
             keywords.insert(e.clone());
         }
@@ -58,6 +71,7 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let mut exclude: HashSet<PathBuf> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.exclude {
+        trace!("Exclude extracted from cli");
         for e in auts {
             exclude.insert(e.into());
         }
@@ -66,6 +80,8 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let mut categories: HashSet<Category> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.categories {
+        trace!("Catgories extracted from cli");
+
         for e in auts {
             categories.insert(*e);
         }
@@ -74,6 +90,7 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let mut disciplines: HashSet<Discipline> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.disciplines {
+        trace!("Disciplines extracted from cli");
         for e in auts {
             disciplines.insert(*e);
         }
@@ -114,9 +131,8 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     }
 
     if cmd.force {
-        println!(
-            "{} {}",
-            "WARNING:".bold().yellow(),
+        warn!(
+            "{}",
             "--force is a dangerous flag, use it cautiously".bold()
         );
     }
