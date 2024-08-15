@@ -1,8 +1,9 @@
 pub mod commands;
 pub mod utils;
 
-use clap::Parser;
+use std::{env, str::FromStr};
 
+use clap::Parser;
 use commands::{
     add, bulk_delete, create, delete, generate, install, link, list, package_path, tree, unlink,
     Cli, Commands, Packages, Workspace,
@@ -10,14 +11,43 @@ use commands::{
 
 use utils::state::Error;
 
-use tracing::{error, info, instrument, Level};
-use tracing_subscriber;
+use tracing::{error, instrument, level_filters::LevelFilter};
+use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+
+use shadow_rs::shadow;
+
+shadow!(build);
 
 #[instrument]
 fn main() {
-    tracing_subscriber::fmt::init();
-
     let x = Cli::parse();
+
+    let debug_str: String = match env::var("UTPM_DEBUG") {
+        Err(_) => "info".into(),
+        Ok(val) => val,
+    };
+
+    let level_filter: LevelFilter = match LevelFilter::from_str(debug_str.as_str()) {
+        Ok(val) => val,
+        Err(_) => LevelFilter::INFO,
+    };
+
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.debug {
+                debug
+            } else {
+                level_filter
+            }),
+        )
+        .init();
+
+    // error!("err");
+    // warn!("warn");
+    // info!("info");
+    // debug!("debug");
+    // trace!("trace");
+
     let res: Result<bool, Error> = match &x.command {
         Commands::Workspace(w) => match w {
             Workspace::Link(cmd) => link::run(cmd, None, true),

@@ -1,6 +1,6 @@
 use owo_colors::OwoColorize;
-use tracing::instrument;
 use std::fs;
+use tracing::instrument;
 
 use crate::utils::{
     paths::{c_packages, d_packages},

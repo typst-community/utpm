@@ -15,7 +15,7 @@ use crate::{
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
 use owo_colors::OwoColorize;
-use tracing::instrument;
+use tracing::{debug, info, instrument};
 use typst_project::manifest::Manifest;
 
 use super::{link, InstallArgs};
@@ -32,10 +32,15 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
 
 #[instrument]
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
-    let path = if cmd.url.is_none() {
-        get_current_dir()?
+    
+    let path = if let Some(url) = &cmd.url {
+        let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
+        debug!("url is set to {}, creating {}", url, dir);
+        dir
     } else {
-        format!("{}/tmp/{}", datalocalutpm()?, i)
+        let dir = get_current_dir()?;
+        debug!("url is none, current dir: {}", dir);
+        dir
     };
 
     if let Some(x) = &cmd.url {

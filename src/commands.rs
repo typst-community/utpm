@@ -13,7 +13,10 @@ pub mod unlink;
 
 use clap::{Parser, Subcommand};
 use clap_complete::Shell;
+use tracing::{level_filters::LevelFilter, Level};
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
+
+use crate::build;
 
 #[derive(Parser, Clone, Debug, PartialEq)]
 pub struct CreateInitArgs {
@@ -254,9 +257,25 @@ pub enum Commands {
 }
 
 #[derive(Parser, Debug, PartialEq)]
-#[command(author = "Thumus", version = "3.0.0")]
+#[cfg(feature = "nightly")]
+#[command(author = "Thumus", version = build::COMMIT_HASH)]
 /// An unofficial typst package manager for your projects.
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+
+    #[arg(short = 'd', long)]
+    pub debug: Option<Level>,
+}
+
+#[derive(Parser, Debug, PartialEq)]
+#[cfg(not(feature = "nightly"))]
+#[command(author = "Thumus", version = build::PKG_VERSION)]
+/// An unofficial typst package manager for your projects.
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+
+    #[arg(short = 'd', long)]
+    pub debug: Option<LevelFilter>,
 }

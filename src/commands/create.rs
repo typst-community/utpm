@@ -97,25 +97,29 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     }
 
     let mut pkg = Package {
-        name: Ident::from_str(cmd.name.to_owned().unwrap_or("temp".into()).as_str())?,
+        name: Ident::from_str(if let Some(name) = &cmd.name {
+            name.as_str()
+        } else {
+            "temp"
+        })?,
         version: cmd.version.to_owned(),
         entrypoint: cmd.entrypoint.to_owned().into(),
         authors,
-        license: License::from_str(cmd.license.to_owned().unwrap_or("MIT".into()).as_str())?,
+        license: License::from_str(if let Some(license) = &cmd.license {
+            license.as_str()
+        } else {
+            "MIT"
+        })?,
         description: cmd.description.to_owned().unwrap_or("".into()),
-        repository: if cmd.repository.is_none() {
-            None
+        repository: if let Some(repository) = &cmd.repository {
+            Some(Website::from_str(repository.as_str())?)
         } else {
-            Some(Website::from_str(
-                cmd.repository.to_owned().unwrap_or("".into()).as_str(),
-            )?)
+            None
         },
-        homepage: if cmd.homepage.is_none() {
-            None
+        homepage: if let Some(homepage) = &cmd.homepage {
+            Some(Website::from_str(homepage.as_str())?)
         } else {
-            Some(Website::from_str(
-                cmd.homepage.to_owned().unwrap_or("".into()).as_str(),
-            )?)
+            None
         },
         keywords,
         compiler: cmd.compiler.to_owned(),
