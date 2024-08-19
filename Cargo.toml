@@ -35,10 +35,12 @@ shadow-rs = "0.31.1"
 [[bin]]
 name = "utpm"
 path = "src/main.rs"
+build = "build.rs"
 
 [[bin]]
 name = "utpm-ci"
 path = "src/ci.rs"
+build = "build.rs"
 
 [features]
 ci = []

@@ -1,3 +1,6 @@
+use shadow_rs::shadow;
+shadow!(build);
+
 pub mod commands;
 pub mod utils;
 
@@ -14,9 +17,7 @@ use utils::state::Error;
 use tracing::{error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
-use shadow_rs::shadow;
 
-shadow!(build);
 
 #[instrument]
 fn main() {

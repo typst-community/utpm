@@ -2,6 +2,8 @@ use std::{fs, path::Path};
 
 use std::io;
 
+use typst_kit::download::Progress;
+
 pub mod macros;
 pub mod paths;
 pub mod specs;
@@ -36,7 +38,24 @@ pub fn symlink_all(
 
 /// Implementing a symlink function for all platform (windows version)
 #[cfg(windows)]
-pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> Result<(), std::io::Error> {
+pub fn symlink_all(
+    origin: impl AsRef<Path>,
+    new_path: impl AsRef<Path>,
+) -> Result<(), std::io::Error> {
     use std::os::windows::fs::symlink_dir;
     symlink_dir(origin, new_path)
+}
+
+pub struct ProgressPrint {}
+
+impl Progress for ProgressPrint {
+    fn print_start(&mut self) {
+        println!("Starting download");
+    }
+
+    fn print_progress(&mut self, state: &typst_kit::download::DownloadState) {}
+
+    fn print_finish(&mut self, state: &typst_kit::download::DownloadState) {
+        todo!()
+    }
 }

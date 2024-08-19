@@ -1,8 +1,10 @@
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 use typst_kit::{
     download::{Downloader, ProgressSink},
     package::PackageStorage,
 };
+
+use crate::{build, utils::ProgressPrint};
 
 use crate::utils::{
     copy_dir_all,
@@ -37,30 +39,27 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         let val = format!(
             "{}/{namespace}/{package}/{major}.{minor}.{patch}",
             if namespace == "preview" {
+                info!("preview found, cache dir use");
                 c_packages()?
             } else {
+                info!("no preview found, data dir use");
                 d_packages()?
             }
         );
         if check_path_dir(&val) {
-            //todo: trace
             if cmd.download_only {
+                info!("download only, nothing to do.");
                 return Ok(true);
             }
             if !cmd.redownload || namespace != "preview" {
+                info!(
+                    namespace = namespace,
+                    redownload = cmd.redownload,
+                    "Skip download..."
+                );
+                let string = format!("{}/{package}:{major}.{minor}.{patch}", get_current_dir()?);
                 if cmd.symlink {
-                    symlink_all(
-                        val,
-                        get_current_dir()?
-                            + "/"
-                            + package
-                            + ":"
-                            + major
-                            + "."
-                            + minor
-                            + "."
-                            + patch,
-                    )?;
+                    symlink_all(val, string)?;
                     info!("symlinked!");
                 } else {
                     copy_dir_all(val, get_current_dir()?)?;
@@ -70,8 +69,12 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             }
         }
 
-        let pkg_sto = PackageStorage::new(None, None, Downloader::new("utpm/latest"));
-        let sink = &mut ProgressSink {};
+        let pkg_sto = PackageStorage::new(
+            None,
+            None,
+            Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
+        );
+        let printer = &mut ProgressPrint {};
         return match pkg_sto.prepare_package(
             &PackageSpec {
                 namespace: namespace.into(),
@@ -82,10 +85,10 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                     patch: patch.parse::<u32>().unwrap(),
                 },
             },
-            sink,
+            printer,
         ) {
             Ok(val) => {
-                info!("package downloaded");
+                info!(path = val.to_str().unwrap(), "package downloaded");
                 if cmd.download_only {
                     debug!("download complete, nothing to do");
                     return Ok(true);
@@ -104,11 +107,12 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             Err(_) => {
                 return Err(Error::new(
                     ErrorKind::PackageNotExist,
-                    "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.", //todo
+                    "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.",
                 ));
             }
         };
     } else {
+        error!("package not found, input: {}", package);
         return Err(Error::new(
             ErrorKind::PackageNotValid,
             "Can't extract your package. Example of a package: @namespace/package:1.0.0",
