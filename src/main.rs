@@ -43,12 +43,6 @@ fn main() {
         )
         .init();
 
-    // error!("err");
-    // warn!("warn");
-    // info!("info");
-    // debug!("debug");
-    // trace!("trace");
-
     let res: Result<bool, Error> = match &x.command {
         Commands::Workspace(w) => match w {
             Workspace::Link(cmd) => link::run(cmd, None, true),

@@ -1,6 +1,6 @@
 use tracing::{debug, error, info, instrument, warn};
 use typst_kit::{
-    download::{Downloader, ProgressSink},
+    download::Downloader,
     package::PackageStorage,
 };
 
@@ -70,8 +70,8 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         }
 
         let pkg_sto = PackageStorage::new(
-            None,
-            None,
+            Some(c_packages()?.into()),
+            Some(d_packages()?.into()),
             Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
         );
         let printer = &mut ProgressPrint {};
