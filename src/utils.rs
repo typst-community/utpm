@@ -36,7 +36,7 @@ pub fn symlink_all(
 
 /// Implementing a symlink function for all platform (windows version)
 #[cfg(windows)]
-pub fn symlink_all(origin: &str, new_path: &str) -> Result<(), std::io::Error> {
+pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> Result<(), std::io::Error> {
     use std::os::windows::fs::symlink_dir;
     symlink_dir(origin, new_path)
 }
