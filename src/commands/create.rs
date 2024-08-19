@@ -324,6 +324,6 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
 
     write_manifest!(&manif);
 
-    println!("{}", format!("File created to {typ}").bold().to_string());
+    println!("{}", format!("File created to {typ}"));
     Ok(true)
 }

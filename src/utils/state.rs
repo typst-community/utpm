@@ -35,6 +35,11 @@ pub enum ErrorKind {
     Manifest,
 
     NotEnoughArgs,
+
+    // Clone
+    PackageNotValid,
+    PackageNotExist,
+    ContentFound,
 }
 
 impl ErrorKind {
@@ -72,10 +77,10 @@ pub struct Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Error {
-    pub fn new(kind: ErrorKind, message: String) -> Self {
+    pub fn new(kind: ErrorKind, message: impl Into<String>) -> Self {
         Self {
             kind,
-            message: Some(message),
+            message: Some(message.into()),
         }
     }
     pub fn empty(kind: ErrorKind) -> Self {

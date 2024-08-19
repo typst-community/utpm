@@ -1,6 +1,7 @@
 // Linker
 pub mod add;
 pub mod bulk_delete;
+pub mod clone;
 pub mod create;
 pub mod delete;
 pub mod generate;
@@ -13,7 +14,7 @@ pub mod unlink;
 
 use clap::{Parser, Subcommand};
 use clap_complete::Shell;
-use tracing::{level_filters::LevelFilter, Level};
+use tracing::level_filters::LevelFilter;
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
 
 use crate::build;
@@ -130,6 +131,30 @@ pub struct GenerateArgs {
     generator: Shell,
 }
 
+//todo: docs, no download
+#[derive(Parser, Clone, Debug, PartialEq)]
+pub struct CloneArgs {
+    /// The name of the package you want to clone
+    #[arg()]
+    pub package: String,
+
+    /// Download the package without copying it.
+    #[arg(short = 'd')]
+    pub download_only: bool,
+
+    /// Continue without veryfing anything.
+    #[arg(short = 'f')]
+    pub force: bool,
+
+    /// Force the redownload of the package.
+    #[arg(short = 'r')]
+    pub redownload: bool,
+
+    /// Create a symlink to the package clone (similar to link --no-copy)
+    #[arg(short = 's')]
+    pub symlink: bool,
+}
+
 #[derive(Parser, Clone, Debug, PartialEq)]
 pub struct UnlinkArgs {
     /// The name of the package
@@ -239,6 +264,10 @@ pub enum Workspace {
     /// WIP
     #[command(visible_alias = "p")]
     Publish,
+
+    /// WIP
+    #[command()]
+    Clone(CloneArgs),
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
@@ -264,8 +293,9 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    #[arg(short = 'd', long)]
-    pub debug: Option<Level>,
+    /// Gives you more information, permet debug.
+    #[arg(short = 'v', long)]
+    pub verbose: Option<LevelFilter>,
 }
 
 #[derive(Parser, Debug, PartialEq)]
@@ -276,6 +306,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    #[arg(short = 'd', long)]
-    pub debug: Option<LevelFilter>,
+    /// Gives you more information, permet debug.
+    #[arg(short = 'v', long)]
+    pub verbose: Option<LevelFilter>,
 }

@@ -1,7 +1,8 @@
 use std::{
     env::{self, current_dir},
-    fs::{read, read_dir, symlink_metadata},
-    path,
+    fs::{self, read, read_dir, symlink_metadata},
+    path::{self, Path},
+    result::Result as R,
 };
 
 use dirs::cache_dir;
@@ -69,9 +70,7 @@ pub fn d_utpm() -> Result<String> {
     Ok(d_packages()? + "/utpm")
 }
 
-//TODO: env
 pub fn get_current_dir() -> Result<String> {
-    println!("test");
     match env::var("UTPM_CURRENT_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => match current_dir() {
@@ -79,7 +78,7 @@ pub fn get_current_dir() -> Result<String> {
                 Some(v) => Ok(String::from(v)),
                 None => Err(Error::new(
                     ErrorKind::CurrentDir,
-                    "There is no current directory.".into(),
+                    "There is no current directory.",
                 )),
             },
             Err(val) => Err(Error::new(ErrorKind::CurrentDir, val.to_string())),
@@ -87,19 +86,23 @@ pub fn get_current_dir() -> Result<String> {
     }
 }
 
+pub fn has_content(path: impl AsRef<Path>) -> Result<bool> {
+    Ok(fs::read_dir(path)?.collect::<R<Vec<_>, _>>()?.len() > 0)
+}
+
 pub fn current_package() -> Result<String> {
     Ok(get_current_dir()? + "/typst.toml")
 }
 
-pub fn check_path_dir(path: &String) -> bool {
+pub fn check_path_dir(path: impl AsRef<Path>) -> bool {
     read_dir(path).is_ok()
 }
 
-pub fn check_path_file(path: &String) -> bool {
+pub fn check_path_file(path: impl AsRef<Path>) -> bool {
     read(path).is_ok()
 }
 
-pub fn check_existing_symlink(path: &String) -> bool {
+pub fn check_existing_symlink(path: impl AsRef<Path>) -> bool {
     let x = match symlink_metadata(path) {
         Ok(val) => val,
         _ => return false,

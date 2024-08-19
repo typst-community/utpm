@@ -5,8 +5,8 @@ use std::{env, str::FromStr};
 
 use clap::Parser;
 use commands::{
-    add, bulk_delete, create, delete, generate, install, link, list, package_path, tree, unlink,
-    Cli, Commands, Packages, Workspace,
+    add, bulk_delete, clone, create, delete, generate, install, link, list, package_path, tree,
+    unlink, Cli, Commands, Packages, Workspace,
 };
 
 use utils::state::Error;
@@ -23,18 +23,18 @@ fn main() {
     let x = Cli::parse();
 
     let debug_str: String = match env::var("UTPM_DEBUG") {
-        Err(_) => "info".into(),
+        Err(_) => "warn".into(),
         Ok(val) => val,
     };
 
     let level_filter: LevelFilter = match LevelFilter::from_str(debug_str.as_str()) {
         Ok(val) => val,
-        Err(_) => LevelFilter::INFO,
+        Err(_) => LevelFilter::WARN,
     };
 
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.debug {
+            tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.verbose {
                 debug
             } else {
                 level_filter
@@ -57,6 +57,7 @@ fn main() {
             Workspace::Delete(cmd) => delete::run(&mut cmd.clone()),
             Workspace::Init(cmd) => create::run(&mut cmd.clone()),
             Workspace::Publish => todo!(),
+            Workspace::Clone(cmd) => clone::run(cmd),
         },
         Commands::Packages(p) => match p {
             Packages::Tree(cmd) => tree::run(cmd),

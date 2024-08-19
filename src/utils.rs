@@ -26,7 +26,10 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
 
 /// Implementing a symlink function for all platform (unix version)
 #[cfg(unix)]
-pub fn symlink_all(origin: &str, new_path: &str) -> Result<(), std::io::Error> {
+pub fn symlink_all(
+    origin: impl AsRef<Path>,
+    new_path: impl AsRef<Path>,
+) -> Result<(), std::io::Error> {
     use std::os::unix::fs::symlink;
     symlink(origin, new_path)
 }

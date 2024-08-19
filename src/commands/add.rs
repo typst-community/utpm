@@ -23,10 +23,10 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
         debug!("0 URI found in cmd.uri");
         return Err(Error::new(
             ErrorKind::NotEnoughArgs,
-            "uri needs more than 0 arguments.".into(),
+            "uri needs more than 0 arguments.",
         ));
     }
-    
+
     debug!("{} URIs found: {}", cmd.uri.len(), cmd.uri.join(", "));
     trace!("Checking if config has a section tool");
     if let Some(mut tool) = config.clone().tool {
@@ -43,10 +43,11 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
                     match dependencies.iter().position(|x| x == e) {
                         Some(_) => {
                             trace!("{} dependency already in the manifest, skipping", e);
-                        },
-                        None => { 
+                        }
+                        None => {
                             trace!("{} added", e);
-                            dependencies.push(e.clone()) },
+                            dependencies.push(e.clone())
+                        }
                     };
                 }
                 extra.dependencies = Some(dependencies);
