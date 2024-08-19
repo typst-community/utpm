@@ -29,7 +29,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             ));
         }
     }
-    let re = Regex::new(r"@([a-z]+)\/([a-z]+)\:(\d+)\.(\d+)\.(\d+)").unwrap();
+    let re = Regex::new(r"@([a-zA-Z]+)\/([a-zA-Z\-]+)\:(\d+)\.(\d+)\.(\d+)").unwrap();
     let package: &String = &cmd.package;
     if let Some(cap) = re.captures(package) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
