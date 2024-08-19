@@ -6,7 +6,7 @@ use typst_kit::{
 
 use crate::utils::{
     copy_dir_all,
-    paths::{c_packages, check_path_dir, get_current_dir, has_content},
+    paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
     state::{Error, ErrorKind, Result},
     symlink_all,
 };
@@ -35,12 +35,19 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
     if let Some(cap) = re.captures(package) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
         let val = format!(
-            "{}/preview/{package}/{major}.{minor}.{patch}",
-            c_packages()?
+            "{}/{namespace}/{package}/{major}.{minor}.{patch}",
+            if namespace == "preview" {
+                c_packages()?
+            } else {
+                d_packages()?
+            }
         );
         if check_path_dir(&val) {
             //todo: trace
-            if !cmd.redownload {
+            if cmd.download_only {
+                return Ok(true);
+            }
+            if !cmd.redownload || namespace != "preview" {
                 if cmd.symlink {
                     symlink_all(
                         val,
