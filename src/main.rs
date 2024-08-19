@@ -17,8 +17,6 @@ use utils::state::Error;
 use tracing::{error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
-
-
 #[instrument]
 fn main() {
     let x = Cli::parse();

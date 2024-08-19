@@ -49,13 +49,9 @@ pub fn symlink_all(
 pub struct ProgressPrint {}
 
 impl Progress for ProgressPrint {
-    fn print_start(&mut self) {
-        println!("Starting download");
-    }
+    fn print_start(&mut self) {}
 
-    fn print_progress(&mut self, state: &typst_kit::download::DownloadState) {}
+    fn print_progress(&mut self, _state: &typst_kit::download::DownloadState) {}
 
-    fn print_finish(&mut self, state: &typst_kit::download::DownloadState) {
-        todo!()
-    }
+    fn print_finish(&mut self, _state: &typst_kit::download::DownloadState) {}
 }

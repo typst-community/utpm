@@ -1,8 +1,5 @@
 use tracing::{debug, error, info, instrument, warn};
-use typst_kit::{
-    download::Downloader,
-    package::PackageStorage,
-};
+use typst_kit::{download::Downloader, package::PackageStorage};
 
 use crate::{build, utils::ProgressPrint};
 
