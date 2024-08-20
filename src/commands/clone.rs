@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use tracing::{debug, error, info, instrument, warn};
 use typst_kit::{download::Downloader, package::PackageStorage};
 
@@ -18,7 +20,12 @@ use regex::Regex;
 
 #[instrument]
 pub fn run(cmd: &CloneArgs) -> Result<bool> {
-    if has_content(get_current_dir()?)? {
+    let path: PathBuf = if let Some(path) = &cmd.path {
+        path.clone()
+    } else {
+        get_current_dir()?.into()
+    };
+    if has_content(&path)? {
         debug!("found content");
         if cmd.force {
             warn!("force used, ignore content");
@@ -29,7 +36,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             ));
         }
     }
-    let re = Regex::new(r"@([a-zA-Z]+)\/([a-zA-Z\-]+)\:(\d+)\.(\d+)\.(\d+)").unwrap();
+    let re = Regex::new(r"@([a-z]+)\/([a-z\-]+)\:(\d+)\.(\d+)\.(\d+)").unwrap();
     let package: &String = &cmd.package;
     if let Some(cap) = re.captures(package) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
@@ -54,17 +61,18 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                     redownload = cmd.redownload,
                     "Skip download..."
                 );
-                let string = format!("{}/{package}:{major}.{minor}.{patch}", get_current_dir()?);
                 if cmd.symlink {
-                    symlink_all(val, string)?;
+                    symlink_all(val, path)?;
                     info!("symlinked!");
                 } else {
-                    copy_dir_all(val, get_current_dir()?)?;
+                    copy_dir_all(val, path)?;
                     info!("copied!");
                 }
                 return Ok(true);
             }
         }
+
+        if cmd.redownload {}
 
         let pkg_sto = PackageStorage::new(
             Some(c_packages()?.into()),
@@ -92,10 +100,10 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                 }
 
                 if cmd.symlink {
-                    symlink_all(val, get_current_dir()?)?;
+                    symlink_all(val, path)?;
                     info!("symlinked!");
                 } else {
-                    copy_dir_all(val, get_current_dir()?)?;
+                    copy_dir_all(val, path)?;
                     info!("copied!");
                 }
 

@@ -12,6 +12,8 @@ pub mod package_path;
 pub mod tree;
 pub mod unlink;
 
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 use clap_complete::Shell;
 use tracing::level_filters::LevelFilter;
@@ -131,12 +133,15 @@ pub struct GenerateArgs {
     generator: Shell,
 }
 
-//todo: docs, no download
 #[derive(Parser, Clone, Debug, PartialEq)]
 pub struct CloneArgs {
     /// The name of the package you want to clone
     #[arg()]
     pub package: String,
+
+    /// Path to your dir
+    #[arg()]
+    pub path: Option<PathBuf>,
 
     /// Download the package without copying it.
     #[arg(short = 'd')]
