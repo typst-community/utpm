@@ -1,5 +1,6 @@
+use shadow_rs::shadow;
 use std::env;
-
+shadow!(build);
 use commands::InstallArgs;
 
 #[allow(unused)]

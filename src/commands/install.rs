@@ -15,10 +15,12 @@ use crate::{
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
 use owo_colors::OwoColorize;
+use tracing::{debug, instrument};
 use typst_project::manifest::Manifest;
 
 use super::{link, InstallArgs};
 
+#[instrument]
 pub fn run(cmd: &InstallArgs) -> Result<bool> {
     let path = format!("{}/tmp", datalocalutpm()?);
     if check_path_dir(&path) {
@@ -28,11 +30,16 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
     Ok(true)
 }
 
+#[instrument]
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
-    let path = if cmd.url.is_none() {
-        get_current_dir()?
+    let path = if let Some(url) = &cmd.url {
+        let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
+        debug!("url is set to {}, creating {}", url, dir);
+        dir
     } else {
-        format!("{}/tmp/{}", datalocalutpm()?, i)
+        let dir = get_current_dir()?;
+        debug!("url is none, current dir: {}", dir);
+        dir
     };
 
     if let Some(x) = &cmd.url {
@@ -115,7 +122,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     println!("{}", format!("Installing {}...", file.package.name).bold());
     if let Some(vec_depend) = utpm.dependencies {
         let mut y = 0;
-        let vec_of_dependencies = vec_depend
+        vec_depend
             .iter()
             .map(|a| -> Result<bool> {
                 y += 1;
@@ -126,11 +133,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
                 init(&ins, i * vec_depend.len() + y)?;
                 Ok(true)
             })
-            .collect::<Vec<Result<bool>>>();
-
-        for result_dependencies in vec_of_dependencies {
-            result_dependencies?;
-        }
+            .collect::<Result<Vec<bool>>>()?;
     }
     if !cmd.url.is_none() {
         let lnk = LinkArgs {

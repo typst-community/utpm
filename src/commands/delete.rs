@@ -1,6 +1,7 @@
 use std::fs;
 
 use toml::map::Map;
+use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
 
 use super::DeleteArgs;
 
+#[instrument]
 pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
     let mut config = manifest!();
 

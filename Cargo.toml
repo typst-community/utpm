@@ -1,4 +1,5 @@
 [package]
+build = "build.rs"
 name = "utpm"
 version = "3.0.0"
 edition = "2021"
@@ -15,24 +16,35 @@ inquire = "0.6.2"
 semver = { version = "1.0.18", features = ["serde"] }
 spdx = { version = "0.10.2", features = ["text"] }
 clap = { version = "4.4.2", features = ["derive"] }
-git2 = "0.18.0"
+git2 = "^0.19.0"
 owo-colors = "3.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
 typst-project = { git = "https://github.com/tingerrr/typst-project", rev = "8462942ef0c783acf339e715b5e24b2dba423de1" }
 openssl = { version = "0.10", features = ["vendored"] }
 tracing = { version = "0.1.40", features = ["attributes"] }
 tracing-subscriber = "0.3.18"
+clap_complete = "4.5.12"
+shadow-rs = "0.31.1"
+typst-kit = { git = "https://github.com/typst/typst" }
+typst-syntax = { git = "https://github.com/typst/typst" }
+regex = "1.10.6"
+
+[build-dependencies]
+shadow-rs = "0.31.1"
 
 [[bin]]
 name = "utpm"
 path = "src/main.rs"
+build = "build.rs"
 
 [[bin]]
 name = "utpm-ci"
 path = "src/ci.rs"
+build = "build.rs"
 
 [features]
 ci = []
+nightly = []
 
 # For future dependencies check and other things, it will be usefull
 # Reduce size

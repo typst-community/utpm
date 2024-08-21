@@ -1,8 +1,12 @@
+use tracing::{error, instrument};
+
 use crate::utils::state::{Error, Result};
 
 use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 
+#[instrument]
 pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
+    //todo: regex
     let mut vec: Vec<Error> = Vec::new();
     for name in &cmd.names {
         let name_and_version = name
@@ -23,6 +27,7 @@ pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
         match unlink::run(&ulnk) {
             Ok(_) => (),
             Err(err) => {
+                error!("{}", err);
                 vec.push(err);
             }
         };
