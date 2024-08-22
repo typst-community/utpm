@@ -9,15 +9,24 @@ use dirs::cache_dir;
 
 use super::state::{Error, ErrorKind, Result};
 
+pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
+pub const DATA_HOME_SHARE: &str = "/.local/share";
+pub const CACHE_HOME: &str = "~/.cache";
+pub const SSH_HOME: &str = "/.ssh";
+pub const TYPST_PACKAGE_PATH: &str = "/typst/packages";
+pub const UTPM_PATH: &str = "/utpm";
+pub const MANIFEST_PATH: &str = "/typst.toml";
+pub const LOCAL_PACKAGES: &str = "/git-packages";
+
 pub fn get_data_dir() -> Result<String> {
     match env::var("UTPM_DATA_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => match dirs::data_local_dir() {
             Some(dir) => match dir.to_str() {
                 Some(string) => Ok(String::from(string)),
-                None => Ok(String::from("/.local/share")), //default on linux
+                None => Ok(String::from(DATA_HOME_SHARE)), //default on linux
             },
-            None => Ok(String::from("/.local/share")),
+            None => Ok(String::from(DATA_HOME_SHARE)),
         },
     }
 }
@@ -40,9 +49,9 @@ pub fn get_cache_dir() -> Result<String> {
     match env::var("UTPM_CACHE_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => Ok(cache_dir()
-            .unwrap_or("~/.cache".into())
+            .unwrap_or(CACHE_HOME.into())
             .to_str()
-            .unwrap_or("~/.cache")
+            .unwrap_or(CACHE_HOME)
             .into()),
     }
 }
@@ -50,28 +59,28 @@ pub fn get_cache_dir() -> Result<String> {
 pub fn get_ssh_dir() -> Result<String> {
     match env::var("UTPM_SSH_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
-        _ => Ok(get_home_dir()? + "/.ssh"),
+        _ => Ok(get_home_dir()? + SSH_HOME),
     }
 }
 
 pub fn c_packages() -> Result<String> {
-    Ok(get_cache_dir()? + "/typst/packages")
+    Ok(get_cache_dir()? + TYPST_PACKAGE_PATH)
 }
 
 pub fn d_packages() -> Result<String> {
-    Ok(get_data_dir()? + "/typst/packages")
+    Ok(get_data_dir()? + TYPST_PACKAGE_PATH)
 }
 
 pub fn datalocalutpm() -> Result<String> {
-    Ok(get_data_dir()? + "/utpm")
+    Ok(get_data_dir()? + UTPM_PATH)
 }
 
 pub fn default_typst_packages() -> Result<String> {
-    Ok(datalocalutpm()? + "/git-packages")
+    Ok(datalocalutpm()? + LOCAL_PACKAGES)
 }
 
 pub fn d_utpm() -> Result<String> {
-    Ok(d_packages()? + "/utpm")
+    Ok(d_packages()? + UTPM_PATH)
 }
 
 pub fn get_current_dir() -> Result<String> {
@@ -95,7 +104,7 @@ pub fn has_content(path: impl AsRef<Path>) -> Result<bool> {
 }
 
 pub fn current_package() -> Result<String> {
-    Ok(get_current_dir()? + "/typst.toml")
+    Ok(get_current_dir()? + MANIFEST_PATH)
 }
 
 pub fn check_path_dir(path: impl AsRef<Path>) -> bool {

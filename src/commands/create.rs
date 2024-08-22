@@ -10,15 +10,18 @@ use inquire::{required, validator::Validation, Select, Text};
 use semver::Version;
 use toml::Table;
 use tracing::{info, instrument, trace, warn};
-use typst_project::manifest::{
-    author::{Author, Website},
-    categories::Category,
-    disciplines::Discipline,
-    ident::Ident,
-    license::License,
-    package::Package,
-    tool::Tool,
-    Manifest,
+use typst_project::{
+    heuristics::MANIFEST_FILE,
+    manifest::{
+        author::{Author, Website},
+        categories::Category,
+        disciplines::Discipline,
+        ident::Ident,
+        license::License,
+        package::Package,
+        tool::Tool,
+        Manifest,
+    },
 };
 
 use crate::{
@@ -32,11 +35,11 @@ use crate::{
 
 use super::CreateInitArgs;
 
-#[instrument]
+#[instrument(skip(cmd))]
 pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
     info!("Current dir: {}", curr);
-    let typ = curr.clone() + "/typst.toml";
+    let typ = curr.clone() + MANIFEST_FILE;
     info!("Current typst file: {}", typ);
 
     let mut extra = Extra::default();
@@ -134,10 +137,7 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     }
 
     if cmd.force {
-        warn!(
-            "{}",
-            "--force is a dangerous flag, use it cautiously"
-        );
+        warn!("{}", "--force is a dangerous flag, use it cautiously");
     }
 
     if !cmd.cli {

@@ -10,7 +10,7 @@ use super::ListTreeArgs;
 
 use std::result::Result as R;
 
-#[instrument]
+#[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
     let typ: String = d_packages()?;
     println!("{}", "Tree listing of your packages\n");

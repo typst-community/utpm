@@ -2,7 +2,8 @@ use std::{fs, path::Path};
 
 use std::io;
 
-use typst_kit::download::Progress;
+use regex::Regex;
+use typst_kit::download::{DownloadState, Progress};
 
 pub mod macros;
 pub mod paths;
@@ -46,12 +47,35 @@ pub fn symlink_all(
     symlink_dir(origin, new_path)
 }
 
+pub fn regex_package() -> Regex {
+    Regex::new(r"@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)\:(\d+)\.(\d+)\.(\d+)").unwrap()
+}
+
+//todo: impl
 pub struct ProgressPrint {}
 
 impl Progress for ProgressPrint {
     fn print_start(&mut self) {}
 
-    fn print_progress(&mut self, _state: &typst_kit::download::DownloadState) {}
+    fn print_progress(&mut self, _state: &DownloadState) {}
 
-    fn print_finish(&mut self, _state: &typst_kit::download::DownloadState) {}
+    fn print_finish(&mut self, _state: &DownloadState) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn regex() {
+        let re = regex_package();
+        assert!(re.is_match("@preview/package:2.0.1"));
+        assert!(!re.is_match("@preview/package-:2.0.1"));
+        assert!(!re.is_match("@local/package-A:2.0.1"));
+        assert!(re.is_match("@local/package-a:2.0.1"));
+        assert!(!re.is_match("@local/p:1..1"));
+        assert!(re.is_match("@a/p:1.0.1"));
+        assert!(!re.is_match("@/p:1.0.1"));
+        assert!(!re.is_match("p:1.0.1"));
+        assert!(!re.is_match("@a/p"));
+    }
 }

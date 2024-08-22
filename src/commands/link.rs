@@ -15,7 +15,7 @@ use crate::{
 
 use super::LinkArgs;
 
-#[instrument]
+#[instrument(skip(cmd))]
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 

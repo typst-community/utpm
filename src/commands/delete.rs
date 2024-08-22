@@ -16,7 +16,7 @@ use crate::{
 
 use super::DeleteArgs;
 
-#[instrument]
+#[instrument(skip(cmd))]
 pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
     let mut config = manifest!();
 

@@ -13,9 +13,9 @@ use crate::{
         state::{Error, ErrorKind, Result},
     },
 };
-use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
+use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
 use tracing::{debug, instrument};
-use typst_project::manifest::Manifest;
+use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};
 
 use super::{link, InstallArgs};
 
@@ -29,7 +29,7 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
     Ok(true)
 }
 
-#[instrument]
+#[instrument(skip(cmd))]
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let path = if let Some(url) = &cmd.url {
         let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
@@ -56,7 +56,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
                 }
             }
         };
-        if x.starts_with("git") {
+        if x.starts_with("git") || x.starts_with("http") {
             let mut callbacks = RemoteCallbacks::new();
             callbacks.credentials(|_, username_from_url, _| {
                 let binding = env::var("UTPM_USERNAME")
@@ -83,17 +83,14 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             let mut builder = RepoBuilder::new();
             builder.fetch_options(fo);
             builder.clone(&x, Path::new(&path))?;
-        } else if x.starts_with("http") {
-            Repository::clone(&x, &path)?;
         } else {
             copy_dir_all(&x, &path)?;
         }
     };
 
-    let typstfile = path.clone() + "/typst.toml";
+    let typstfile = path.clone() + MANIFEST_FILE;
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
-        //Err(Error::new(ErrorKind::ConfigFile, format!("From: {path} <{origin}>\nTips: Delete \"{origin}\" with `utpm workspace delete {origin}`")));
         println!("{}", format!("x {}", origin));
         return Ok(false);
     }

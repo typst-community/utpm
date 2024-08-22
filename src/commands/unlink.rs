@@ -9,7 +9,7 @@ use crate::utils::{
 
 use super::UnlinkArgs;
 
-#[instrument]
+#[instrument(skip(cmd))]
 pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let mut new_namespace = String::from("local");
     if let Some(nspace) = &cmd.namespace {

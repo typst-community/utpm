@@ -28,15 +28,12 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
     }
 
     debug!("{} URIs found: {}", cmd.uri.len(), cmd.uri.join(", "));
-    trace!("Checking if config has a section tool");
     if let Some(mut tool) = config.clone().tool {
         trace!("- tool section found");
-        trace!("Checking if there is an utpm section in the tool");
         if let Some(ex) = tool.keys.get("utpm") {
             trace!("- utpm section found in tool");
             let mut extra: Extra = toml::from_str(toml::to_string(ex)?.as_str())?; //Todo: change this hack
             trace!("hacky conversion done");
-            trace!("Checking if there are dependencies in utpm config");
             if let Some(mut dependencies) = extra.dependencies.clone() {
                 trace!("- dependencies found, adding uris");
                 for e in &cmd.uri {
