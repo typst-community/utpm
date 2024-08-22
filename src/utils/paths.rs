@@ -66,6 +66,10 @@ pub fn datalocalutpm() -> Result<String> {
     Ok(get_data_dir()? + "/utpm")
 }
 
+pub fn default_typst_packages() -> Result<String> {
+    Ok(datalocalutpm()? + "/git-packages")
+}
+
 pub fn d_utpm() -> Result<String> {
     Ok(d_packages()? + "/utpm")
 }

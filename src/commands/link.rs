@@ -1,4 +1,3 @@
-use owo_colors::OwoColorize;
 use std::fs;
 use tracing::instrument;
 use typst_project::manifest::Manifest;
@@ -38,13 +37,11 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     } else {
         format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
     };
-    let binding = "Info:".yellow();
-    let info = binding.bold();
     if check_path_dir(&path) && !cmd.force {
         return Err(Error::empty(ErrorKind::AlreadyExist(
             name.into(),
             version,
-            format!("{}", info),
+            "Info:".into(),
         )));
     }
 

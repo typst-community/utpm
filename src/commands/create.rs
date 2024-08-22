@@ -7,7 +7,6 @@ use std::{
 };
 
 use inquire::{required, validator::Validation, Select, Text};
-use owo_colors::OwoColorize;
 use semver::Version;
 use toml::Table;
 use tracing::{info, instrument, trace, warn};
@@ -137,7 +136,7 @@ pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
     if cmd.force {
         warn!(
             "{}",
-            "--force is a dangerous flag, use it cautiously".bold()
+            "--force is a dangerous flag, use it cautiously"
         );
     }
 

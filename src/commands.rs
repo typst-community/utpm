@@ -9,6 +9,7 @@ pub mod install;
 pub mod link;
 pub mod list;
 pub mod package_path;
+pub mod publish;
 pub mod tree;
 pub mod unlink;
 
@@ -124,6 +125,35 @@ pub struct ListTreeArgs {
     /// List all subdirectory you want
     #[arg(short, long, num_args = 1..)]
     pub include: Option<Vec<String>>,
+}
+
+#[derive(Parser, Clone, Debug, PartialEq)]
+pub struct PublishArgs {
+    #[arg()]
+    path: Option<PathBuf>,
+
+    /// Add rules of .ignore files to the check
+    #[arg(short = 'i', default_value_t = false)]
+    ignore: bool,
+
+    #[arg(short = 'g', default_value_t = true)]
+    git_ignore: bool,
+
+    #[arg(short = 't', default_value_t = true)]
+    typst_ignore: bool,
+
+    #[arg(short = 'G', default_value_t = true)]
+    git_global_ignore: bool,
+
+    #[arg(short = 'x', default_value_t = true)]
+    git_exclude: bool,
+
+    #[arg(short = 'c')]
+    custom_ignore: Option<PathBuf>,
+
+    /// Won't create a PR on typst/packages
+    #[arg(short = 'p', default_value_t = false)]
+    prepare_only: bool,
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
@@ -268,7 +298,7 @@ pub enum Workspace {
 
     /// WIP
     #[command(visible_alias = "p")]
-    Publish,
+    Publish(PublishArgs),
 
     /// WIP
     #[command()]

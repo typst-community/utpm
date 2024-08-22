@@ -8,8 +8,8 @@ use std::{env, str::FromStr};
 
 use clap::Parser;
 use commands::{
-    add, bulk_delete, clone, create, delete, generate, install, link, list, package_path, tree,
-    unlink, Cli, Commands, Packages, Workspace,
+    add, bulk_delete, clone, create, delete, generate, install, link, list, package_path, publish,
+    tree, unlink, Cli, Commands, Packages, Workspace,
 };
 
 use utils::state::Error;
@@ -49,10 +49,11 @@ fn main() {
             Workspace::Add(cmd) => add::run(&mut cmd.clone()),
             Workspace::Delete(cmd) => delete::run(&mut cmd.clone()),
             Workspace::Init(cmd) => create::run(&mut cmd.clone()),
-            Workspace::Publish => todo!(),
+            Workspace::Publish(cmd) => publish::run(cmd),
             Workspace::Clone(cmd) => clone::run(cmd),
         },
         Commands::Packages(p) => match p {
+            // Maybe a move command to change namespace? Or name or version
             Packages::Tree(cmd) => tree::run(cmd),
             Packages::List(cmd) => list::run(cmd),
             Packages::Path => package_path::run(),

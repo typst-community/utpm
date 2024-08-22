@@ -1,4 +1,3 @@
-use owo_colors::OwoColorize;
 use semver::Version;
 use std::{fmt, io::Error as IError};
 
@@ -92,9 +91,9 @@ impl Error {
     pub fn to_str(&self) -> String {
         let kind_message = format!("{} Error", self.kind.to_string());
         if let Some(message) = &self.message {
-            format!("{}: {}", kind_message.bold().red(), message)
+            format!("{}: {}", kind_message, message)
         } else {
-            format!("{}: {}", kind_message.bold().red(), self.kind.message())
+            format!("{}: {}", kind_message, self.kind.message())
         }
     }
 
@@ -105,9 +104,9 @@ impl Error {
             write!(
                 f,
                 "{}: {}\n{}",
-                format!("{} Error", self.kind.to_string()).red(),
-                self.kind.message().bold(),
-                self.message.clone().unwrap().bright_black()
+                format!("{} Error", self.kind.to_string()),
+                self.kind.message(),
+                self.message.clone().unwrap()
             )
         }
     }
@@ -143,3 +142,4 @@ impl_from!(typst_project::manifest::license::ParseLicenseError => License);
 
 impl_from!(toml::ser::Error => Serialize);
 impl_from!(toml::de::Error => Deserialize);
+impl_from!(ignore::Error => General);

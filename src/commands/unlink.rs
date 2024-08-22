@@ -1,5 +1,4 @@
 use inquire::Confirm;
-use owo_colors::OwoColorize;
 use std::fs;
 use tracing::instrument;
 
@@ -83,7 +82,7 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
 
         fs::remove_dir_all(d_packages()? + format!("/{}/{}", new_namespace, nm).as_str())?;
     }
-    println!("{}", "Removed!".bold());
+    println!("{}", "Removed!");
 
     Ok(true)
 }

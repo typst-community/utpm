@@ -17,7 +17,6 @@ semver = { version = "1.0.18", features = ["serde"] }
 spdx = { version = "0.10.2", features = ["text"] }
 clap = { version = "4.4.2", features = ["derive"] }
 git2 = "^0.19.0"
-owo-colors = "3.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
 typst-project = { git = "https://github.com/tingerrr/typst-project", rev = "8462942ef0c783acf339e715b5e24b2dba423de1" }
 openssl = { version = "0.10", features = ["vendored"] }
@@ -28,6 +27,7 @@ shadow-rs = "0.31.1"
 typst-kit = { git = "https://github.com/typst/typst" }
 typst-syntax = { git = "https://github.com/typst/typst" }
 regex = "1.10.6"
+ignore = "0.4.22"
 
 [build-dependencies]
 shadow-rs = "0.31.1"

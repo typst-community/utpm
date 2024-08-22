@@ -14,7 +14,6 @@ use crate::{
     },
 };
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
-use owo_colors::OwoColorize;
 use tracing::{debug, instrument};
 use typst_project::manifest::Manifest;
 
@@ -95,7 +94,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
         //Err(Error::new(ErrorKind::ConfigFile, format!("From: {path} <{origin}>\nTips: Delete \"{origin}\" with `utpm workspace delete {origin}`")));
-        println!("{}", format!("x {}", origin).yellow());
+        println!("{}", format!("x {}", origin));
         return Ok(false);
     }
     let file = manifest!(&path);
@@ -114,12 +113,12 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     )) {
         println!(
             "{}",
-            format!("~ {}:{}", file.package.name, file.package.version).bright_black()
+            format!("~ {}:{}", file.package.name, file.package.version)
         );
         return Ok(true);
     }
 
-    println!("{}", format!("Installing {}...", file.package.name).bold());
+    println!("{}", format!("Installing {}...", file.package.name));
     if let Some(vec_depend) = utpm.dependencies {
         let mut y = 0;
         vec_depend
@@ -144,14 +143,10 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         fs::remove_dir_all(&path)?;
         println!(
             "{}",
-            format!("+ {}:{}", file.package.name, file.package.version).bright_green()
+            format!("+ {}:{}", file.package.name, file.package.version)
         );
     } else {
-        println!(
-            "{}",
-            "* Installation complete! If you want to use it as a lib, just do a `utpm link`!"
-                .bold()
-        )
+        println!("* Installation complete! If you want to use it as a lib, just do a `utpm link`!")
     }
 
     Ok(true)
