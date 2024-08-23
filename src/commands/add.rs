@@ -56,7 +56,7 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
             tool.keys.insert(
                 "utpm".to_string(),
                 toml::from_str(
-                    toml::to_string(&Extra::new(None, Some(cmd.uri.clone())))?.as_str(),
+                    toml::to_string(&Extra::new(None, Some(cmd.uri.clone()), None))?.as_str(),
                 )?,
             );
         }
@@ -65,7 +65,9 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
         let mut keys = BTreeMap::new();
         keys.insert(
             "utpm".to_string(),
-            toml::from_str(toml::to_string(&Extra::new(None, Some(cmd.uri.clone())))?.as_str())?,
+            toml::from_str(
+                toml::to_string(&Extra::new(None, Some(cmd.uri.clone()), None))?.as_str(),
+            )?,
         );
         config.tool = Some(Tool { keys });
     }

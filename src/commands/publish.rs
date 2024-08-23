@@ -1,4 +1,5 @@
 use crate::utils::regex_package;
+use crate::utils::specs::Extra;
 use crate::utils::state::{Error, ErrorKind};
 use std::env;
 use std::ffi::OsStr;
@@ -14,6 +15,7 @@ use crate::utils::paths::{
 use crate::utils::{paths::get_current_dir, state::Result};
 use git2::build::RepoBuilder;
 use git2::{Cred, FetchOptions, RemoteCallbacks, Repository};
+use ignore::overrides::OverrideBuilder;
 use tracing::{error, info, instrument};
 use typst_project::manifest::Manifest;
 
@@ -23,7 +25,10 @@ use ignore::WalkBuilder;
 
 #[instrument(skip(cmd))]
 pub fn run(cmd: &PublishArgs) -> Result<bool> {
-    //todo: github create fork if not exist, link to local packages, create PR, git push (VIA GITHUB AHAHAHHA),
+    //todo: github create fork if not exist (checkout and everything), link to local packages, create PR, git push
+    //todo: Check dependencies, a way to add them?
+    //todo: check if there are files in the package...
+
     let config: Manifest = load_manifest!();
 
     info!("Manifest load");
@@ -60,6 +65,14 @@ pub fn run(cmd: &PublishArgs) -> Result<bool> {
 
     let mut wb: WalkBuilder = WalkBuilder::new(path_curr);
 
+    let mut overr: OverrideBuilder = OverrideBuilder::new(path_curr);
+
+    for exclude in Extra::from(config.tool).exclude.unwrap_or(vec![]) {
+        overr.add(("!".to_string() + &exclude).as_str())?;
+    }
+
+    wb.overrides(overr.build()?);
+
     wb.ignore(cmd.ignore)
         .git_ignore(cmd.git_ignore)
         .git_global(cmd.git_global_ignore)
@@ -89,14 +102,13 @@ pub fn run(cmd: &PublishArgs) -> Result<bool> {
 
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
-            let path = result.path();
+            let path: &Path = result.path();
             let name: String = path.to_str().unwrap().to_string();
             let l: String = name.replace::<&str>(path_curr_str, &path_packages_new);
+            println!("{l}");
             if file_type.is_dir() {
-                println!("dir: {l}");
                 create_dir_all(l)?;
             } else {
-                println!("file: {l}");
                 copy(path, l)?;
             }
         }
