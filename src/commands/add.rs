@@ -5,7 +5,7 @@ use tracing::{debug, instrument, trace};
 use typst_project::manifest::{tool::Tool, Manifest};
 
 use crate::{
-    manifest,
+    load_manifest,
     utils::{
         paths::get_current_dir,
         specs::Extra,
@@ -18,7 +18,7 @@ use super::{install, AddArgs, InstallArgs};
 
 #[instrument]
 pub fn run(cmd: &mut AddArgs) -> Result<bool> {
-    let mut config: Manifest = manifest!();
+    let mut config: Manifest = load_manifest!();
     if cmd.uri.len() == 0 {
         debug!("0 URI found in cmd.uri");
         return Err(Error::new(
@@ -39,7 +39,7 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
                 for e in &cmd.uri {
                     match dependencies.iter().position(|x| x == e) {
                         Some(_) => {
-                            trace!("{} dependency already in the manifest, skipping", e);
+                            trace!("{} dependency already in the load_manifest skipping", e);
                         }
                         None => {
                             trace!("{} added", e);

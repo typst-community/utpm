@@ -129,7 +129,9 @@ macro_rules! impl_from {
     };
 }
 impl_from!(semver::Error => SemVer);
+#[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
 impl_from!(git2::Error => Git);
+#[cfg(any(feature = "init", feature = "unlink"))]
 impl_from!(inquire::InquireError => Questions);
 impl_from!(IError => IO);
 impl_from!(typst_project::manifest::Error => General);
@@ -142,4 +144,5 @@ impl_from!(typst_project::manifest::license::ParseLicenseError => License);
 
 impl_from!(toml::ser::Error => Serialize);
 impl_from!(toml::de::Error => Deserialize);
+#[cfg(any(feature = "publish"))]
 impl_from!(ignore::Error => General);

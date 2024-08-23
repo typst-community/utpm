@@ -2,7 +2,7 @@ use std::{env, fs, path::Path};
 
 use crate::{
     commands::LinkArgs,
-    manifest,
+    load_manifest,
     utils::{
         copy_dir_all,
         paths::{
@@ -94,7 +94,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         println!("{}", format!("x {}", origin));
         return Ok(false);
     }
-    let file = manifest!(&path);
+    let file = load_manifest!(&path);
     let utpm = if let Some(value) = file.tool {
         value.get_section("utpm")?.unwrap_or(Extra::default())
     } else {

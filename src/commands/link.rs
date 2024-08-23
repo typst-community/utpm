@@ -3,7 +3,7 @@ use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
-    manifest,
+    load_manifest,
     utils::{
         copy_dir_all,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir},
@@ -19,7 +19,7 @@ use super::LinkArgs;
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);
 
-    let config = manifest!(&curr);
+    let config = load_manifest!(&curr);
     let namespace = if let Some(value) = config.tool {
         value
             .get_section("utpm")?

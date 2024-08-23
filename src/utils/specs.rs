@@ -25,7 +25,3 @@ impl Extra {
         }
     }
 }
-
-// #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
-// #[strum(serialize_all = "lowercase")]
-// #[clap(rename_all = "lower")]

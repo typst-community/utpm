@@ -7,7 +7,7 @@ use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::result::Result as R;
 
-use crate::manifest;
+use crate::load_manifest;
 use crate::utils::paths::{
     check_path_file, default_typst_packages, get_ssh_dir, has_content, TYPST_PACKAGE_URL,
 };
@@ -24,7 +24,7 @@ use ignore::WalkBuilder;
 #[instrument(skip(cmd))]
 pub fn run(cmd: &PublishArgs) -> Result<bool> {
     //todo: github create fork if not exist, link to local packages, create PR, git push (VIA GITHUB AHAHAHHA),
-    let config: Manifest = manifest!();
+    let config: Manifest = load_manifest!();
 
     info!("Manifest load");
 

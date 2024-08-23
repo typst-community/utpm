@@ -2,6 +2,7 @@ use std::{fs, path::Path};
 
 use std::io;
 
+#[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 use regex::Regex;
 use typst_kit::download::{DownloadState, Progress};
 
@@ -47,8 +48,18 @@ pub fn symlink_all(
     symlink_dir(origin, new_path)
 }
 
+#[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 pub fn regex_package() -> Regex {
-    Regex::new(r"@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)\:(\d+)\.(\d+)\.(\d+)").unwrap()
+    Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
+}
+#[cfg(any(feature = "unlink"))]
+pub fn regex_namespace() -> Regex {
+    Regex::new(r"^@([a-z]+)$").unwrap()
+}
+
+#[cfg(any(feature = "unlink"))]
+pub fn regex_packagename() -> Regex {
+    Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)$").unwrap()
 }
 
 //todo: impl

@@ -33,10 +33,10 @@ use crate::{
     write_manifest,
 };
 
-use super::CreateInitArgs;
+use super::InitArgs;
 
 #[instrument(skip(cmd))]
-pub fn run(cmd: &mut CreateInitArgs) -> Result<bool> {
+pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
     info!("Current dir: {}", curr);
     let typ = curr.clone() + MANIFEST_FILE;
