@@ -13,6 +13,7 @@ use crate::{
         state::{Error, ErrorKind, Result},
     },
 };
+
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
 use tracing::{debug, instrument};
 use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};

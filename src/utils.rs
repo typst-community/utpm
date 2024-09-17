@@ -3,14 +3,16 @@ use std::fmt::Debug;
 use std::fs::create_dir_all;
 use std::{fs, path::Path};
 
-use std::{env, io, result::Result as R};
-
-use git2::build::{CheckoutBuilder, RepoBuilder};
-use git2::{Cred, FetchOptions, RemoteCallbacks, Repository};
+#[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
+use git2::{
+    build::{CheckoutBuilder, RepoBuilder},
+    Cred, FetchOptions, RemoteCallbacks, Repository,
+};
 use paths::{check_path_file, get_ssh_dir, has_content};
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 use regex::Regex;
 use state::{Error, ErrorKind};
+use std::{env, io, result::Result as R};
 use tracing::{error, info, instrument};
 use typst_kit::download::{DownloadState, Progress};
 
@@ -40,20 +42,14 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
 
 /// Implementing a symlink function for all platform (unix version)
 #[cfg(unix)]
-pub fn symlink_all(
-    origin: impl AsRef<Path>,
-    new_path: impl AsRef<Path>,
-) -> R<(), std::io::Error> {
+pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
     use std::os::unix::fs::symlink;
     symlink(origin, new_path)
 }
 
 /// Implementing a symlink function for all platform (windows version)
 #[cfg(windows)]
-pub fn symlink_all(
-    origin: impl AsRef<Path>,
-    new_path: impl AsRef<Path>,
-) -> R<(), std::io::Error> {
+pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
     use std::os::windows::fs::symlink_dir;
     symlink_dir(origin, new_path)
 }
@@ -83,6 +79,7 @@ impl Progress for ProgressPrint {
     fn print_finish(&mut self, _state: &DownloadState) {}
 }
 
+#[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
 #[instrument]
 pub fn update_git_packages<P>(path_packages: P, url: &str) -> Result<Repository>
 where
@@ -159,7 +156,6 @@ where
     };
     Ok(repo)
 }
-
 
 #[cfg(test)]
 mod tests {
