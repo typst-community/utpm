@@ -137,7 +137,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     }
 
     if cmd.force {
-        warn!("{}", "--force is a dangerous flag, use it cautiously");
+        warn!("--force is a dangerous flag, use it cautiously");
     }
 
     if !cmd.cli {
@@ -152,7 +152,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
         let template = Select::new("Do you want to create a template?", choice.clone()).prompt()?;
         let popu = Select::new(
             "Do you want to populate your package? Files like index.typ will be created",
-            choice.clone(),
+            choice,
         )
         .prompt()?;
 

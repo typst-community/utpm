@@ -14,15 +14,17 @@ pub struct Extra {
     pub exclude: Option<Vec<String>>,
 }
 
-impl Extra {
-    pub fn default() -> Self {
+impl Default for Extra {
+    fn default() -> Self {
         Self {
             namespace: Some("local".to_string()),
             dependencies: None,
             exclude: None,
         }
     }
+}
 
+impl Extra {
     pub fn new(
         namespace: Option<String>,
         dependencies: Option<Vec<String>>,

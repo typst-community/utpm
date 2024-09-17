@@ -1,22 +1,18 @@
-use crate::utils::regex_package;
+use crate::utils::{regex_package, update_git_packages};
 use crate::utils::specs::Extra;
 use crate::utils::state::{Error, ErrorKind};
-use std::env;
-use std::ffi::OsStr;
-use std::fmt::Debug;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::result::Result as R;
+use std::str::FromStr;
 
 use crate::load_manifest;
 use crate::utils::paths::{
-    check_path_file, default_typst_packages, get_ssh_dir, has_content, TYPST_PACKAGE_URL,
+    check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL
 };
 use crate::utils::{paths::get_current_dir, state::Result};
-use git2::build::RepoBuilder;
-use git2::{Cred, FetchOptions, RemoteCallbacks, Repository};
 use ignore::overrides::OverrideBuilder;
-use tracing::{error, info, instrument};
+use tracing::{error, info, instrument, trace};
 use typst_project::manifest::Manifest;
 
 use super::PublishArgs;
@@ -59,9 +55,13 @@ pub fn run(cmd: &PublishArgs) -> Result<bool> {
     let path_packages: String = default_typst_packages()?;
     let path_packages_new: String = format!("{path_packages}/packages/preview/{name}/{version}");
 
-    update_git_packages(path_packages)?;
+    // Download typst/packages
+
+    update_git_packages(path_packages, TYPST_PACKAGE_URL)?;
 
     info!("Path to the new package {}", path_packages_new);
+
+    // Prepare files
 
     let mut wb: WalkBuilder = WalkBuilder::new(path_curr);
 
@@ -100,6 +100,8 @@ pub fn run(cmd: &PublishArgs) -> Result<bool> {
         }
     }
 
+    // Copy
+
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
             let path: &Path = result.path();
@@ -114,80 +116,28 @@ pub fn run(cmd: &PublishArgs) -> Result<bool> {
         }
     }
 
+    if !has_content(&path_packages_new)? {
+        error!("There is no files in the new package. Consider to change your ignored files.");
+        return Err(Error::empty(ErrorKind::UnknowError("".into())));
+    }
+
+    if !check_path_file(format!("{path_packages_new}/typst.toml")) {
+        error!("Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?");
+        return Err(Error::empty(ErrorKind::UnknowError("".into())));
+    }
+
+    let entry = config.package.entrypoint;
+    let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
+    entryfile.push(&entry);
+    let entrystr = entry.to_str().unwrap();
+
+    trace!(entryfile = entrystr);
+    if !check_path_file(entryfile) {
+        error!("Can't find {entrystr} file in {path_packages_new}. Did you omit it in your ignored files?");
+        return Err(Error::empty(ErrorKind::UnknowError("".into())));
+    }
+
+    info!("files copied to {path_packages_new}");
+
     Ok(true)
-}
-
-#[instrument]
-fn update_git_packages<P>(path_packages: P) -> Result<Repository>
-where
-    P: AsRef<Path> + AsRef<OsStr> + Debug,
-{
-    create_dir_all(&path_packages)?;
-    let repo: Repository;
-    if has_content(&path_packages)? {
-        info!("Content found, starting a 'git pull origin main'");
-        repo = Repository::open(path_packages)?;
-        repo.find_remote("origin")?.fetch(&["main"], None, None)?;
-        let fetch_head = repo.find_reference("FETCH_HEAD")?;
-        let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
-        let analysis = repo.merge_analysis(&[&fetch_commit])?;
-        if analysis.0.is_up_to_date() {
-            info!("up to date, nothing to do");
-        } else if analysis.0.is_fast_forward() {
-            let refname = format!("refs/heads/{}", "main");
-            let mut reference = repo.find_reference(&refname)?;
-            reference.set_target(fetch_commit.id(), "Fast-Forward")?;
-            repo.set_head(&refname)?;
-            repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))?;
-            info!("fast forward done");
-        } else {
-            error!("Can't rebase for now.");
-            return Err(Error::empty(ErrorKind::UnknowError("todo".into())));
-        }
-    } else {
-        info!("Start cloning");
-        let sshpath = get_ssh_dir()?;
-        let ed: String = sshpath.clone() + "/id_ed25519";
-        let rsa: String = sshpath + "/id_rsa";
-        let val: String = match env::var("UTPM_KEYPATH") {
-            Ok(val) => val,
-            Err(_) => {
-                if check_path_file(&ed) {
-                    ed
-                } else {
-                    rsa
-                }
-            }
-        };
-
-        info!(path = val);
-        let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_, username_from_url, _| {
-            let binding: String =
-                env::var("UTPM_USERNAME").unwrap_or(username_from_url.unwrap_or("git").to_string());
-            let username: &str = binding.as_str();
-            match Cred::ssh_key_from_agent(username) {
-                Ok(cred) => Ok(cred),
-                Err(_) => Ok(match env::var("UTPM_PASSPHRASE") {
-                    Ok(s) => {
-                        info!(passphrase = true);
-                        Cred::ssh_key(username, None, Path::new(&val), Some(s.as_str()))?
-                    }
-                    Err(_) => {
-                        info!(passphrase = false);
-                        Cred::ssh_key(username, None, Path::new(&val), None)?
-                    }
-                }),
-            }
-        });
-
-        let mut fo = FetchOptions::new();
-        fo.remote_callbacks(callbacks);
-
-        let mut builder = RepoBuilder::new();
-        builder.fetch_options(fo);
-        repo = builder.clone(TYPST_PACKAGE_URL, Path::new(&path_packages))?;
-        info!("Package cloned");
-    };
-    Ok(repo)
 }
