@@ -53,7 +53,7 @@ pub fn symlink_all(
 pub fn symlink_all(
     origin: impl AsRef<Path>,
     new_path: impl AsRef<Path>,
-) -> Result<(), std::io::Error> {
+) -> R<(), std::io::Error> {
     use std::os::windows::fs::symlink_dir;
     symlink_dir(origin, new_path)
 }
