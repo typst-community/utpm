@@ -1,6 +1,7 @@
-use crate::utils::{regex_package, update_git_packages};
 use crate::utils::specs::Extra;
 use crate::utils::state::{Error, ErrorKind};
+use crate::utils::{regex_package, update_git_packages};
+use std::env;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::result::Result as R;
@@ -8,19 +9,22 @@ use std::str::FromStr;
 
 use crate::load_manifest;
 use crate::utils::paths::{
-    check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL
+    check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL,
 };
 use crate::utils::{paths::get_current_dir, state::Result};
 use ignore::overrides::OverrideBuilder;
+use octocrab::Octocrab;
 use tracing::{error, info, instrument, trace};
 use typst_project::manifest::Manifest;
+use url::Url;
 
 use super::PublishArgs;
 
 use ignore::WalkBuilder;
 
+#[tokio::main]
 #[instrument(skip(cmd))]
-pub fn run(cmd: &PublishArgs) -> Result<bool> {
+pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     //todo: github create fork if not exist (checkout and everything), link to local packages, create PR, git push
     //todo: Check dependencies, a way to add them?
     //todo: check if there are files in the package...
@@ -138,6 +142,35 @@ pub fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     info!("files copied to {path_packages_new}");
+
+    let crab = Octocrab::builder()
+        .personal_token(env::var("UTPM_GITHUB_TOKEN").unwrap())
+        .build()
+        .unwrap();
+
+    let pages = match crab
+        .current()
+        .list_repos_for_authenticated_user()
+        .visibility("public")
+        .send()
+        .await
+    {
+        Ok(a) => a,
+        Err(_) => todo!(),
+    };
+
+    let repo = pages.items.iter().find(|f| match &f.forks_url {
+        None=>"",
+        Some(a) => a.as_str(), 
+    } == TYPST_PACKAGE_URL );
+
+    let fork: &Url;
+
+    if let Some(rep) = repo {
+        fork = &rep.url;
+    } else {
+        crab.repos("", "").create_fork().send().await;
+    }
 
     Ok(true)
 }
