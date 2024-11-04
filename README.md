@@ -21,7 +21,7 @@
   - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
   - [x] ⌨️ Intuitive Clap CLI
 - [x] 🛠 Manage existing packages (`utpm ws link --no-copy`)
-  - [x] 🔗Quick linking of remote and local packages (`utpm workspace link`)
+  - [x] 🔗 Link remote and local packages (`utpm workspace link`)
   - [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
 - [x] 🌐 Dependencies outside of Typst!
   - [x] 📦 Support for third party application and plugins
@@ -48,31 +48,27 @@ $ cargo install --git https://github.com/Thumuss/utpm
 
 <div id="usage">
 
-## Usage 
-Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section.
+## 🎰 Usage 
+Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
 
 ### General
 
 ```
-An unofficial typst package manager for your projects
-
 Usage: utpm [OPTIONS] <COMMAND>
 
 Commands:
-  workspace  Commands to create, edit, delete your workspace for your package [aliases: ws]
-  packages   Commands to use packages related to typst [aliases: pkg]
-  generate   Generate shell completion [aliases: gen]
+  workspace  Create, edit, delete your workspace for your package [aliases: ws]
+  packages   use packages related to Typst [aliases: pkg]
+  generate   Generate shell completions [aliases: gen]
   help       Print this message or the help of the given subcommand(s)
 
 Options:
   -v, --verbose <VERBOSE>  Gives you more information, permet debug
   -h, --help               Print help
   -V, --version            Print version
-
 ```
 
 ### Commands
-
 **Workspace** (ws): Manage Your Project Workspace
 - `link (l)`: Link your project to existing directories.
 - `create (c) (Deprecated)`: Creates a typst.toml file. Use init instead.
