@@ -47,7 +47,6 @@ $ cargo install --git https://github.com/Thumuss/utpm
 <div id="usage">
 
 ## Usage 
-
 Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section.
 
 ### General
@@ -65,21 +64,22 @@ Options
 ### Commands
 
 **Workspace** (ws): Manage Your Project Workspace
-    - link (l): Link your project to existing directories.
-    - create (c) (Deprecated) : Creates a typst.toml file. Use init instead.
-    - install (i): Install dependencies listed in typst.toml.
-    - add (a): Add and install new dependencies.
-    - delete (d): Remove specific dependencies.
-    - init: Initialize a new workspace for a Typst package.
-    - publish (p) (WIP): Intended for publishing packages.
-    - clone (WIP): Clone an existing workspace.
+
+- link (l): Link your project to existing directories.
+- create (c) (Deprecated) : Creates a typst.toml file. Use init instead.
+- install (i): Install dependencies listed in typst.toml.
+- add (a): Add and install new dependencies.
+- delete (d): Remove specific dependencies.
+- init: Initialize a new workspace for a Typst package.
+- publish (p) (WIP): Intended for publishing packages.
+- clone (WIP): Clone an existing workspace.
 
 **Packages** (pkg): Manage Typst Packages
-    - tree (t): Display all packages in a directory as a tree.
-    - list (l): List all packages in a directory in a flat list.
-    - path (p): Show the path to the Typst packages folder.
-    - unlink (u): Remove a previously installed package.
-    - bulk-delete (bd): Delete multiple packages at once.
+- tree (t): Display all packages in a directory as a tree.
+- list (l): List all packages in a directory in a flat list.
+- path (p): Show the path to the Typst packages folder.
+- unlink (u): Remove a previously installed package.
+- bulk-delete (bd): Delete multiple packages at once.
 
 **generate** (gen): Generate Shell Completions
 
