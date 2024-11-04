@@ -18,7 +18,6 @@
 </div>
 
 ## 🔥 Features
-
 - [x] ✨Create packages rapidly (`utpm workspace create`)
   - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
   - [x] ⌨️ Intuitive Clap CLI
@@ -31,7 +30,6 @@
 - [x] 📃 Visualization 
   - [x] 🗃️ list `utpm pkg list`
   - [x] 🌲 tree `utpm pkg tree`
-
 - [ ] 🚀 Automated publication directly to Typst Universe!
 
 **_And more soon!_**
