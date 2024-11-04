@@ -33,6 +33,9 @@
 
 **_...And more soon!_**
 
+> [!WARNING]  
+> **UTPM** is still in active development, and some features may not be fully implemented. Contributions are welcome!
+
 <div id="install">
 
 ## ⚡Install
@@ -51,13 +54,21 @@ Further usage information can be found by running `utpm --help` or `utpm <comman
 ### General
 
 ```
-utpm [OPTIONS] <COMMAND>
+An unofficial typst package manager for your projects
 
-Options
+Usage: utpm [OPTIONS] <COMMAND>
 
-    -v, --verbose <VERBOSE>: Enable verbose output for debugging.
-    -h, --help: Display help information.
-    -V, --version: Display the utpm version.
+Commands:
+  workspace  Commands to create, edit, delete your workspace for your package [aliases: ws]
+  packages   Commands to use packages related to typst [aliases: pkg]
+  generate   Generate shell completion [aliases: gen]
+  help       Print this message or the help of the given subcommand(s)
+
+Options:
+  -v, --verbose <VERBOSE>  Gives you more information, permet debug
+  -h, --help               Print help
+  -V, --version            Print version
+
 ```
 
 ### Commands
@@ -84,9 +95,11 @@ Options
 <div/>
 
 <div id="contribution">
+
 ## ❤️ Contribution
 
 If you want to help me develop this package, simply make an issue or a PR!
 
 By using this app, you contribute to it, thank you! <3
+
 </div>
