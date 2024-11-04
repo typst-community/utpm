@@ -4,7 +4,7 @@
 
 > _Unofficial typst package manager_
 
-**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **remote** packages. Create quickly new _projects_ and _templates_ from a **singular tool**, and then **publish** it _directly_ to **Typst**!
+**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe** via one unified tool.  
 
 [![Thumuss - utpm](https://img.shields.io/static/v1?label=Thumuss&message=utpm&color=blue&logo=github)](https://github.com/Thumuss/utpm "Go to GitHub repo")
 [![stars - utpm](https://img.shields.io/github/stars/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
@@ -19,22 +19,22 @@
 
 ## 🔥 Features
 
-- [x] ✨ Create packages automatically (`utpm ws create`)
-  - [x] ⏯️ Interactive
-  - [x] ⌨️ CLI version
-- [x] 🛠 Put your package directly into your local packages (`utpm ws link`)
-  - [x] 💻 Link without copying! (`utpm ws link --no-copy`)
-- [x] 🌐 Dependencies outsite typst!
-  - [x] 📦 Install directly from the tool
+- [x] ✨Create packages rapidly (`utpm workspace create`)
+  - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
+  - [x] ⌨️ Intuitive Clap CLI
+- [x] 🛠 Manage existing packages (`utpm ws link --no-copy`)
+  - [x] 🔗Quick linking of remote and local packages (`utpm workspace link`)
+  - [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
+- [x] 🌐 Dependencies outside of Typst!
+  - [x] 📦 Support for third party application and plugins
   - [x] 🔒 Portable installer (limited for now)
-- [x] 📃 List all your packages
-  - [x] 🗃️ As a list `utpm pkg list`
-  - [x] 🌲 As a tree `utpm pkg tree`
-- [ ] 💥 Customize your output (json or classic, `-j` in your commands)
-- [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
-- [ ] 🚀 Publish it directly to Typst!
+- [x] 📃 Visualization 
+  - [x] 🗃️ list `utpm pkg list`
+  - [x] 🌲 tree `utpm pkg tree`
 
-**_And many other features!_**
+- [ ] 🚀 Automated publication directly to Typst Universe!
+
+**_And more soon!_**
 
 ## 🔎 How to use it?
 
