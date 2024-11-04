@@ -51,8 +51,6 @@ $ cargo install --git https://github.com/Thumuss/utpm
 ## 🎰 Usage 
 Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
 
-### General
-
 ```
 Usage: utpm [OPTIONS] <COMMAND>
 
@@ -68,7 +66,6 @@ Options:
   -V, --version            Print version
 ```
 
-### Commands
 **Workspace** (ws): Manage Your Project Workspace
 - `link (l)`: Link your project to existing directories.
 - `create (c) (Deprecated)`: Creates a typst.toml file. Use init instead.
