@@ -4,7 +4,7 @@
 
 > _Unofficial typst package manager_
 
-**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe** via one unified tool.  
+**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.  
 
 [![Thumuss - utpm](https://img.shields.io/static/v1?label=Thumuss&message=utpm&color=blue&logo=github)](https://github.com/Thumuss/utpm "Go to GitHub repo")
 [![stars - utpm](https://img.shields.io/github/stars/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
@@ -32,101 +32,57 @@
   - [x] 🌲 tree `utpm pkg tree`
 - [ ] 🚀 Automated publication directly to Typst Universe!
 
-**_And more soon!_**
+**_...And more soon!_**
 
-## 🔎 How to use it?
-
-### The basic workflow
-
-- _Firstly, you'll need to [create](#create) your `typst.toml` file!_
-- _Then, edit your file! Like `index.typ` or `lib.typ`_
-- _Finally, [link](#link) your new package to typst!_
-
-### Commands
-
-#### 🗄️ Bulk Delete
-
-<!-- TODO: GIF -->
-
-_A command to delete multiple packages at once!_
-
-![bulk-delete.gif](./assets/gifs/bulk_delete.gif)
-
-<div id="create">
-
-#### ✨ Create
-_Create a `typst.toml` to make a package_
-
-![create_cli.gif](./assets/gifs/create_cli.gif)
-<!-- TODO: GIF v2 -->
-
-</div>
-<div id="help">
-
-
-#### ❓ Help
-
-_Generate a help message_
-![help.gif](./assets/gifs/help.gif)
-
-</div>
 <div id="install">
 
-#### 📦 Install
-![install.gif](./assets/gifs/install.gif)
-<!-- TODO: GIF & text-->
-
-</div>
-<div id="link">
-
-#### 🛠 Link
-![link.gif](./assets/gifs/link.gif)
-<!-- TODO: GIF & text-->
-
-</div>
-<div id="list">
-
-#### 🗃️ List
-<!-- TODO: text -->
-
-![list.gif](./assets/gifs/list.gif)
-
-</div>
-<div id="package-path">
-<!-- TODO: text -->
-
-#### 🚦 Package Path
-
-![packages-path.gif](./assets/gifs/packages-path.gif)
-
-</div>
-<div id="tree">
-
-#### 🌲 Tree
-
-_A simple command to show all packages installed in your local dir like a tree!_
-
-![tree.gif](./assets/gifs/tree.gif)
-
-</div>
-<div id="unlink">
-<!-- TODO: GIF -->
-
-#### 🗄️ Unlink
-
-![unlink.gif](./assets/gifs/unlink.gif)
-
-</div>
-
-## ⚡ Install
-
-You will need Cargo and Rust.
-
-The easiest way to install utpm using Cargo is:
+## ⚡Install
+Requires Cargo and Rust. 
 
 ```bash
 $ cargo install --git https://github.com/Thumuss/utpm
 ```
+<div/>
+
+<div id="usage">
+
+## Usage 
+
+Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section.
+
+### General
+
+```
+utpm [OPTIONS] <COMMAND>
+
+Options
+
+    -v, --verbose <VERBOSE>: Enable verbose output for debugging.
+    -h, --help: Display help information.
+    -V, --version: Display the utpm version.
+```
+
+### Commands
+
+**Workspace** (ws): Manage Your Project Workspace
+    - link (l): Link your project to existing directories.
+    - create (c) (Deprecated) : Creates a typst.toml file. Use init instead.
+    - install (i): Install dependencies listed in typst.toml.
+    - add (a): Add and install new dependencies.
+    - delete (d): Remove specific dependencies.
+    - init: Initialize a new workspace for a Typst package.
+    - publish (p) (WIP): Intended for publishing packages.
+    - clone (WIP): Clone an existing workspace.
+
+**Packages** (pkg): Manage Typst Packages
+    - tree (t): Display all packages in a directory as a tree.
+    - list (l): List all packages in a directory in a flat list.
+    - path (p): Show the path to the Typst packages folder.
+    - unlink (u): Remove a previously installed package.
+    - bulk-delete (bd): Delete multiple packages at once.
+
+**generate** (gen): Generate Shell Completions
+
 
 ## ❤️ Contribution
 
