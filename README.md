@@ -14,7 +14,6 @@
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 [![issues - utpm](https://img.shields.io/github/issues/Thumuss/utpm)](https://github.com/Thumuss/utpm/issues)
 
-
 </div>
 
 ## 🔥 Features
@@ -65,7 +64,7 @@ Options
 
 **Workspace** (ws): Manage Your Project Workspace
 - `link (l)`: Link your project to existing directories.
-- `create (c) (Deprecated) `: Creates a typst.toml file. Use init instead.
+- `create (c) (Deprecated)`: Creates a typst.toml file. Use init instead.
 - `install (i)`: Install dependencies listed in typst.toml.
 - `add (a)`: Add and install new dependencies.
 - `delete (d)`: Remove specific dependencies.
@@ -82,9 +81,12 @@ Options
 
 **generate** (gen): Generate Shell Completions
 
+<div/>
 
+<div id="contribution">
 ## ❤️ Contribution
 
 If you want to help me develop this package, simply make an issue or a PR!
 
 By using this app, you contribute to it, thank you! <3
+</div>
