@@ -2,9 +2,9 @@
 
 ![UTPM logo](./assets/logo.svg)
 
-> _Unofficial typst package manager_
+> _Unofficial Typst package manager_
 
-**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **remote** packages. Create quickly new _projects_ and _templates_ from a **singular tool**, and then **publish** it _directly_ to **Typst**!
+**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.  
 
 [![Thumuss - utpm](https://img.shields.io/static/v1?label=Thumuss&message=utpm&color=blue&logo=github)](https://github.com/Thumuss/utpm "Go to GitHub repo")
 [![stars - utpm](https://img.shields.io/github/stars/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
@@ -14,124 +14,85 @@
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 [![issues - utpm](https://img.shields.io/github/issues/Thumuss/utpm)](https://github.com/Thumuss/utpm/issues)
 
-
 </div>
 
 ## 🔥 Features
-
-- [x] ✨ Create packages automatically (`utpm ws create`)
-  - [x] ⏯️ Interactive
-  - [x] ⌨️ CLI version
-- [x] 🛠 Put your package directly into your local packages (`utpm ws link`)
-  - [x] 💻 Link without copying! (`utpm ws link --no-copy`)
-- [x] 🌐 Dependencies outsite typst!
-  - [x] 📦 Install directly from the tool
+- [x] ✨Create packages rapidly (`utpm workspace create`)
+  - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
+  - [x] ⌨️ Intuitive Clap CLI
+- [x] 🛠 Manage existing packages (`utpm ws link --no-copy`)
+  - [x] 🔗 Link remote and local packages (`utpm workspace link`)
+  - [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
+- [x] 🌐 Dependencies outside of Typst!
+  - [x] 📦 Support for third party application and plugins
   - [x] 🔒 Portable installer (limited for now)
-- [x] 📃 List all your packages
-  - [x] 🗃️ As a list `utpm pkg list`
-  - [x] 🌲 As a tree `utpm pkg tree`
-- [ ] 💥 Customize your output (json or classic, `-j` in your commands)
-- [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
-- [ ] 🚀 Publish it directly to Typst!
+- [x] 📃 Visualization 
+  - [x] 🗃️ list `utpm pkg list`
+  - [x] 🌲 tree `utpm pkg tree`
+- [ ] 🚀 Automated publication directly to Typst Universe!
 
-**_And many other features!_**
+**_...And more soon!_**
 
-## 🔎 How to use it?
+> [!WARNING]  
+> **UTPM** is still in active development, and some features may not be fully implemented. Contributions are welcome!
 
-### The basic workflow
-
-- _Firstly, you'll need to [create](#create) your `typst.toml` file!_
-- _Then, edit your file! Like `index.typ` or `lib.typ`_
-- _Finally, [link](#link) your new package to typst!_
-
-### Commands
-
-#### 🗄️ Bulk Delete
-
-<!-- TODO: GIF -->
-
-_A command to delete multiple packages at once!_
-
-![bulk-delete.gif](./assets/gifs/bulk_delete.gif)
-
-<div id="create">
-
-#### ✨ Create
-_Create a `typst.toml` to make a package_
-
-![create_cli.gif](./assets/gifs/create_cli.gif)
-<!-- TODO: GIF v2 -->
-
-</div>
-<div id="help">
-
-
-#### ❓ Help
-
-_Generate a help message_
-![help.gif](./assets/gifs/help.gif)
-
-</div>
 <div id="install">
 
-#### 📦 Install
-![install.gif](./assets/gifs/install.gif)
-<!-- TODO: GIF & text-->
-
-</div>
-<div id="link">
-
-#### 🛠 Link
-![link.gif](./assets/gifs/link.gif)
-<!-- TODO: GIF & text-->
-
-</div>
-<div id="list">
-
-#### 🗃️ List
-<!-- TODO: text -->
-
-![list.gif](./assets/gifs/list.gif)
-
-</div>
-<div id="package-path">
-<!-- TODO: text -->
-
-#### 🚦 Package Path
-
-![packages-path.gif](./assets/gifs/packages-path.gif)
-
-</div>
-<div id="tree">
-
-#### 🌲 Tree
-
-_A simple command to show all packages installed in your local dir like a tree!_
-
-![tree.gif](./assets/gifs/tree.gif)
-
-</div>
-<div id="unlink">
-<!-- TODO: GIF -->
-
-#### 🗄️ Unlink
-
-![unlink.gif](./assets/gifs/unlink.gif)
-
-</div>
-
-## ⚡ Install
-
-You will need Cargo and Rust.
-
-The easiest way to install utpm using Cargo is:
+## ⚡Install
+Requires Cargo and Rust. 
 
 ```bash
 $ cargo install --git https://github.com/Thumuss/utpm
 ```
+<div/>
+
+<div id="usage">
+
+## 🎰 Usage 
+Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
+
+```
+Usage: utpm [OPTIONS] <COMMAND>
+
+Commands:
+  workspace  Create, edit, delete your workspace for your package [aliases: ws]
+  packages   use packages related to Typst [aliases: pkg]
+  generate   Generate shell completions [aliases: gen]
+  help       Print this message or the help of the given subcommand(s)
+
+Options:
+  -v, --verbose <VERBOSE>  Gives you more information, permet debug
+  -h, --help               Print help
+  -V, --version            Print version
+```
+
+**Workspace** (ws): Manage Your Project Workspace
+- `link (l)`: Link your project to existing directories.
+- `create (c) (Deprecated)`: Creates a typst.toml file. Use init instead.
+- `install (i)`: Install dependencies listed in typst.toml.
+- `add (a)`: Add and install new dependencies.
+- `delete (d)`: Remove specific dependencies.
+- `init`: Initialize a new workspace for a Typst package.
+- `publish (p) (WIP)`: Intended for publishing packages.
+- `clone (WIP)`: Clone an existing workspace.
+
+**Packages** (pkg): Manage Typst Packages
+- `tree (t)`: Display all packages in a directory as a tree.
+- `list (l)`: List all packages in a directory in a flat list.
+- `path (p)`: Show the path to the Typst packages folder.
+- `unlink (u)`: Remove a previously installed package.
+- `bulk-delete (bd)`: Delete multiple packages at once.
+
+**generate** (gen): Generate Shell Completions
+
+<div/>
+
+<div id="contribution">
 
 ## ❤️ Contribution
 
 If you want to help me develop this package, simply make an issue or a PR!
 
 By using this app, you contribute to it, thank you! <3
+
+</div>
