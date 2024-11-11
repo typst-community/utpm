@@ -76,6 +76,7 @@ pub struct Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+
 impl Error {
     pub fn new(kind: ErrorKind, message: impl Into<String>) -> Self {
         Self {
