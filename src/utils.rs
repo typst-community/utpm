@@ -46,6 +46,10 @@ pub fn symlink_all(
     symlink_dir(origin, new_path)
 }
 
+/// (Warning) Not implemented yet
+/// 
+/// Create an object to track the progression
+/// of downloaded packages from typst for the user
 pub struct ProgressPrint {}
 
 impl Progress for ProgressPrint {
