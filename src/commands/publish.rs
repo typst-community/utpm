@@ -41,9 +41,9 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     info!("Path: {}", path_curr.to_str().unwrap());
 
-    let version = config.package.version.to_string();
+    let version: String = config.package.version.to_string();
     let name: String = config.package.name.into();
-    let re = regex_package();
+    let re: regex::Regex = regex_package();
 
     let package_format = format!("@preview/{name}:{version}");
 
@@ -159,7 +159,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         Err(_) => todo!(),
     };
 
-    let repo = pages.items.iter().find(|f| match &f.forks_url {
+    let repo: Option<&octocrab::models::Repository> = pages.items.iter().find(|f| match &f.forks_url {
         None=>"",
         Some(a) => a.as_str(), 
     } == TYPST_PACKAGE_URL );
