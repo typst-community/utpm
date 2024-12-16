@@ -43,6 +43,8 @@ pub enum ErrorKind {
 }
 
 impl ErrorKind {
+    // TODO: Remake this system
+    /// Create a message when there isn't one provided (depreciated)
     pub fn message(&self) -> String {
         match self {
             ErrorKind::CurrentDir => "There is no current directory set.".into(),
@@ -62,6 +64,7 @@ impl ErrorKind {
         }
     }
 }
+
 
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

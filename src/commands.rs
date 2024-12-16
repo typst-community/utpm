@@ -96,7 +96,7 @@ pub struct CreateInitArgs {
     #[clap(value_delimiter = ',')]
     disciplines: Option<Vec<Discipline>>,
 
-    // Add a link to your template. Example: "./template.typ"
+    /// Add a link to your template. Example: "./template.typ"
     #[arg(long, requires = "template")]
     template_path: Option<String>,
 

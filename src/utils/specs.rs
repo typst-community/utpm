@@ -18,6 +18,7 @@ impl Extra {
         }
     }
 
+    /// Represent the `[tool.utpm]`` property on a `typst.toml` file
     pub fn new(namespace: Option<String>, dependencies: Option<Vec<String>>) -> Self {
         Self {
             namespace,
@@ -25,7 +26,3 @@ impl Extra {
         }
     }
 }
-
-// #[derive(Debug, ValueEnum, Serialize, Deserialize, Clone, PartialEq, Eq, EnumString)]
-// #[strum(serialize_all = "lowercase")]
-// #[clap(rename_all = "lower")]
