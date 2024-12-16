@@ -3,8 +3,14 @@ build = "build.rs"
 name = "utpm"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "UTPM is a package manager for local and remote Typst packages. Quickly create and manage projects and templates on your system, and publish them directly to Typst Universe."
+authors = ["Thomas QUEMIN <tquemin@thumus.eu>"]
+documentation = "https://utpm.thumus.eu"
+repository = "https://github.com/Thumuss/utpm"
+license = "MIT"
+keywords = ["typst", "packages"]
+categories = ["command-line-utilities"]
+exclude = ["/target", "/.github"]
 
 [dependencies]
 dirs = "5.0"
