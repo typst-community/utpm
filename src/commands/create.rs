@@ -11,6 +11,7 @@ use owo_colors::OwoColorize;
 use semver::Version;
 use toml::Table;
 use tracing::{info, instrument, trace, warn};
+
 use typst_project::manifest::{
     author::{Author, Website},
     categories::Category,

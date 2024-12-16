@@ -1,0 +1,3 @@
+[submodule "typst-project"]
+	path = dependencies/typst-project
+	url = git@github.com:tingerrr/typst-project
