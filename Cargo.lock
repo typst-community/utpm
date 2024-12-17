@@ -617,15 +617,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
-name = "email_address"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1019fa28f600f5b581b7a603d515c3f1635da041ca211b5055804788673abfe"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "embedded-io"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2691,23 +2682,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "typst-project"
-version = "0.1.0"
-dependencies = [
- "bitflags 2.6.0",
- "email_address",
- "semver",
- "serde",
- "spdx",
- "strum",
- "thiserror",
- "toml",
- "toml_edit",
- "unicode-ident",
- "unscanny",
-]
-
-[[package]]
 name = "typst-syntax"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2981,7 +2955,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "typst-kit",
- "typst-project",
  "typst-syntax",
 ]
 
