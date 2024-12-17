@@ -1,3 +1,6 @@
+
+/// Load automatically your manifest (typst.toml).
+/// Can specify (or not) the path to the manifest.
 #[macro_export]
 macro_rules! load_manifest {
     () => {
@@ -14,6 +17,8 @@ macro_rules! load_manifest {
     };
 }
 
+/// Write data to your manifest (typst.toml) 
+/// Can specify (or not) your path. Data must be provided.
 #[macro_export]
 macro_rules! write_manifest {
     ($var:expr => $path:expr) => {

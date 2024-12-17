@@ -59,9 +59,43 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let path_packages: String = default_typst_packages()?;
     let path_packages_new: String = format!("{path_packages}/packages/preview/{name}/{version}");
 
+    // Github handle
+
+    let crab = Octocrab::builder()
+        .personal_token(env::var("UTPM_GITHUB_TOKEN").expect("Should have a github token in \"UTPM_GITHUB_TOKEN\""))
+        .build()
+        .unwrap();
+
+    let pages = match crab
+        .current()
+        .list_repos_for_authenticated_user()
+        .visibility("public")
+        .send()
+        .await
+    {
+        Ok(a) => a,
+        Err(_) => todo!(),
+    };
+
+    let repo: Option<&octocrab::models::Repository> = pages.items.iter().find(|f| match &f.forks_url {
+        None=>"",
+        Some(a) => a.as_str(), 
+    } == TYPST_PACKAGE_URL );
+
+    let fork: Url;
+    
+    if let Some(rep) = repo {
+        fork = rep.url.clone();
+    } else {
+        match crab.repos("typst", "packages").create_fork().send().await {
+          Ok(val) => fork = Url::parse(val.ssh_url.unwrap().as_str()).expect(""),
+          Err(_) => return Err(Error::empty(ErrorKind::GithubHandle)) 
+        };
+    }
+
     // Download typst/packages
 
-    update_git_packages(path_packages, TYPST_PACKAGE_URL)?;
+    update_git_packages(path_packages, fork.as_str())?;
 
     info!("Path to the new package {}", path_packages_new);
 
@@ -142,35 +176,6 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     info!("files copied to {path_packages_new}");
-
-    let crab = Octocrab::builder()
-        .personal_token(env::var("UTPM_GITHUB_TOKEN").unwrap())
-        .build()
-        .unwrap();
-
-    let pages = match crab
-        .current()
-        .list_repos_for_authenticated_user()
-        .visibility("public")
-        .send()
-        .await
-    {
-        Ok(a) => a,
-        Err(_) => todo!(),
-    };
-
-    let repo: Option<&octocrab::models::Repository> = pages.items.iter().find(|f| match &f.forks_url {
-        None=>"",
-        Some(a) => a.as_str(), 
-    } == TYPST_PACKAGE_URL );
-
-    let fork: &Url;
-
-    if let Some(rep) = repo {
-        fork = &rep.url;
-    } else {
-        crab.repos("", "").create_fork().send().await;
-    }
 
     Ok(true)
 }

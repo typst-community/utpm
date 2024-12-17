@@ -97,22 +97,25 @@ pub struct InitArgs {
     #[clap(value_delimiter = ',')]
     exclude: Option<Vec<String>>,
 
-    /// Namespace
+    /// Namespace to put your package
     #[arg(short = 'N', long)]
     namespace: Option<String>,
 
-    /// Populate
+    /// Add examples file to your projects.
     #[arg(short = 'p', long)]
     populate: bool,
 
+    /// Add categories to your typst.toml
     #[arg(short = 'C', long)]
     #[clap(value_delimiter = ',')]
     categories: Option<Vec<Category>>,
 
+    /// Add disciplines to your typst.toml
     #[arg(short = 'D', long)]
     #[clap(value_delimiter = ',')]
     disciplines: Option<Vec<Discipline>>,
 
+    /// Add a link to your template. Example: "./template.typ"
     #[arg(long, requires = "template")]
     template_path: Option<String>,
 
@@ -292,6 +295,7 @@ pub enum Packages {
     #[cfg(feature = "unlink")]
     Unlink(UnlinkArgs),
 
+    /// Delete multiple packages/namespace at once
     #[command(visible_alias = "bd")]
     #[cfg(feature = "bulk_delete")]
     BulkDelete(BulkDeleteArgs),
@@ -334,12 +338,12 @@ pub enum Workspace {
     #[cfg(feature = "init")]
     Init(InitArgs),
 
-    /// WIP
+    /// Publish directly your packages to typst universe. (WIP)
     #[command(visible_alias = "p")]
     #[cfg(feature = "publish")]
     Publish(PublishArgs),
 
-    /// WIP
+    /// Clone like a git clone packages from typst universe or your local directory
     #[command()]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
@@ -386,7 +390,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Gives you more information, permet debug.
+    /// Gives you more information, permit debug.
     #[arg(short = 'v', long)]
     pub verbose: Option<LevelFilter>,
 }
@@ -399,7 +403,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Gives you more information, permet debug.
+    /// Gives you more information, permit debug.
     #[arg(short = 'v', long)]
     pub verbose: Option<LevelFilter>,
 }

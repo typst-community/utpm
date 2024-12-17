@@ -21,7 +21,7 @@ use typst_project::{
         package::Package,
         tool::Tool,
         Manifest,
-    },
+    }
 };
 
 use crate::{

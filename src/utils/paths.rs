@@ -18,6 +18,9 @@ pub const UTPM_PATH: &str = "/utpm";
 pub const MANIFEST_PATH: &str = "/typst.toml";
 pub const LOCAL_PACKAGES: &str = "/git-packages";
 
+/// Get the path to your data directory.
+/// Can be edited by using `UTPM_DATA_DIR` env. 
+/// Used for getting your local packages.
 pub fn get_data_dir() -> Result<String> {
     match env::var("UTPM_DATA_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
@@ -31,6 +34,9 @@ pub fn get_data_dir() -> Result<String> {
     }
 }
 
+/// Get the path to your home directory.
+/// Can be edited by using `UTPM_HOME_DIR` env.
+/// Used for getting your ssh keys when running `publish` command.
 pub fn get_home_dir() -> Result<String> {
     let err_hd = Error::empty(ErrorKind::HomeDir);
     match env::var("UTPM_HOME_DIR") {
@@ -45,6 +51,9 @@ pub fn get_home_dir() -> Result<String> {
     }
 }
 
+/// Get the path to your cache directory.
+/// Can be edited by using `UTPM_CACHE_DIR` env.
+/// Used for getting your downloaded packages from typst registry.
 pub fn get_cache_dir() -> Result<String> {
     match env::var("UTPM_CACHE_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
@@ -56,6 +65,9 @@ pub fn get_cache_dir() -> Result<String> {
     }
 }
 
+/// Get the path to your ssh directory.
+/// Can be edited by using `UTPM_SSH_DIR` env.
+/// Used for getting your ssh keys for the `publish` command.
 pub fn get_ssh_dir() -> Result<String> {
     match env::var("UTPM_SSH_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
@@ -63,14 +75,18 @@ pub fn get_ssh_dir() -> Result<String> {
     }
 }
 
+/// Get the path to your downloaded packages.
 pub fn c_packages() -> Result<String> {
     Ok(get_cache_dir()? + TYPST_PACKAGE_PATH)
 }
 
+/// Get the path to your local packages.
 pub fn d_packages() -> Result<String> {
     Ok(get_data_dir()? + TYPST_PACKAGE_PATH)
 }
 
+/// Get the path to your utpm files.
+/// Used to get and set your temporary files.
 pub fn datalocalutpm() -> Result<String> {
     Ok(get_data_dir()? + UTPM_PATH)
 }
@@ -79,10 +95,10 @@ pub fn default_typst_packages() -> Result<String> {
     Ok(datalocalutpm()? + LOCAL_PACKAGES)
 }
 
-pub fn d_utpm() -> Result<String> {
-    Ok(d_packages()? + UTPM_PATH)
-}
 
+/// Get the path to your current directory.
+/// Can be edited by using `UTPM_CURRENT_DIR` env.
+/// Used to write and read yout `typst.toml` file.
 pub fn get_current_dir() -> Result<String> {
     match env::var("UTPM_CURRENT_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),

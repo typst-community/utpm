@@ -64,11 +64,14 @@ use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, La
 fn main() {
     let x = Cli::parse();
 
+    // Fetching variables from the environment.
     let debug_str: String = match env::var("UTPM_DEBUG") {
         Err(_) => "warn".into(),
         Ok(val) => val,
     };
 
+    // Transform the env var into a levelfilter to
+    // filter logs from the tracing
     let level_filter: LevelFilter = match LevelFilter::from_str(debug_str.as_str()) {
         Ok(val) => val,
         Err(_) => LevelFilter::WARN,

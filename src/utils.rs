@@ -69,6 +69,10 @@ pub fn regex_packagename() -> Regex {
 }
 
 //todo: impl
+/// (Warning) Not implemented yet
+/// 
+/// Create an object to track the progression
+/// of downloaded packages from typst for the user
 pub struct ProgressPrint {}
 
 impl Progress for ProgressPrint {
