@@ -39,11 +39,63 @@
 <div id="install">
 
 ## ⚡Install
+### With cargo
 Requires Cargo and Rust. 
 
 ```bash
 $ cargo install --git https://github.com/Thumuss/utpm
 ```
+
+<details>
+<summary>
+  
+### With nix
+
+</summary>
+
+#### Nix with flakes enabled :
+
+Get utpm for a bash session without installing it :
+
+```bash
+$ nix shell github:Thumuss/utpm
+```
+
+Or if you use NixOS or home-manager with a flake, install it permanently in your `flake.nix` or your modules :
+
+```nix
+{
+  inputs.utpm.url = "github:Thumuss/utpm";
+  # ...
+
+  outputs = { self, nixpkgs, ... }@inputs: {
+    # change `yourhostname` or `yourusername` to your actual hostname or username
+    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem { #or homeConfigurations.yourusername
+      system = "x86_64-linux";
+      modules = [
+        # ...
+        {
+          environment.systemPackages = [ inputs.utpm.packages.${system}.default ]; #or home.packages
+        }
+      ];
+    };
+  };
+}
+```
+
+#### Nix without flakes :
+
+Clone the repo and then nix-build into the utpm directory :
+
+```bash
+git clone https://github.com/Thumuss/utpm.git
+cd utpm
+nix-build
+./result/bin/utpm
+```
+Utpm will be at ./result/bin/utpm
+
+</details>
 <div/>
 
 <div id="usage">
