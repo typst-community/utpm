@@ -1,2 +1,6 @@
 /target
 .vscode
+
+#nix
+.direnv
+result
