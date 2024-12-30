@@ -23,6 +23,9 @@ pub mod state;
 
 use self::state::Result;
 
+#[cfg(any(feature = "publish"))]
+use octocrab::models::UserProfile;
+
 /// Copy all subdirectories from a point to an other
 /// From https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
 /// Edited to prepare a ci version
@@ -70,7 +73,7 @@ pub fn regex_packagename() -> Regex {
 
 //todo: impl
 /// (Warning) Not implemented yet
-/// 
+///
 /// Create an object to track the progression
 /// of downloaded packages from typst for the user
 pub struct ProgressPrint {}
@@ -83,15 +86,17 @@ impl Progress for ProgressPrint {
     fn print_finish(&mut self, _state: &DownloadState) {}
 }
 
+/// Get remote indexes into local indexes
 #[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
 #[instrument]
 pub fn update_git_packages<P>(path_packages: P, url: &str) -> Result<Repository>
 where
     P: AsRef<Path> + AsRef<OsStr> + Debug,
 {
+    use crate::load_creds;
+
     create_dir_all(&path_packages)?;
     let repo: Repository;
-
     let sshpath = get_ssh_dir()?;
     let ed: String = sshpath.clone() + "/id_ed25519";
     let rsa: String = sshpath + "/id_rsa";
@@ -105,31 +110,11 @@ where
             }
         }
     };
-
     info!(path = val);
     let mut callbacks = RemoteCallbacks::new();
-    callbacks.credentials(|_, username_from_url, _| {
-        let binding: String =
-            env::var("UTPM_USERNAME").unwrap_or(username_from_url.unwrap_or("git").to_string());
-        let username: &str = binding.as_str();
-        match Cred::ssh_key_from_agent(username) {
-            Ok(cred) => Ok(cred),
-            Err(_) => Ok(match env::var("UTPM_PASSPHRASE") {
-                Ok(s) => {
-                    info!(passphrase = true);
-                    Cred::ssh_key(username, None, Path::new(&val), Some(s.as_str()))?
-                }
-                Err(_) => {
-                    info!(passphrase = false);
-                    Cred::ssh_key(username, None, Path::new(&val), None)?
-                }
-            }),
-        }
-    });
-
+    load_creds!(callbacks, val);
     let mut fo = FetchOptions::new();
     fo.remote_callbacks(callbacks);
-
     if has_content(&path_packages)? {
         info!("Content found, starting a 'git pull origin main'");
         repo = Repository::open(path_packages)?;
@@ -159,6 +144,77 @@ where
         info!("Package cloned");
     };
     Ok(repo)
+}
+
+#[cfg(any(feature = "publish"))]
+pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> Result<()> {
+    use git2::{IndexAddOption, Oid, PushOptions, Signature};
+    use tracing::{span, Level};
+
+    use crate::load_creds;
+
+    // Can't use instrument here.
+    let spans = span!(Level::INFO, "push_git_packages");
+    let _guard = spans.enter();
+
+    // Real start
+
+    info!("Starting commit");
+    let uid = user.id.to_string();
+
+    let author = Signature::now(
+        user.name.unwrap_or(uid.clone()).as_str(),
+        user.email.unwrap_or(format!("{uid}@github.com")).as_str(),
+    )?;
+
+    let mut index = repo.index()?;
+
+    index.add_all(&["."], IndexAddOption::DEFAULT, None)?;
+
+    index.write()?;
+    let oid = index.write_tree()?;
+
+    info!("Index added");
+
+    let last_commit = repo.head()?.peel_to_commit()?;
+    let tree = repo.find_tree(oid)?;
+
+    let oid: Oid = repo.commit(
+        Some("HEAD"),
+        &author,
+        &author,
+        message,
+        &tree,
+        &[&last_commit],
+    )?;
+    info!(id = oid.to_string(), "Commit created");
+
+    // From above
+    let sshpath = get_ssh_dir()?;
+    let ed: String = sshpath.clone() + "/id_ed25519";
+    let rsa: String = sshpath + "/id_rsa";
+    let val: String = match env::var("UTPM_KEYPATH") {
+        Ok(val) => val,
+        Err(_) => {
+            if check_path_file(&ed) {
+                ed
+            } else {
+                rsa
+            }
+        }
+    };
+    info!(path = val);
+    let mut callbacks = RemoteCallbacks::new();
+    load_creds!(callbacks, val);
+
+    let mut po = PushOptions::new();
+    po.remote_callbacks(callbacks);
+
+    repo.find_remote("origin")?
+        .push::<&str>(&["refs/heads/main"], Some(&mut po))?;
+
+    
+    return Ok(());
 }
 
 #[cfg(test)]

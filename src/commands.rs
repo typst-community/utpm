@@ -175,6 +175,10 @@ pub struct PublishArgs {
     #[arg(short = 'c')]
     custom_ignore: Option<PathBuf>,
 
+    /// Specify a message for the new commit.
+    #[arg(short = 'm')]
+    message: Option<String>,
+
     /// Won't create a PR on typst/packages
     #[arg(short = 'p', default_value_t = false)]
     prepare_only: bool,

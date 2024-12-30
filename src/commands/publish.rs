@@ -1,6 +1,6 @@
 use crate::utils::specs::Extra;
 use crate::utils::state::{Error, ErrorKind};
-use crate::utils::{regex_package, update_git_packages};
+use crate::utils::{push_git_packages, regex_package, update_git_packages};
 use std::env;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
@@ -13,10 +13,10 @@ use crate::utils::paths::{
 };
 use crate::utils::{paths::get_current_dir, state::Result};
 use ignore::overrides::OverrideBuilder;
+use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;
 use tracing::{error, info, instrument, trace};
 use typst_project::manifest::Manifest;
-use url::Url;
 
 use super::PublishArgs;
 
@@ -62,7 +62,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     // Github handle
 
     let crab = Octocrab::builder()
-        .personal_token(env::var("UTPM_GITHUB_TOKEN").expect("Should have a github token in \"UTPM_GITHUB_TOKEN\""))
+        .personal_token(
+            env::var("UTPM_GITHUB_TOKEN")
+                .expect("Should have a github token in \"UTPM_GITHUB_TOKEN\""),
+        )
         .build()
         .unwrap();
 
@@ -79,23 +82,35 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     let repo: Option<&octocrab::models::Repository> = pages.items.iter().find(|f| match &f.forks_url {
         None=>"",
-        Some(a) => a.as_str(), 
+        Some(a) => a.as_str()
     } == TYPST_PACKAGE_URL );
 
-    let fork: Url;
-    
+    let fork: String;
+    let name_package = format!("{}-{}", name.clone(), config.package.version.to_string());
+
     if let Some(rep) = repo {
-        fork = rep.url.clone();
+        fork = rep.url.clone().into();
     } else {
-        match crab.repos("typst", "packages").create_fork().send().await {
-          Ok(val) => fork = Url::parse(val.ssh_url.unwrap().as_str()).expect(""),
-          Err(_) => return Err(Error::empty(ErrorKind::GithubHandle)) 
+        // Format into: "mypackage-1.0.0"
+        // Github doesn't allow ':'
+        match crab
+            .repos("typst", "packages")
+            .create_fork()
+            .name(&name_package)
+            .send()
+            .await
+        {
+            Ok(val) => fork = format!("git@github.com:{}.git", val.full_name.expect("Didn't fork")),
+            Err(err) => {
+                println!("{:?}", err);
+                return Err(Error::empty(ErrorKind::General));
+            }
         };
     }
 
     // Download typst/packages
 
-    update_git_packages(path_packages, fork.as_str())?;
+    let repos = update_git_packages(path_packages, fork.as_str())?;
 
     info!("Path to the new package {}", path_packages_new);
 
@@ -176,6 +191,55 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     info!("files copied to {path_packages_new}");
+
+    // Push
+
+    info!("Getting information from github");
+
+    let author_user: Author = crab.current().user().await?;
+    let user: UserProfile = crab.users_by_id(author_user.id).profile().await?;
+
+    let us = &user;
+    info!(
+        email = us.email,
+        id = us.id.to_string(),
+        name = us.name.clone().unwrap()
+    );
+
+    let name_replaced = name_package.replace('-', ":");
+    let msg = cmd
+        .message
+        .clone()
+        .unwrap_or(format!("{} using utpm", &name_replaced));
+
+    push_git_packages(repos, user.clone(), msg.as_str())?;
+
+    info!("Ended push");
+
+    // Pull request
+
+    crab.pulls("typst", "packages")
+        .create(name_replaced.as_str(), format!("{}:main", us.name.clone().unwrap()), "base")
+        .body("
+I am submitting
+- [ ] a new package
+- [ ] an update for a package
+
+
+Description: Explain what the package does and why it's useful.
+
+I have read and followed the submission guidelines and, in particular, I
+- [ ] selected a name that isn't the most obvious or canonical name for what the package does
+- [ ] added a `typst.toml` file with all required keys
+- [ ] added a `README.md` with documentation for my package
+- [ ] have chosen a license and added a `LICENSE` file or linked one in my `README.md`
+- [ ] tested my package locally on my system and it worked
+- [ ] `exclude`d PDFs or README images, if any, but not the LICENSE
+
+- [ ] ensured that my package is licensed such that users can use and distribute the contents of its template directory without restriction, after modifying them through normal use.
+") // todo: body
+        .send()
+        .await?;
 
     Ok(true)
 }

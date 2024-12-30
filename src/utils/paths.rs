@@ -19,7 +19,7 @@ pub const MANIFEST_PATH: &str = "/typst.toml";
 pub const LOCAL_PACKAGES: &str = "/git-packages";
 
 /// Get the path to your data directory.
-/// Can be edited by using `UTPM_DATA_DIR` env. 
+/// Can be edited by using `UTPM_DATA_DIR` env.
 /// Used for getting your local packages.
 pub fn get_data_dir() -> Result<String> {
     match env::var("UTPM_DATA_DIR") {
@@ -94,7 +94,6 @@ pub fn datalocalutpm() -> Result<String> {
 pub fn default_typst_packages() -> Result<String> {
     Ok(datalocalutpm()? + LOCAL_PACKAGES)
 }
-
 
 /// Get the path to your current directory.
 /// Can be edited by using `UTPM_CURRENT_DIR` env.

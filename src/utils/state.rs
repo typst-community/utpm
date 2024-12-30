@@ -64,7 +64,6 @@ impl ErrorKind {
     }
 }
 
-
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -77,7 +76,6 @@ pub struct Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-
 
 impl Error {
     pub fn new(kind: ErrorKind, message: impl Into<String>) -> Self {
@@ -150,3 +148,5 @@ impl_from!(toml::ser::Error => Serialize);
 impl_from!(toml::de::Error => Deserialize);
 #[cfg(any(feature = "publish"))]
 impl_from!(ignore::Error => General);
+#[cfg(any(feature = "publish"))]
+impl_from!(octocrab::Error => General); // todo
