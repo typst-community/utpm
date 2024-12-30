@@ -4,12 +4,12 @@
 
 > _Unofficial Typst package manager_
 
-**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.
+**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.  
 
 [![Thumuss - utpm](https://img.shields.io/static/v1?label=Thumuss&message=utpm&color=blue&logo=github)](https://github.com/Thumuss/utpm "Go to GitHub repo")
 [![stars - utpm](https://img.shields.io/github/stars/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
 [![forks - utpm](https://img.shields.io/github/forks/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
-`<br/>`
+<br/>
 [![GitHub tag](https://img.shields.io/github/tag/Thumuss/utpm?include_prereleases=&sort=semver&color=blue)](https://github.com/Thumuss/utpm/releases/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 [![issues - utpm](https://img.shields.io/github/issues/Thumuss/utpm)](https://github.com/Thumuss/utpm/issues)
@@ -17,42 +17,90 @@
 </div>
 
 ## 🔥 Features
-
-- [X] ✨Create packages rapidly (`utpm workspace create`)
-  - [X] ⏯️ Alias shorthand e.g. (`workspace = ws`)
-  - [X] ⌨️ Intuitive Clap CLI
-- [X] 🛠 Manage existing packages (`utpm ws link --no-copy`)
-  - [X] 🔗 Link remote and local packages (`utpm workspace link`)
-  - [X] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
-- [X] 🌐 Dependencies outside of Typst!
-  - [X] 📦 Support for third party application and plugins
-  - [X] 🔒 Portable installer (limited for now)
-- [X] 📃 Visualization
-  - [X] 🗃️ list `utpm pkg list`
-  - [X] 🌲 tree `utpm pkg tree`
+- [x] ✨Create packages rapidly (`utpm workspace create`)
+  - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
+  - [x] ⌨️ Intuitive Clap CLI
+- [x] 🛠 Manage existing packages (`utpm ws link --no-copy`)
+  - [x] 🔗 Link remote and local packages (`utpm workspace link`)
+  - [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
+- [x] 🌐 Dependencies outside of Typst!
+  - [x] 📦 Support for third party application and plugins
+  - [x] 🔒 Portable installer (limited for now)
+- [x] 📃 Visualization 
+  - [x] 🗃️ list `utpm pkg list`
+  - [x] 🌲 tree `utpm pkg tree`
 - [ ] 🚀 Automated publication directly to Typst Universe!
 
 **_...And more soon!_**
 
-> [!WARNING]
+> [!WARNING]  
 > **UTPM** is still in active development, and some features may not be fully implemented. Contributions are welcome!
 
 <div id="install">
 
 ## ⚡Install
-
-Requires Cargo and Rust.
+### With cargo
+Requires Cargo and Rust. 
 
 ```bash
 $ cargo install --git https://github.com/Thumuss/utpm
 ```
 
+<details>
+<summary>
+  
+### With nix
+
+</summary>
+
+#### Nix with flakes enabled :
+
+Get utpm for a bash session without installing it :
+
+```bash
+$ nix shell github:Thumuss/utpm
+```
+
+Or if you use NixOS or home-manager with a flake, install it permanently in your `flake.nix` or your modules :
+
+```nix
+{
+  inputs.utpm.url = "github:Thumuss/utpm";
+  # ...
+
+  outputs = { self, nixpkgs, ... }@inputs: {
+    # change `yourhostname` or `yourusername` to your actual hostname or username
+    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem { #or homeConfigurations.yourusername
+      system = "x86_64-linux";
+      modules = [
+        # ...
+        {
+          environment.systemPackages = [ inputs.utpm.packages.${system}.default ]; #or home.packages
+        }
+      ];
+    };
+  };
+}
+```
+
+#### Nix without flakes :
+
+Clone the repo and then nix-build into the utpm directory :
+
+```bash
+git clone https://github.com/Thumuss/utpm.git
+cd utpm
+nix-build
+./result/bin/utpm
+```
+Utpm will be at ./result/bin/utpm
+
+</details>
 <div/>
 
 <div id="usage">
 
-## 🎰 Usage
-
+## 🎰 Usage 
 Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
 
 ```
@@ -71,7 +119,6 @@ Options:
 ```
 
 **Workspace** (ws): Manage Your Project Workspace
-
 - `link (l)`: Link your project to existing directories.
 - `create (c) (Deprecated)`: Creates a typst.toml file. Use init instead.
 - `install (i)`: Install dependencies listed in typst.toml.
@@ -82,7 +129,6 @@ Options:
 - `clone (WIP)`: Clone an existing workspace.
 
 **Packages** (pkg): Manage Typst Packages
-
 - `tree (t)`: Display all packages in a directory as a tree.
 - `list (l)`: List all packages in a directory in a flat list.
 - `path (p)`: Show the path to the Typst packages folder.
@@ -90,12 +136,6 @@ Options:
 - `bulk-delete (bd)`: Delete multiple packages at once.
 
 **generate** (gen): Generate Shell Completions
-
-### The basic workflow
-
-- _Firstly, you'll need to [create](#create) your `typst.toml` file!_
-- _Then, edit your file! Like `index.typ` or `lib.typ`_
-- _Finally, [link](#link) your new package to typst!_
 
 <div/>
 
