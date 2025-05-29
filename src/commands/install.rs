@@ -89,7 +89,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         }
     };
 
-    let typstfile = path.clone() + MANIFEST_FILE;
+    let typstfile = path.clone() + "/" + MANIFEST_FILE;
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
         println!("{}", format!("x {}", origin));
