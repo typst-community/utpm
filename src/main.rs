@@ -27,8 +27,8 @@ use commands::link;
 use commands::list;
 #[cfg(feature = "path")]
 use commands::package_path;
-#[cfg(feature = "publish")]
-use commands::publish;
+// #[cfg(feature = "publish")]
+// use commands::publish;
 #[cfg(feature = "tree")]
 use commands::tree;
 #[cfg(feature = "unlink")]
@@ -109,8 +109,8 @@ fn main() {
             Workspace::Delete(cmd) => delete::run(&mut cmd.clone()),
             #[cfg(feature = "init")]
             Workspace::Init(cmd) => init::run(&mut cmd.clone()),
-            #[cfg(feature = "publish")]
-            Workspace::Publish(cmd) => publish::run(cmd),
+            // #[cfg(feature = "publish")]
+            // Workspace::Publish(cmd) => publish::run(cmd),
             #[cfg(feature = "clone")]
             Workspace::Clone(cmd) => clone::run(cmd),
         },

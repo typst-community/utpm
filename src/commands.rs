@@ -172,6 +172,10 @@ pub struct PublishArgs {
     #[arg(short = 'x', default_value_t = true)]
     git_exclude: bool,
 
+    /// Bypass the warning
+    #[arg(default_value_t = false)]
+    bypass_warning: bool,
+
     #[arg(short = 'c')]
     custom_ignore: Option<PathBuf>,
 
@@ -343,9 +347,9 @@ pub enum Workspace {
     Init(InitArgs),
 
     /// Publish directly your packages to typst universe. (WIP)
-    #[command(visible_alias = "p")]
-    #[cfg(feature = "publish")]
-    Publish(PublishArgs),
+    // #[command(visible_alias = "p")]
+    // #[cfg(feature = "publish")]
+    // Publish(PublishArgs),
 
     /// Clone like a git clone packages from typst universe or your local directory
     #[command()]
