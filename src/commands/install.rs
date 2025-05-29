@@ -2,49 +2,71 @@ use std::{env, fs, path::Path};
 
 use crate::{
     commands::LinkArgs,
+    load_manifest,
     utils::{
+        copy_dir_all,
         paths::{
             check_path_dir, check_path_file, d_packages, datalocalutpm, get_current_dir,
             get_ssh_dir,
         },
-        state::{Error, ErrorKind, Responses, Result},
-        TypstConfig,
+        specs::Extra,
+        state::{Error, ErrorKind, Result},
     },
 };
-use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks, Repository};
-use owo_colors::OwoColorize;
+
+use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
+use tracing::{debug, instrument};
+use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};
 
 use super::{link, InstallArgs};
 
-pub fn run(cmd: &InstallArgs, res: &mut Responses) -> Result<bool> {
-    let path = format!("{}/tmp", datalocalutpm());
+#[instrument]
+pub fn run(cmd: &InstallArgs) -> Result<bool> {
+    let path = format!("{}/tmp", datalocalutpm()?);
     if check_path_dir(&path) {
         fs::remove_dir_all(path)?;
     }
-    init(cmd, res, 0)?;
+    init(cmd, 0)?;
     Ok(true)
 }
 
-pub fn init(cmd: &InstallArgs, res: &mut Responses, i: usize) -> Result<bool> {
-    let path = if cmd.url.is_none() {
-        get_current_dir()?
+#[instrument(skip(cmd))]
+pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
+    let path = if let Some(url) = &cmd.url {
+        let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
+        debug!("url is set to {}, creating {}", url, dir);
+        dir
     } else {
-        format!("{}/tmp/{}", datalocalutpm(), i)
+        let dir = get_current_dir()?;
+        debug!("url is none, current dir: {}", dir);
+        dir
     };
 
     if let Some(x) = &cmd.url {
         fs::create_dir_all(&path)?;
         let sshpath = get_ssh_dir()?;
-        let ed = sshpath.clone() + "/id_ed25519";
-        let rsa = sshpath + "/id_rsa";
-        let val = if check_path_file(&ed) { ed } else { rsa };
-        if x.starts_with("git") {
+        let ed: String = sshpath.clone() + "/id_ed25519";
+        let rsa: String = sshpath + "/id_rsa";
+        let val: String = match env::var("UTPM_KEYPATH") {
+            Ok(val) => val,
+            Err(_) => {
+                if check_path_file(&ed) {
+                    ed
+                } else {
+                    rsa
+                }
+            }
+        };
+        if x.starts_with("git") || x.starts_with("http") {
             let mut callbacks = RemoteCallbacks::new();
             callbacks.credentials(|_, username_from_url, _| {
-                match Cred::ssh_key_from_agent(username_from_url.unwrap_or("git")) {
+                let binding = env::var("UTPM_USERNAME")
+                    .unwrap_or(username_from_url.unwrap_or("git").to_string());
+                let username = binding.as_str();
+                match Cred::ssh_key_from_agent(username) {
                     Ok(cred) => Ok(cred),
                     Err(_) => Cred::ssh_key(
-                        username_from_url.unwrap_or("git"),
+                        username,
                         None,
                         Path::new(&val),
                         Some(
@@ -63,82 +85,66 @@ pub fn init(cmd: &InstallArgs, res: &mut Responses, i: usize) -> Result<bool> {
             builder.fetch_options(fo);
             builder.clone(&x, Path::new(&path))?;
         } else {
-            Repository::clone(&x, &path)?;
+            copy_dir_all(&x, &path)?;
         }
     };
 
-    let typstfile = path.clone() + "/typst.toml";
+    let typstfile = path.clone() + "/" + MANIFEST_FILE;
     if !check_path_file(&typstfile) {
-        return Err(Error::empty(ErrorKind::ConfigFile));
+        let origin = cmd.url.clone().unwrap_or("/".into());
+        println!("{}", format!("x {}", origin));
+        return Ok(false);
     }
-
-    let file = TypstConfig::load(&typstfile);
-    let utpm = file.utpm;
-    let namespace = utpm
-        .clone()
-        .unwrap_or(crate::utils::Extra {
-            version: None,
-            namespace: Some("local".to_string()),
-            dependencies: None,
-        })
-        .namespace
-        .unwrap_or("local".into());
-
+    let file = load_manifest!(&path);
+    let utpm = if let Some(value) = file.tool {
+        value.get_section("utpm")?.unwrap_or(Extra::default())
+    } else {
+        Extra::default()
+    };
+    let namespace = utpm.namespace.unwrap_or("local".into());
     if check_path_dir(&format!(
         "{}/{}/{}/{}",
-        d_packages(),
+        d_packages()?,
         namespace,
         &file.package.name,
         &file.package.version
     )) {
         println!(
             "{}",
-            format!("~ {}:{}", file.package.name, file.package.version).bright_black()
+            format!("~ {}:{}", file.package.name, file.package.version)
         );
         return Ok(true);
     }
 
-    println!("{}", format!("Installing {}...", file.package.name).bold());
-    if let Some(fl) = utpm {
-        if let Some(vec_depend) = fl.dependencies {
-            let mut y = 0;
-            let vec_of_dependencies = vec_depend
-                .iter()
-                .map(|a| -> Result<bool> {
-                    y += 1;
-                    let ins = InstallArgs {
-                        force: cmd.force,
-                        url: Some(a.to_string()),
-                    };
-                    init(&ins, res, i * vec_depend.len() + y)?;
-                    Ok(true)
-                })
-                .collect::<Vec<Result<bool>>>();
-
-            for result_dependencies in vec_of_dependencies {
-                result_dependencies?;
-            }
-        }
+    println!("{}", format!("Installing {}...", file.package.name));
+    if let Some(vec_depend) = utpm.dependencies {
+        let mut y = 0;
+        vec_depend
+            .iter()
+            .map(|a| -> Result<bool> {
+                y += 1;
+                let ins = InstallArgs {
+                    force: cmd.force,
+                    url: Some(a.to_string()),
+                };
+                init(&ins, i * vec_depend.len() + y)?;
+                Ok(true)
+            })
+            .collect::<Result<Vec<bool>>>()?;
     }
-
     if !cmd.url.is_none() {
         let lnk = LinkArgs {
             force: cmd.force,
             no_copy: false,
         };
-
-        link::run(&lnk, Some(path.clone()), res)?; //TODO: change here too
+        link::run(&lnk, Some(path.clone()), false)?; //TODO: change here too
         fs::remove_dir_all(&path)?;
         println!(
             "{}",
-            format!("+ {}:{}", file.package.name, file.package.version).bright_green()
+            format!("+ {}:{}", file.package.name, file.package.version)
         );
     } else {
-        println!(
-            "{}",
-            "* Installation complete! If you want to use it as a lib, just do a `utpm link`!"
-                .bold()
-        )
+        println!("* Installation complete! If you want to use it as a lib, just do a `utpm link`!")
     }
 
     Ok(true)

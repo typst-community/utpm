@@ -1,82 +1,139 @@
 use std::{
-    env::current_dir,
-    fs::{read, read_dir, symlink_metadata},
+    env::{self, current_dir},
+    fs::{self, read, read_dir, symlink_metadata},
+    path::{self, Path},
+    result::Result as R,
 };
+
+use dirs::cache_dir;
 
 use super::state::{Error, ErrorKind, Result};
 
-#[cfg(not(feature = "portable"))]
-pub fn get_data_dir() -> String {
-    match dirs::data_local_dir() {
-        Some(dir) => match dir.to_str() {
-            Some(string) => String::from(string),
-            None => String::from("/.local/share"), //default on linux
+pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
+pub const DATA_HOME_SHARE: &str = "/.local/share";
+pub const CACHE_HOME: &str = "~/.cache";
+pub const SSH_HOME: &str = "/.ssh";
+pub const TYPST_PACKAGE_PATH: &str = "/typst/packages";
+pub const UTPM_PATH: &str = "/utpm";
+pub const MANIFEST_PATH: &str = "/typst.toml";
+pub const LOCAL_PACKAGES: &str = "/git-packages";
+
+/// Get the path to your data directory.
+/// Can be edited by using `UTPM_DATA_DIR` env.
+/// Used for getting your local packages.
+pub fn get_data_dir() -> Result<String> {
+    match env::var("UTPM_DATA_DIR") {
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
+        _ => match dirs::data_local_dir() {
+            Some(dir) => match dir.to_str() {
+                Some(string) => Ok(String::from(string)),
+                None => Ok(String::from(DATA_HOME_SHARE)), //default on linux
+            },
+            None => Ok(String::from(DATA_HOME_SHARE)),
         },
-        None => String::from("/.local/share"),
     }
 }
 
+/// Get the path to your home directory.
+/// Can be edited by using `UTPM_HOME_DIR` env.
+/// Used for getting your ssh keys when running `publish` command.
 pub fn get_home_dir() -> Result<String> {
     let err_hd = Error::empty(ErrorKind::HomeDir);
-    match dirs::home_dir() {
-        Some(val) => match val.to_str() {
-            Some(v) => Ok(String::from(v)),
+    match env::var("UTPM_HOME_DIR") {
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
+        _ => match dirs::home_dir() {
+            Some(val) => match val.to_str() {
+                Some(v) => Ok(String::from(v)),
+                None => Err(err_hd),
+            },
             None => Err(err_hd),
         },
-        None => Err(err_hd),
     }
 }
 
+/// Get the path to your cache directory.
+/// Can be edited by using `UTPM_CACHE_DIR` env.
+/// Used for getting your downloaded packages from typst registry.
+pub fn get_cache_dir() -> Result<String> {
+    match env::var("UTPM_CACHE_DIR") {
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
+        _ => Ok(cache_dir()
+            .unwrap_or(CACHE_HOME.into())
+            .to_str()
+            .unwrap_or(CACHE_HOME)
+            .into()),
+    }
+}
+
+/// Get the path to your ssh directory.
+/// Can be edited by using `UTPM_SSH_DIR` env.
+/// Used for getting your ssh keys for the `publish` command.
 pub fn get_ssh_dir() -> Result<String> {
-    Ok(get_home_dir()? + "/.ssh")
-}
-
-#[cfg(feature = "portable")]
-pub fn get_data_dir() -> String {
-    get_current_dir().unwrap_or("./".to_string()) + "/utpmp"
-}
-
-pub fn d_packages() -> String {
-    get_data_dir() + "/typst/packages"
-}
-
-pub fn datalocalutpm() -> String {
-    get_data_dir() + "/utpm"
-}
-
-pub fn d_utpm() -> String {
-    d_packages() + "/utpm"
-}
-
-pub fn get_current_dir() -> Result<String> {
-    match current_dir() {
-        Ok(val) => match val.to_str() {
-            Some(v) => Ok(String::from(v)),
-            None => Err(Error::new(
-                ErrorKind::CurrentDir,
-                "There is no current directory.".into(),
-            )),
-        },
-        Err(val) => Err(Error::new(ErrorKind::CurrentDir, val.to_string())),
+    match env::var("UTPM_SSH_DIR") {
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
+        _ => Ok(get_home_dir()? + SSH_HOME),
     }
+}
+
+/// Get the path to your downloaded packages.
+pub fn c_packages() -> Result<String> {
+    Ok(get_cache_dir()? + TYPST_PACKAGE_PATH)
+}
+
+/// Get the path to your local packages.
+pub fn d_packages() -> Result<String> {
+    Ok(get_data_dir()? + TYPST_PACKAGE_PATH)
+}
+
+/// Get the path to your utpm files.
+/// Used to get and set your temporary files.
+pub fn datalocalutpm() -> Result<String> {
+    Ok(get_data_dir()? + UTPM_PATH)
+}
+
+pub fn default_typst_packages() -> Result<String> {
+    Ok(datalocalutpm()? + LOCAL_PACKAGES)
+}
+
+/// Get the path to your current directory.
+/// Can be edited by using `UTPM_CURRENT_DIR` env.
+/// Used to write and read yout `typst.toml` file.
+pub fn get_current_dir() -> Result<String> {
+    match env::var("UTPM_CURRENT_DIR") {
+        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
+        _ => match current_dir() {
+            Ok(val) => match val.to_str() {
+                Some(v) => Ok(String::from(v)),
+                None => Err(Error::new(
+                    ErrorKind::CurrentDir,
+                    "There is no current directory.",
+                )),
+            },
+            Err(val) => Err(Error::new(ErrorKind::CurrentDir, val.to_string())),
+        },
+    }
+}
+
+pub fn has_content(path: impl AsRef<Path>) -> Result<bool> {
+    Ok(fs::read_dir(path)?.collect::<R<Vec<_>, _>>()?.len() > 0)
 }
 
 pub fn current_package() -> Result<String> {
-    Ok(get_current_dir()? + "/typst.toml")
+    Ok(get_current_dir()? + MANIFEST_PATH)
 }
 
-pub fn check_path_dir(path: &String) -> bool {
+pub fn check_path_dir(path: impl AsRef<Path>) -> bool {
     read_dir(path).is_ok()
 }
 
-pub fn check_path_file(path: &String) -> bool {
+pub fn check_path_file(path: impl AsRef<Path>) -> bool {
     read(path).is_ok()
 }
 
-pub fn check_existing_symlink(path: &String) -> bool {
+pub fn check_existing_symlink(path: impl AsRef<Path>) -> bool {
     let x = match symlink_metadata(path) {
         Ok(val) => val,
-        Err(_) => return false,
+        _ => return false,
     };
     x.file_type().is_symlink()
 }
