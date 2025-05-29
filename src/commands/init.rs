@@ -39,7 +39,7 @@ use super::InitArgs;
 pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
     info!("Current dir: {}", curr);
-    let typ = curr.clone() + MANIFEST_FILE;
+    let typ = curr.clone() + "/" + MANIFEST_FILE;
     info!("Current typst file: {}", typ);
 
     let mut extra = Extra::default();
