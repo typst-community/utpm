@@ -27,7 +27,7 @@ build-nightly: format prepare
 copy:
     cp {{tjust}}/utpm {{bindir}}
 
-# 
+# Compress
 upx:
     upx --best --lzma {{tjust}}/utpm
 

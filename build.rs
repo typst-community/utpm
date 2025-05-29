@@ -1,6 +1,8 @@
-use shadow_rs;
+use shadow_rs::{self, BuildPattern, ShadowBuilder};
 
-fn main() -> shadow_rs::SdResult<()> {
+fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    shadow_rs::new()
+    ShadowBuilder::builder()
+        .build_pattern(BuildPattern::RealTime)
+        .build().unwrap();
 }
