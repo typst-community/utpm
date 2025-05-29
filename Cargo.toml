@@ -13,31 +13,30 @@ categories = ["command-line-utilities"]
 exclude = ["/target", "/.github"]
 
 [dependencies]
-dirs = "5.0"
+dirs = "6.0"
+serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-toml = { version = "^0.8.14", features = ["display"] }
-inquire = { version = "0.6.2", optional=true }
-semver = { version = "1.0.18", features = ["serde"] }
-spdx = { version = "0.10.2", features = ["text"], optional = true }
-clap = { version = "4.4.2", features = ["derive"] }
-git2 = { version = "^0.19.0", optional = true }
+serde_with = "3.12"
+toml = { version = "^0.8.20", features = ["display"] }
+inquire = "0.7.5"
+semver = { version = "1.0.25", features = ["serde"] }
+spdx = { version = "0.10.8", features = ["text"] }
+clap = { version = "4.5.29", features = ["derive"] }
+git2 = "^0.20.0"
+owo-colors = "4.1.0"
+strum = { version = "0.27.0", features = ["derive"] }
 typst-project = { git = "https://github.com/tingerrr/typst-project", rev = "8462942ef0c783acf339e715b5e24b2dba423de1" }
-openssl = { version = "0.10", features = ["vendored"] } # ?
-tracing = { version = "0.1.40", features = ["attributes"] }
-tracing-subscriber = "0.3.18"
-clap_complete = { version = "4.5.12", optional = true }
-shadow-rs = "0.31.1"
+openssl = { version = "0.10", features = ["vendored"] }
+tracing = { version = "0.1.41", features = ["attributes"] }
+tracing-subscriber = "0.3.19"
+clap_complete = "4.5.44"
+shadow-rs = "0.38.1"
 typst-kit = "0.12.0"
-typst-syntax = { version = "0.12.0", optional = true }
-regex = { version = "1.10.6", optional = true }
-ignore = { version = "0.4.22", optional = true } 
-octocrab = { version = "0.42.1", optional = true }
-tokio = { version = "1.39.3", features = ["full"] }
-tokio-macros = "2.4.0"
-url = "2.5.2"
+typst-syntax = "0.12.0"
+regex = "1.11.1"
 
 [build-dependencies]
-shadow-rs = "0.31.1"
+shadow-rs = "0.38.1"
 
 [[bin]]
 name = "utpm"
