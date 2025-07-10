@@ -6,13 +6,13 @@
 
 **UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.  
 
-[![Thumuss - utpm](https://img.shields.io/static/v1?label=Thumuss&message=utpm&color=blue&logo=github)](https://github.com/Thumuss/utpm "Go to GitHub repo")
-[![stars - utpm](https://img.shields.io/github/stars/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
-[![forks - utpm](https://img.shields.io/github/forks/Thumuss/utpm?style=social)](https://github.com/Thumuss/utpm)
+[![typst-community - utpm](https://img.shields.io/static/v1?label=typst-community&message=utpm&color=blue&logo=github)](https://github.com/typst-community/utpm "Go to GitHub repo")
+[![stars - utpm](https://img.shields.io/github/stars/typst-community/utpm?style=social)](https://github.com/typst-community/utpm)
+[![forks - utpm](https://img.shields.io/github/forks/typst-community/utpm?style=social)](https://github.com/typst-community/utpm)
 <br/>
-[![GitHub tag](https://img.shields.io/github/tag/Thumuss/utpm?include_prereleases=&sort=semver&color=blue)](https://github.com/Thumuss/utpm/releases/)
+[![GitHub tag](https://img.shields.io/github/tag/typst-community/utpm?include_prereleases=&sort=semver&color=blue)](https://github.com/typst-community/utpm/releases/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
-[![issues - utpm](https://img.shields.io/github/issues/Thumuss/utpm)](https://github.com/Thumuss/utpm/issues)
+[![issues - utpm](https://img.shields.io/github/issues/typst-community/utpm)](https://github.com/typst-community/utpm/issues)
 
 </div>
 
@@ -47,7 +47,7 @@
 Requires Cargo and Rust. 
 
 ```bash
-$ cargo install --git https://github.com/Thumuss/utpm
+$ cargo install --git https://github.com/typst-community/utpm
 ```
 
 <details>
@@ -57,19 +57,19 @@ $ cargo install --git https://github.com/Thumuss/utpm
 
 </summary>
 
-#### Nix with flakes enabled :
+#### Nix with flakes enabled:
 
-Get utpm for a bash session without installing it :
+Get utpm for a bash session without installing it:
 
 ```bash
-$ nix shell github:Thumuss/utpm
+$ nix shell github:typst-community/utpm
 ```
 
-Or if you use NixOS or home-manager with a flake, install it permanently in your `flake.nix` or your modules :
+Or if you use NixOS or home-manager with a flake, install it permanently in your `flake.nix` or your modules:
 
 ```nix
 {
-  inputs.utpm.url = "github:Thumuss/utpm";
+  inputs.utpm.url = "github:typst-community/utpm";
   # ...
 
   outputs = { self, nixpkgs, ... }@inputs: {
@@ -87,17 +87,17 @@ Or if you use NixOS or home-manager with a flake, install it permanently in your
 }
 ```
 
-#### Nix without flakes :
+#### Nix without flakes:
 
-Clone the repo and then nix-build into the utpm directory :
+Clone the repo and then nix-build into the utpm directory:
 
 ```bash
-git clone https://github.com/Thumuss/utpm.git
+git clone https://github.com/typst-community/utpm.git
 cd utpm
 nix-build
 ./result/bin/utpm
 ```
-Utpm will be at ./result/bin/utpm
+Utpm will be at `./result/bin/utpm`
 
 </details>
 <div/>
