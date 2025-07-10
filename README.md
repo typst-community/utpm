@@ -16,6 +16,12 @@
 
 </div>
 
+
+> [!WARNING]  
+> **UTPM** is still in active development, and some features may not be fully implemented. \
+> We are searching for contributors — anything you can offer will be greatly appreciated!
+
+
 ## 🔥 Features
 - [x] ✨Create packages rapidly (`utpm workspace create`)
   - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
@@ -33,8 +39,6 @@
 
 **_...And more soon!_**
 
-> [!WARNING]  
-> **UTPM** is still in active development, and some features may not be fully implemented. Contributions are welcome!
 
 <div id="install">
 
