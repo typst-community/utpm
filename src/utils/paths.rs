@@ -7,7 +7,8 @@ use std::{
 
 use dirs::cache_dir;
 
-use super::state::{Error, ErrorKind, Result};
+use super::state::Result;
+use crate::utpm_bail;
 
 pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
 pub const DATA_HOME_SHARE: &str = "/.local/share";
@@ -38,15 +39,14 @@ pub fn get_data_dir() -> Result<String> {
 /// Can be edited by using `UTPM_HOME_DIR` env.
 /// Used for getting your ssh keys when running `publish` command.
 pub fn get_home_dir() -> Result<String> {
-    let err_hd = Error::empty(ErrorKind::HomeDir);
     match env::var("UTPM_HOME_DIR") {
         Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
         _ => match dirs::home_dir() {
             Some(val) => match val.to_str() {
                 Some(v) => Ok(String::from(v)),
-                None => Err(err_hd),
+                None => utpm_bail!(HomeDir),
             },
-            None => Err(err_hd),
+            None => utpm_bail!(HomeDir),
         },
     }
 }
@@ -104,12 +104,9 @@ pub fn get_current_dir() -> Result<String> {
         _ => match current_dir() {
             Ok(val) => match val.to_str() {
                 Some(v) => Ok(String::from(v)),
-                None => Err(Error::new(
-                    ErrorKind::CurrentDir,
-                    "There is no current directory.",
-                )),
+                None => utpm_bail!(CurrentDir),
             },
-            Err(val) => Err(Error::new(ErrorKind::CurrentDir, val.to_string())),
+            Err(_) => utpm_bail!(CurrentDir),
         },
     }
 }

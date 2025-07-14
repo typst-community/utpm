@@ -5,13 +5,13 @@ macro_rules! load_manifest {
     () => {
         match Manifest::try_find(get_current_dir()?)? {
             Some(val) => Ok(val),
-            None => Err(Error::empty(ErrorKind::Manifest)),
+            None => Err(UtpmError::Manifest),
         }?
     };
     ($var:expr) => {
         match Manifest::try_find($var)? {
             Some(val) => Ok(val),
-            None => Err(Error::empty(ErrorKind::Manifest)),
+            None => Err(UtpmError::Manifest),
         }?
     };
 }
@@ -87,3 +87,32 @@ macro_rules! load_creds {
         });
     }};
 }
+
+
+/// Bail with a UtpmError
+#[macro_export]
+macro_rules! utpm_bail {
+    ($variant:ident) => {
+        return Err($crate::utils::state::UtpmError::$variant)
+    };
+    ($variant:ident, $($arg:expr),+) => {
+        return Err($crate::utils::state::UtpmError::$variant($($arg),+))
+    };
+}
+
+#[macro_export]
+macro_rules! utpm_println {
+    ($fmt:expr, $($args:tt)+) => {
+        $crate::utpm_println!(format!($fmt, $($args)+));
+    };
+    ($data:expr) => {
+        match $crate::utils::output::get_output_format() {
+            $crate::OutputFormat::Json => tracing::info!("{}", serde_json::to_string_pretty(&$data).unwrap()),
+            $crate::OutputFormat::Yaml => tracing::info!("{}", serde_yaml::to_string(&$data).unwrap()),
+            $crate::OutputFormat::Toml => tracing::info!("{}", toml::to_string(&$data).unwrap()),
+            $crate::OutputFormat::Text => tracing::info!("{}", $data),
+            $crate::OutputFormat::Hjson => tracing::info!("{}", serde_hjson::ser::to_string(&$data).unwrap()),
+        }
+    };
+}
+

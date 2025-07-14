@@ -3,14 +3,15 @@ use std::path::PathBuf;
 use tracing::{debug, error, info, instrument, warn};
 use typst_kit::{download::Downloader, package::PackageStorage};
 
-use crate::utils::regex_package;
-use crate::{build, utils::ProgressPrint};
-
-use crate::utils::{
-    copy_dir_all,
-    paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
-    state::{Error, ErrorKind, Result},
-    symlink_all,
+use crate::{
+    build, utpm_bail,
+    utils::{
+        copy_dir_all,
+        paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
+        regex_package,
+        state::Result,
+        symlink_all, ProgressPrint,
+    },
 };
 
 use typst_syntax::package::{PackageSpec, PackageVersion};
@@ -31,10 +32,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         if cmd.force {
             warn!("force used, ignore content");
         } else {
-            return Err(Error::new(
-                ErrorKind::ContentFound,
-                "Content found, cancelled",
-            ));
+            utpm_bail!(ContentFound);
         }
     }
     let re: Regex = regex_package();
@@ -112,17 +110,11 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                 Ok(true)
             }
             Err(_) => {
-                return Err(Error::new(
-                    ErrorKind::PackageNotExist,
-                    "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.",
-                ));
+                utpm_bail!(PackageNotExist);
             }
         };
     } else {
         error!("package not found, input: {}", package);
-        return Err(Error::new(
-            ErrorKind::PackageNotValid,
-            "Can't extract your package. Example of a package: @namespace/package:1.0.0",
-        ));
+        utpm_bail!(PackageNotValid);
     }
 }

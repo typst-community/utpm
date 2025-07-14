@@ -1,152 +1,244 @@
-use semver::Version;
-use std::{fmt, io::Error as IError};
+use serde::Serialize;
+use thiserror::Error as TError;
+use typst_project::manifest::{
+    author::{ParseAuthorError, ParseWebsiteError},
+    ident::ParseIdentError,
+    license::ParseLicenseError,
+    Error as ManifestError,
+};
 
-/// All errors implemented in utpm
-#[derive(Debug)]
-pub enum ErrorKind {
-    UnknowError(String),
+pub type Result<T> = anyhow::Result<T, UtpmError>;
 
+use serde::ser::{SerializeStruct, Serializer};
+
+#[derive(Debug, TError)]
+pub enum UtpmError {
+    #[error("Semantic version error: {0}")]
+    SemVer(String),
+
+    #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
+    #[error("Git error: {0}")]
+    Git(String),
+
+    #[cfg(any(feature = "init", feature = "unlink"))]
+    #[error("Inquire error: {0}")]
+    Questions(String),
+
+    #[error("IO error: {0}")]
+    IO(String),
+
+    #[error("Manifest error: {0}")]
+    General(String),
+
+    #[error("Author parse error: {0}")]
+    Author(String),
+
+    #[error("Website parse error: {0}")]
+    Website(String),
+
+    #[error("Email parse error: {0}")]
+    Email(String),
+
+    #[error("GitHub handle parse error: {0}")]
+    GithubHandle(String),
+
+    #[error("Identifier parse error: {0}")]
+    Ident(String),
+
+    #[error("License parse error: {0}")]
+    License(String),
+
+    #[error("TOML serialization error: {0}")]
+    Serialize(String),
+
+    #[error("TOML deserialization error: {0}")]
+    Deserialize(String),
+
+    #[cfg(any(feature = "publish"))]
+    #[error("Ignore crate error: {0}")]
+    Ignore(String),
+
+    #[cfg(any(feature = "publish"))]
+    #[error("Octocrab error: {0}")]
+    OctoCrab(String),
+
+    #[error("Typst project error: {0}")]
+    Project(String),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
+
+    // Unit variantes (sans champ)
+    #[error("Missing namespace or package name.")]
+    Namespace,
+
+    #[error("Missing configuration file.")]
+    ConfigFile,
+
+    #[error("Couldn't find the current directory.")]
     CurrentDir,
+
+    #[error("Failed to create directory.")]
     CreationDir,
+
+    #[error("Could not determine home directory.")]
     HomeDir,
 
-    Namespace,
-    ConfigFile,
-    AlreadyExist(String, Version, String),
-
-    IO,
-    Questions,
-    Git,
-    SemVer,
-    General,
-
-    Author,
-    Website,
-    Email,
-    GithubHandle,
-
-    Ident,
-    License,
-
-    Serialize,
-    Deserialize,
-
+    #[error("Missing manifest.")]
     Manifest,
 
+    #[error("Not enough arguments provided.")]
     NotEnoughArgs,
 
-    // Clone
+    #[error("Can't extract your package. Example of a package: @namespace/package:1.0.0")]
     PackageNotValid,
+
+    #[error("This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.")]
     PackageNotExist,
+
+    #[error("We founded content. Cancelled the operation.")]
     ContentFound,
+
+    #[error("{2} Package {0} with version {1} already exist.")]
+    AlreadyExist(String, semver::Version, String),
 }
 
-impl ErrorKind {
-    // TODO: Remake this system
-    /// Create a message when there isn't one provided (depreciated)
-    pub fn message(&self) -> String {
-        match self {
-            ErrorKind::CurrentDir => "There is no current directory set.".into(),
-            ErrorKind::CreationDir => "We can't create the directory.".into(),
-            ErrorKind::HomeDir => "There is no home directory set.".into(),
-            ErrorKind::Namespace => {
-                "You need to provide at least a namespace or the name of the package".into()
-            }
-            ErrorKind::ConfigFile => {
-                "There is no typst.toml in this directory. Try to `utpm create -p` to create a package.".into()
-            }
-            ErrorKind::Manifest => "There is no `typst.toml` here!".into(),
-            ErrorKind::AlreadyExist(name, version, info) => format!("This package ({name}:{version}) already exist!\n{info} Put --force to force the copy or change the version in 'typst.toml'"),
-            ErrorKind::UnknowError(s) => s.into(),
-            ErrorKind::NotEnoughArgs => "There is not enough args:".into(),
-            _ => "".into(),
-        }
+impl From<std::io::Error> for UtpmError {
+    fn from(err: std::io::Error) -> Self {
+        UtpmError::IO(err.to_string())
     }
 }
 
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+impl From<toml::ser::Error> for UtpmError {
+    fn from(err: toml::ser::Error) -> Self {
+        UtpmError::Serialize(err.to_string())
     }
 }
 
-pub struct Error {
-    kind: ErrorKind,
-    message: Option<String>,
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
-
-impl Error {
-    pub fn new(kind: ErrorKind, message: impl Into<String>) -> Self {
-        Self {
-            kind,
-            message: Some(message.into()),
-        }
-    }
-    pub fn empty(kind: ErrorKind) -> Self {
-        Self {
-            kind,
-            message: None,
-        }
-    }
-    pub fn to_str(&self) -> String {
-        let kind_message = format!("{} Error", self.kind.to_string());
-        if let Some(message) = &self.message {
-            format!("{}: {}", kind_message, message)
-        } else {
-            format!("{}: {}", kind_message, self.kind.message())
-        }
-    }
-
-    pub fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.message.is_none() {
-            write!(f, "{}", self.to_str())
-        } else {
-            write!(
-                f,
-                "{}: {}\n{}",
-                format!("{} Error", self.kind.to_string()),
-                self.kind.message(),
-                self.message.clone().unwrap()
-            )
-        }
+impl From<toml::de::Error> for UtpmError {
+    fn from(err: toml::de::Error) -> Self {
+        UtpmError::Deserialize(err.to_string())
     }
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.display(f)
+impl From<semver::Error> for UtpmError {
+    fn from(err: semver::Error) -> Self {
+        UtpmError::SemVer(err.to_string())
     }
 }
 
-// From `https://github.com/tingerrr/typst-project/blob/e19fb3d68b10fce7d2366f4e5969edac6e2f7d34/src/manifest.rs#L182`
-macro_rules! impl_from {
-    ($err:ty => $var:ident) => {
-        impl From<$err> for Error {
-            fn from(err: $err) -> Self {
-                Error::new(ErrorKind::$var, err.to_string())
-            }
-        }
-    };
-}
-impl_from!(semver::Error => SemVer);
 #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
-impl_from!(git2::Error => Git);
-#[cfg(any(feature = "init", feature = "unlink"))]
-impl_from!(inquire::InquireError => Questions);
-impl_from!(IError => IO);
-impl_from!(typst_project::manifest::Error => General);
-impl_from!(typst_project::manifest::author::ParseAuthorError => Author);
-impl_from!(typst_project::manifest::author::ParseWebsiteError => Website);
-impl_from!(typst_project::manifest::author::ParseEmailError => Email);
-impl_from!(typst_project::manifest::author::ParseGitHubHandleError => GithubHandle);
-impl_from!(typst_project::manifest::ident::ParseIdentError => Ident);
-impl_from!(typst_project::manifest::license::ParseLicenseError => License);
+impl From<git2::Error> for UtpmError {
+    fn from(err: git2::Error) -> Self {
+        UtpmError::Git(err.to_string())
+    }
+}
 
-impl_from!(toml::ser::Error => Serialize);
-impl_from!(toml::de::Error => Deserialize);
+#[cfg(any(feature = "init", feature = "unlink"))]
+impl From<inquire::InquireError> for UtpmError {
+    fn from(err: inquire::InquireError) -> Self {
+        UtpmError::Questions(err.to_string())
+    }
+}
+
 #[cfg(any(feature = "publish"))]
-impl_from!(ignore::Error => General);
+impl From<ignore::Error> for UtpmError {
+    fn from(err: ignore::Error) -> Self {
+        UtpmError::Ignore(err.to_string())
+    }
+}
+
 #[cfg(any(feature = "publish"))]
-impl_from!(octocrab::Error => General); // todo
+impl From<octocrab::Error> for UtpmError {
+    fn from(err: octocrab::Error) -> Self {
+        UtpmError::OctoCrab(err.to_string())
+    }
+}
+
+impl From<ManifestError> for UtpmError {
+    fn from(err: ManifestError) -> Self {
+        UtpmError::Project(err.to_string())
+    }
+}
+
+impl From<ParseAuthorError> for UtpmError {
+    fn from(err: ParseAuthorError) -> Self {
+        UtpmError::Author(err.to_string())
+    }
+}
+
+impl From<ParseWebsiteError> for UtpmError {
+    fn from(err: ParseWebsiteError) -> Self {
+        UtpmError::Website(err.to_string())
+    }
+}
+
+impl From<ParseIdentError> for UtpmError {
+    fn from(err: ParseIdentError) -> Self {
+        UtpmError::Ident(err.to_string())
+    }
+}
+
+impl From<ParseLicenseError> for UtpmError {
+    fn from(err: ParseLicenseError) -> Self {
+        UtpmError::License(err.to_string())
+    }
+}
+
+// Custom serialize impl
+impl Serialize for UtpmError {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where S: Serializer,
+    {
+        let mut st = serializer.serialize_struct("UtpmError", 2)?;
+        st.serialize_field("type", self.variant_name())?;
+        st.serialize_field("message", &self.to_string())?;
+        st.end()
+    }
+}
+
+impl UtpmError {
+    fn variant_name(&self) -> &'static str {
+        use UtpmError::*;
+        match self {
+            SemVer(_) => "SemVer",
+            #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
+            Git(_) => "Git",
+            #[cfg(any(feature = "init", feature = "unlink"))]
+            Questions(_) => "Questions",
+            IO(_) => "IO",
+            General(_) => "General",
+            Author(_) => "Author",
+            Website(_) => "Website",
+            Email(_) => "Email",
+            GithubHandle(_) => "GithubHandle",
+            Ident(_) => "Ident",
+            License(_) => "License",
+            Serialize(_) => "Serialize",
+            Deserialize(_) => "Deserialize",
+            #[cfg(any(feature = "publish"))]
+            Ignore(_) => "Ignore",
+            #[cfg(any(feature = "publish"))]
+            OctoCrab(_) => "OctoCrab",
+            Project(_) => "Project",
+            Unknown(_) => "Unknown",
+            Namespace => "Namespace",
+            ConfigFile => "ConfigFile",
+            CurrentDir => "CurrentDir",
+            CreationDir => "CreationDir",
+            HomeDir => "HomeDir",
+            Manifest => "Manifest",
+            NotEnoughArgs => "NotEnoughArgs",
+            PackageNotValid => "PackageNotValid",
+            PackageNotExist => "PackageNotExist",
+            ContentFound => "ContentFound",
+            AlreadyExist(_, _, _) => "AlreadyExist",
+        }
+    }
+}
+
+impl From<anyhow::Error> for UtpmError {
+    fn from(err: anyhow::Error) -> Self {
+        UtpmError::Unknown(err.to_string())
+    }
+}

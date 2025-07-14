@@ -38,6 +38,8 @@ use tracing::level_filters::LevelFilter;
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
 
 use crate::build;
+#[cfg(not(feature = "nightly"))]
+use crate::utils::output::OutputFormat;
 
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "init")]
@@ -392,7 +394,7 @@ pub enum Commands {
 
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(feature = "nightly")]
-#[command(author = "Thumus", version = build::COMMIT_HASH)]
+#[command(author = "Thumuss & typst-community", version = build::COMMIT_HASH)]
 /// An unofficial typst package manager for your projects.
 pub struct Cli {
     #[command(subcommand)]
@@ -405,7 +407,7 @@ pub struct Cli {
 
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(not(feature = "nightly"))]
-#[command(author = "Thumus", version = build::PKG_VERSION)]
+#[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
 /// An unofficial typst package manager for your projects.
 pub struct Cli {
     #[command(subcommand)]
@@ -414,4 +416,7 @@ pub struct Cli {
     /// Gives you more information, permit debug.
     #[arg(short = 'v', long)]
     pub verbose: Option<LevelFilter>,
+
+    #[arg(short = 'o', long, global = true, value_enum)]
+    pub output_format: Option<OutputFormat>
 }

@@ -10,13 +10,13 @@ use git2::{
 };
 use paths::{check_path_file, get_ssh_dir, has_content};
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
-use regex::Regex;
-use state::{Error, ErrorKind};
 use std::{env, io, result::Result as R};
+use regex::Regex;
 use tracing::{error, info, instrument};
 use typst_kit::download::{DownloadState, Progress};
 
 pub mod macros;
+pub mod output;
 pub mod paths;
 pub mod specs;
 pub mod state;
@@ -93,7 +93,7 @@ pub fn update_git_packages<P>(path_packages: P, url: &str) -> Result<Repository>
 where
     P: AsRef<Path> + AsRef<OsStr> + Debug,
 {
-    use crate::load_creds;
+    use crate::{load_creds, utpm_bail};
 
     create_dir_all(&path_packages)?;
     let repo: Repository;
@@ -134,7 +134,7 @@ where
             info!("fast forward done");
         } else {
             error!("Can't rebase for now.");
-            return Err(Error::empty(ErrorKind::UnknowError("todo".into())));
+            utpm_bail!(Git, "Oui".into());
         }
     } else {
         info!("Start cloning");
@@ -213,7 +213,6 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
     repo.find_remote("origin")?
         .push::<&str>(&["refs/heads/main"], Some(&mut po))?;
 
-    
     return Ok(());
 }
 

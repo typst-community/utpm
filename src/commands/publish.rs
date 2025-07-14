@@ -1,17 +1,18 @@
 use crate::utils::specs::Extra;
-use crate::utils::state::{Error, ErrorKind};
+use crate::utils::state::Result;
 use crate::utils::{push_git_packages, regex_package, update_git_packages};
+use crate::utpm_println;
 use std::env;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::result::Result as R;
 use std::str::FromStr;
 
-use crate::load_manifest;
+use crate::{load_manifest, utpm_bail, utils::state::UtpmError};
 use crate::utils::paths::{
     check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL,
 };
-use crate::utils::{paths::get_current_dir, state::Result};
+use crate::utils::paths::get_current_dir;
 use ignore::overrides::OverrideBuilder;
 use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;
@@ -51,7 +52,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     if !re.is_match(package_format.as_str()) {
         error!("Package didn't match, the name or the version is incorrect.");
-        return Err(Error::empty(ErrorKind::UnknowError("todo".into()))); // todo: u k
+        utpm_bail!(Unknown, "todo".into()); // todo: u k
     }
 
     let path_curr_str: &str = path_curr.to_str().unwrap();
@@ -102,8 +103,8 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         {
             Ok(val) => fork = format!("git@github.com:{}.git", val.full_name.expect("Didn't fork")),
             Err(err) => {
-                println!("{:?}", err);
-                return Err(Error::empty(ErrorKind::General));
+                utpm_println!("{:?}", err);
+                utpm_bail!(General, "Failed to create fork".to_string());
             }
         };
     }
@@ -160,7 +161,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             let path: &Path = result.path();
             let name: String = path.to_str().unwrap().to_string();
             let l: String = name.replace::<&str>(path_curr_str, &path_packages_new);
-            println!("{l}");
+            utpm_println!("{}", l);
             if file_type.is_dir() {
                 create_dir_all(l)?;
             } else {
@@ -170,13 +171,11 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     if !has_content(&path_packages_new)? {
-        error!("There is no files in the new package. Consider to change your ignored files.");
-        return Err(Error::empty(ErrorKind::UnknowError("".into())));
+        utpm_bail!(Unknown, "There is no files in the new package. Consider to change your ignored files.".into());
     }
 
     if !check_path_file(format!("{path_packages_new}/typst.toml")) {
-        error!("Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?");
-        return Err(Error::empty(ErrorKind::UnknowError("".into())));
+        utpm_bail!(Unknown, format!("Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?"));
     }
 
     let entry = config.package.entrypoint;
@@ -186,8 +185,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     trace!(entryfile = entrystr);
     if !check_path_file(entryfile) {
-        error!("Can't find {entrystr} file in {path_packages_new}. Did you omit it in your ignored files?");
-        return Err(Error::empty(ErrorKind::UnknowError("".into())));
+        utpm_bail!(Unknown, format!("Can't find {entrystr} file in {path_packages_new}. Did you omit it in your ignored files?"));
     }
 
     info!("files copied to {path_packages_new}");

@@ -6,10 +6,11 @@ use typst_project::manifest::{tool::Tool, Manifest};
 
 use crate::{
     load_manifest,
+    utpm_bail,
     utils::{
         paths::get_current_dir,
         specs::Extra,
-        state::{Error, ErrorKind, Result},
+        state::{Result, UtpmError},
     },
     write_manifest,
 };
@@ -21,10 +22,7 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
     let mut config: Manifest = load_manifest!();
     if cmd.uri.len() == 0 {
         debug!("0 URI found in cmd.uri");
-        return Err(Error::new(
-            ErrorKind::NotEnoughArgs,
-            "uri needs more than 0 arguments.",
-        ));
+        utpm_bail!(General, "Error".into());
     }
 
     debug!("{} URIs found: {}", cmd.uri.len(), cmd.uri.join(", "));
