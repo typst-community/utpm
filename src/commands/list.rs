@@ -1,11 +1,11 @@
 use std::fs;
 use fmt_derive::{Debug, Display};
-use ptree::TreeItem;
+use ptree::{print_tree, TreeItem};
 use serde::Serialize;
 use tracing::instrument;
 use std::borrow::Cow;
 
-use crate::{commands::tree::run as R, utils::{
+use crate::{utils::{
     output::{get_output_format, OutputFormat}, paths::{c_packages, d_packages}, state::Result
 }, utpm_println};
 
@@ -106,10 +106,8 @@ use super::ListTreeArgs;
 
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
-    // For right now, I'll use this hack because the command tree is deprecated but I don't want to change the
-    // code atleast for a while. This works
     if cmd.tree && get_output_format() == OutputFormat::Text {
-        return R(cmd)
+        return run_tree(cmd)
     }
     let typ: String = d_packages()?;
     if cmd.all {
@@ -174,4 +172,39 @@ pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
         nms.list_packages.push(pkg);
     }
     Ok(nms)
+}
+
+
+#[instrument(skip(cmd))]
+pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
+    let typ: String = d_packages()?;
+    if cmd.all {
+        let preview: String = c_packages()?;
+        let data1 = read(typ)?;
+        let data2 = read(preview)?;
+        print_tree(&data1)?;
+        print_tree(&data2)?;
+        return Ok(true)
+    }
+
+    if let Some(list) = &cmd.include {
+        let preview: String = c_packages()?;
+        for e in list {
+            if e == "preview" {
+                let data = read(preview)?;
+                print_tree(&data)?;
+                return Ok(true);
+            }
+            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
+            match pkg {
+                Err(_)=> {print_tree(&namespace_read(&format!("{}/{}",typ,e), e.to_string())?)},
+                Ok(data) => {print_tree(&data)},
+            }?;
+        }
+        Ok(true)
+    } else {
+        let data = read(typ)?;
+        print_tree(&data)?;
+        return Ok(true)
+    }
 }

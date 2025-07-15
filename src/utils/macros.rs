@@ -107,10 +107,15 @@ macro_rules! utpm_println {
     };
     ($data:expr) => {
         match $crate::utils::output::get_output_format() {
+            #[cfg(feature = "output_json")]
             $crate::OutputFormat::Json => tracing::info!("{}", serde_json::to_string(&$data).unwrap()),
+            #[cfg(feature = "output_yaml")]
             $crate::OutputFormat::Yaml => tracing::info!("{}", serde_yaml::to_string(&$data).unwrap()),
+            #[cfg(feature = "output_toml")]
             $crate::OutputFormat::Toml => tracing::info!("{}", toml::to_string(&$data).unwrap()),
+            #[cfg(feature = "output_text")]
             $crate::OutputFormat::Text => tracing::info!("{}", $data),
+            #[cfg(feature = "output_hjson")]
             $crate::OutputFormat::Hjson => tracing::info!("{}", serde_hjson::ser::to_string(&$data).unwrap()),
         }
     };

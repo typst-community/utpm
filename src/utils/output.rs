@@ -4,11 +4,16 @@ use once_cell::sync::OnceCell;
 // Differents format we want to support
 #[derive(Copy, Clone, PartialEq, Eq, shadow_rs::Debug, ValueEnum)]
 pub enum OutputFormat {
-    Json, //todo: feature default true
-    Yaml, //todo: feature default false
-    Toml, //todo: feature default false
-    Text, //todo: feature default true
-    Hjson, //todo: feature default false
+    #[cfg(feature = "output_json")]
+    Json,
+    #[cfg(feature = "output_yaml")]
+    Yaml, 
+    #[cfg(feature = "output_toml")]
+    Toml,
+    #[cfg(feature = "output_text")]
+    Text,
+    #[cfg(feature = "output_hjson")]
+    Hjson,
 }
 
 pub static OUTPUT_FORMAT: OnceCell<OutputFormat> = OnceCell::new();
