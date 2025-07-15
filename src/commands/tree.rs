@@ -1,85 +1,45 @@
-use std::fs;
+use ptree::print_tree;
 use tracing::instrument;
 
-use crate::utils::{
-    paths::{c_packages, d_packages},
-    state::Result,
-};
+use crate::{commands::{list::{namespace_read, package_read, read, run as R}}, utils::{
+    output::{get_output_format, OutputFormat}, paths::{c_packages, d_packages}, state::Result
+}};
 
 use super::ListTreeArgs;
 
-use std::result::Result as R;
-
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
+    if get_output_format() != OutputFormat::Text {
+        return R(cmd);
+    }
     let typ: String = d_packages()?;
-    println!("{}", "Tree listing of your packages\n");
     if cmd.all {
         let preview: String = c_packages()?;
-        read(typ)?;
-        return read(preview);
+        let data1 = read(typ)?;
+        let data2 = read(preview)?;
+        print_tree(&data1)?;
+        print_tree(&data2)?;
+        return Ok(true)
     }
 
     if let Some(list) = &cmd.include {
         let preview: String = c_packages()?;
         for e in list {
             if e == "preview" {
-                return read(preview);
+                let data = read(preview)?;
+                print_tree(&data)?;
+                return Ok(true);
             }
-            match package_read(&format!("{}/local/{}", typ, e)) {
-                Ok(_) => true,
-                Err(_) => namespace_read(&format!("{}/{}", typ, e))?,
-            };
+            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
+            match pkg {
+                Err(_)=> {print_tree(&namespace_read(&format!("{}/{}",typ,e), e.to_string())?)},
+                Ok(data) => {print_tree(&data)},
+            }?;
         }
         Ok(true)
     } else {
-        read(typ)
+        let data = read(typ)?;
+        print_tree(&data)?;
+        return Ok(true)
     }
-}
-
-fn read(typ: String) -> Result<bool> {
-    let dirs = fs::read_dir(&typ)?;
-
-    for dir_res in dirs {
-        let dir = dir_res?;
-        println!("@{}:", dir.file_name().to_str().unwrap());
-        let subupdirs = fs::read_dir(dir.path())?;
-
-        for dir_res in subupdirs {
-            let dir = dir_res?;
-            println!("  {}:", dir.file_name().to_str().unwrap());
-
-            let subdirs = fs::read_dir(dir.path())?;
-            for sub_dir_res in subdirs {
-                let subdir = sub_dir_res?;
-                println!("    - {}", subdir.file_name().to_str().unwrap());
-            }
-        }
-    }
-    Ok(true)
-}
-
-fn package_read(typ: &String) -> Result<bool> {
-    let dirs = fs::read_dir(&typ)?;
-
-    for dir_res in dirs {
-        let dir = dir_res?;
-        print!("{}", dir.file_name().to_str().unwrap());
-    }
-    println!();
-    Ok(true)
-}
-
-fn namespace_read(typ: &String) -> Result<bool> {
-    let dirs = fs::read_dir(&typ)?;
-
-    for dir_res in dirs.into_iter().collect::<R<Vec<_>, _>>()? {
-        println!("{}:", dir_res.file_name().into_string().unwrap());
-        let subupdirs = fs::read_dir(dir_res.path())?;
-        for dir_res in subupdirs.into_iter().collect::<R<Vec<_>, _>>()? {
-            println!("  - {}", dir_res.file_name().to_str().unwrap());
-        }
-        println!();
-    }
-    Ok(true)
 }

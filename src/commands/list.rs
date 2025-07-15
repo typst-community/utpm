@@ -1,30 +1,51 @@
 use std::fs;
-use fmt_derive::Display;
+use fmt_derive::{Debug, Display};
+use ptree::TreeItem;
 use serde::Serialize;
 use tracing::instrument;
+use std::borrow::Cow;
 
-use crate::{utils::{
-    paths::{c_packages, d_packages},
-    state::Result,
+use crate::{commands::tree::run as R, utils::{
+    output::{get_output_format, OutputFormat}, paths::{c_packages, d_packages}, state::Result
 }, utpm_println};
 
 
-#[derive(Serialize, Display)]
-struct Data {
+#[derive(Serialize, Display, Debug, Clone)]
+#[display("{}", list_namespace.iter().map(|ns| ns.to_string()).collect::<Vec<_>>().join(""))]
+pub struct Data {
+    path: String,
     list_namespace: Vec<Namespace> 
 }
 
+
+
 impl Data {
-    pub fn new() -> Self {
+    pub fn new(path: String) -> Self {
         Self {
-            list_namespace: vec![]
+            list_namespace: vec![],
+            path
         }
     }
-
 }
 
-#[derive(Serialize, Display)]
-struct Namespace {
+impl TreeItem for Data {
+    type Child = Namespace;
+
+    fn write_self<W: std::io::Write>(&self, w: &mut W, _style: &ptree::Style) -> std::io::Result<()> {
+        write!(w, "{}", self.path)
+    }
+
+    fn children(&self) -> Cow<[Namespace]> {
+        Cow::Borrowed(&self.list_namespace)
+    }
+}
+
+
+
+
+#[derive(Serialize, Display, Debug, Clone)]
+#[display("\n* {}: \n{}", name, list_packages.iter().map(|ns| ns.to_string()).collect::<Vec<_>>().join("\n"))]
+pub struct Namespace {
     name: String,
     list_packages: Vec<Package>
 }
@@ -38,10 +59,23 @@ impl Namespace {
     }
 }
 
+impl TreeItem for Namespace {
+    type Child = Package;
+
+    fn write_self<W: std::io::Write>(&self, w: &mut W, _style: &ptree::Style) -> std::io::Result<()> {
+        write!(w, "{}", self.name)
+    }
+
+    fn children(&self) -> Cow<[Package]> {
+        Cow::Borrowed(&self.list_packages)
+    }
+}
 
 
-#[derive(Serialize, Display)]
-struct Package {
+
+#[derive(Serialize, Display, Debug, Clone)]
+#[display("* * {name}: {}", list_version.join(", "))]
+pub struct Package {
     name: String,
     list_version: Vec<String>
 }
@@ -55,11 +89,28 @@ impl Package {
     }
 }
 
+impl TreeItem for Package {
+    type Child = Package; // Peut être n'importe quoi, car sans enfants
+
+    fn write_self<W: std::io::Write>(&self, w: &mut W, _style: &ptree::Style) -> std::io::Result<()> {
+        write!(w, "{}: {}", self.name, self.list_version.join(", "))
+    }
+
+    fn children(&self) -> Cow<[Self::Child]> {
+        Cow::Borrowed(&[]) // Zéro enfant
+    }
+}
+
 
 use super::ListTreeArgs;
 
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
+    // For right now, I'll use this hack because the command tree is deprecated but we won't change the
+    // code atleast for a while.
+    if cmd.tree && get_output_format() == OutputFormat::Text {
+        return R(cmd)
+    }
     let typ: String = d_packages()?;
     if cmd.all {
         let preview: String = c_packages()?;
@@ -78,9 +129,11 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
                 utpm_println!(data);
                 return Ok(true);
             }
-            match package_read(&format!("{}/local/{}", typ, e), e.to_string()) {
-                Err(_)=> {namespace_read(&format!("{}/{}",typ,e), e.to_string())?;} ,
-                Ok(_) => {},
+            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
+
+            match pkg {
+                Err(_)=> {utpm_println!(namespace_read(&format!("{}/{}",typ,e), e.to_string())?);},
+                Ok(data) => {utpm_println!(data)},
             };
         }
         Ok(true)
@@ -91,9 +144,9 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
     }
 }
 
-fn read(typ: String) -> Result<Data> {
+pub fn read(typ: String) -> Result<Data> {
     let dirs = fs::read_dir(&typ)?;
-    let mut data = Data::new();
+    let mut data = Data::new(typ);
 
     for dir_res in dirs {
         let dir = dir_res?;
@@ -103,7 +156,7 @@ fn read(typ: String) -> Result<Data> {
     Ok(data)
 }
 
-fn package_read(typ: &String, name: String) -> Result<Package> {
+pub fn package_read(typ: &String, name: String) -> Result<Package> {
     let mut pkg = Package::new(name);
     for dir_res in fs::read_dir(&typ)? {
         let dir: fs::DirEntry = dir_res?;
@@ -112,7 +165,7 @@ fn package_read(typ: &String, name: String) -> Result<Package> {
     Ok(pkg)
 }
 
-fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
+pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
     let mut nms = Namespace::new(name);
     for dir_res in fs::read_dir(&typ)? {
         let dir = dir_res?;

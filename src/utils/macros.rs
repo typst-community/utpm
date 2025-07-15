@@ -107,7 +107,7 @@ macro_rules! utpm_println {
     };
     ($data:expr) => {
         match $crate::utils::output::get_output_format() {
-            $crate::OutputFormat::Json => tracing::info!("{}", serde_json::to_string_pretty(&$data).unwrap()),
+            $crate::OutputFormat::Json => tracing::info!("{}", serde_json::to_string(&$data).unwrap()),
             $crate::OutputFormat::Yaml => tracing::info!("{}", serde_yaml::to_string(&$data).unwrap()),
             $crate::OutputFormat::Toml => tracing::info!("{}", toml::to_string(&$data).unwrap()),
             $crate::OutputFormat::Text => tracing::info!("{}", $data),

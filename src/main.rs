@@ -83,7 +83,7 @@ fn main() {
 
     OUTPUT_FORMAT.set(x.output_format.unwrap_or(OutputFormat::Text)).unwrap();
 
-    if get_output_format() == OutputFormat::Json || get_output_format() == OutputFormat::Hjson {
+    if get_output_format() != OutputFormat::Text {
         tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()

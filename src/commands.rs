@@ -150,6 +150,10 @@ pub struct ListTreeArgs {
     /// List all subdirectory you want
     #[arg(short, long, num_args = 1..)]
     pub include: Option<Vec<String>>,
+
+    /// If you want a tree output. Only work with text output.
+    #[arg(short, long)]
+    pub tree: bool
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
@@ -285,9 +289,9 @@ pub struct AddArgs {
     feature = "bulk_delete"
 ))]
 pub enum Packages {
-    /// List all of packages from your dir, in a form of a tree
     #[command(visible_alias = "t")]
     #[cfg(feature = "tree")]
+    #[command(about="[DEPRECIATED] Use list with --tree.")]
     Tree(ListTreeArgs),
 
     /// List all of packages from your dir, in a form of a list
