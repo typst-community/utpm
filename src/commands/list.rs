@@ -106,8 +106,8 @@ use super::ListTreeArgs;
 
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
-    // For right now, I'll use this hack because the command tree is deprecated but we won't change the
-    // code atleast for a while.
+    // For right now, I'll use this hack because the command tree is deprecated but I don't want to change the
+    // code atleast for a while. This works
     if cmd.tree && get_output_format() == OutputFormat::Text {
         return R(cmd)
     }
@@ -143,6 +143,7 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
         return Ok(true)
     }
 }
+
 
 pub fn read(typ: String) -> Result<Data> {
     let dirs = fs::read_dir(&typ)?;
