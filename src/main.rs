@@ -164,9 +164,6 @@ fn main() {
     };
 
     if let Err(err) = res {
-        if get_output_format() != OutputFormat::Text {
-            OUTPUT_FORMAT.set(OutputFormat::Json).unwrap();
-        }
         match check_errors(err) {
             Ok(_) => (),
             Err(err2) => error!("{}", err2),
@@ -176,6 +173,6 @@ fn main() {
 
 /// Last try to print errors. If we can't, we result to use tracing
 fn check_errors(err: UtpmError) -> Result<()> {
-    utpm_log!(error, "{}", err);
+    utpm_log!(error, "{err}");
     return Ok(());
 }

@@ -83,7 +83,6 @@ pub enum UtpmError {
     #[error("Unknown error: {0}")]
     Unknown(String),
 
-    // Unit variantes (sans champ)
     #[error("Missing namespace or package name.")]
     Namespace,
 
@@ -119,7 +118,6 @@ pub enum UtpmError {
 
     #[error("No URI were found. Please check your typst.toml")]
     NoURIFound,
-
 
     #[error(transparent)]
     Other(#[from] anyhow::Error)
