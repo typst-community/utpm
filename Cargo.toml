@@ -82,7 +82,7 @@ default_output = ["output_json", "output_text"]
 full_output = ["default_output", "output_toml", "output_hjson", "output_yaml"]
 
 #### Default/Full features
-default = ["default_commands", "full_output"]
+default = ["default_commands", "default_output"]
 full = ["full_commands", "full_output"]
 
 
