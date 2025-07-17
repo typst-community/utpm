@@ -1,6 +1,6 @@
 use tracing::{error, info, instrument};
 
-use crate::{utils::state::{Result, UtpmError}, utpm_println};
+use crate::{utils::state::{Result, UtpmError}, utpm_log};
 
 use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 
@@ -22,7 +22,7 @@ pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
             }
         };
     }
-    utpm_println!(
+    utpm_log!(
         "{}/{} successful",
         cmd.names.len() - vec.len(),
         cmd.names.len()

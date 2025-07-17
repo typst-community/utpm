@@ -11,7 +11,7 @@ use crate::{
         },
         specs::Extra,
         state::{Result, UtpmError},
-    }, utpm_println,
+    }, utpm_log,
 };
 
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
@@ -92,7 +92,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let typstfile = path.clone() + "/" + MANIFEST_FILE;
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
-        utpm_println!("{}", format!("x {}", origin));
+        utpm_log!("{}", format!("x {}", origin));
         return Ok(false);
     }
     let file = load_manifest!(&path);
@@ -109,14 +109,14 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         &file.package.name,
         &file.package.version
     )) {
-        utpm_println!(
+        utpm_log!(
             "{}",
             format!("~ {}:{}", file.package.name, file.package.version)
         );
         return Ok(true);
     }
 
-    utpm_println!("{}", format!("Installing {}...", file.package.name));
+    utpm_log!("{}", format!("Installing {}...", file.package.name));
     if let Some(vec_depend) = utpm.dependencies {
         let mut y = 0;
         vec_depend
@@ -139,12 +139,12 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         };
         link::run(&lnk, Some(path.clone()), false)?; //TODO: change here too
         fs::remove_dir_all(&path)?;
-        utpm_println!(
+        utpm_log!(
             "{}",
             format!("+ {}:{}", file.package.name, file.package.version)
         );
     } else {
-        utpm_println!("* Installation complete! If you want to use it as a lib, just do a `utpm link`!")
+        utpm_log!("* Installation complete! If you want to use it as a lib, just do a `utpm link`!")
     }
 
     Ok(true)

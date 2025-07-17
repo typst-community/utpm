@@ -4,7 +4,7 @@ use tracing::{debug, error, info, instrument, warn};
 use typst_kit::{download::Downloader, package::PackageStorage};
 
 use crate::{
-    build, utpm_bail,
+    build,
     utils::{
         copy_dir_all,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
@@ -12,6 +12,7 @@ use crate::{
         state::Result,
         symlink_all, ProgressPrint,
     },
+    utpm_bail,
 };
 
 use typst_syntax::package::{PackageSpec, PackageVersion};

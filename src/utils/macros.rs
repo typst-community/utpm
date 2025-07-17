@@ -101,23 +101,29 @@ macro_rules! utpm_bail {
 }
 
 #[macro_export]
-macro_rules! utpm_println {
-    ($fmt:expr, $($args:tt)+) => {
-        $crate::utpm_println!(format!($fmt, $($args)+));
+macro_rules! utpm_log {
+    ($lvl:ident, $fmt:expr, $($args:tt)+) => {
+        $crate::utpm_log!($lvl, format!($fmt, $($args)+));
     };
-    ($data:expr) => {
+    ($lvl:ident, $data:expr) => {
         match $crate::utils::output::get_output_format() {
             #[cfg(feature = "output_json")]
-            $crate::OutputFormat::Json => tracing::info!("{}", serde_json::to_string(&$data).unwrap()),
+            $crate::OutputFormat::Json => tracing::$lvl!("{}", serde_json::to_string(&$data).unwrap()),
             #[cfg(feature = "output_yaml")]
-            $crate::OutputFormat::Yaml => tracing::info!("{}", serde_yaml::to_string(&$data).unwrap()),
+            $crate::OutputFormat::Yaml => tracing::$lvl!("{}", serde_yaml::to_string(&$data).unwrap()),
             #[cfg(feature = "output_toml")]
-            $crate::OutputFormat::Toml => tracing::info!("{}", toml::to_string(&$data).unwrap()),
+            $crate::OutputFormat::Toml => tracing::$lvl!("{}", toml::to_string(&$data).unwrap()),
             #[cfg(feature = "output_text")]
-            $crate::OutputFormat::Text => tracing::info!("{}", $data),
+            $crate::OutputFormat::Text => tracing::$lvl!("{}", $data),
             #[cfg(feature = "output_hjson")]
-            $crate::OutputFormat::Hjson => tracing::info!("{}", serde_hjson::ser::to_string(&$data).unwrap()),
+            $crate::OutputFormat::Hjson => tracing::$lvl!("{}", serde_hjson::ser::to_string(&$data).unwrap()),
         }
+    };
+    ($fmt:expr, $($args:tt)+) => {
+        $crate::utpm_log!(info, $fmt, $($args)+);
+    };
+    ($data:expr) => {
+        $crate::utpm_log!(info, $data)
     };
 }
 

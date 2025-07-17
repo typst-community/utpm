@@ -9,7 +9,7 @@ use crate::{
         specs::Extra,
         state::{Result, UtpmError},
         symlink_all,
-    }, utpm_bail, utpm_println
+    }, utpm_bail, utpm_log
 };
 
 use super::LinkArgs;
@@ -49,7 +49,7 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     if cmd.no_copy {
         symlink_all(&curr, &path)?;
         if pt {
-            utpm_println!(
+            utpm_log!(
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
                 path, namespace, name, version
             );
@@ -57,7 +57,7 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     } else {
         copy_dir_all(&curr, &path)?;
         if pt {
-            utpm_println!(
+            utpm_log!(
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
                 path, namespace, name, version
             );

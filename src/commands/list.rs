@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 use crate::{utils::{
     output::{get_output_format, OutputFormat}, paths::{c_packages, d_packages}, state::Result
-}, utpm_println};
+}, utpm_log};
 
 
 #[derive(Serialize, Display, Debug, Clone)]
@@ -114,8 +114,8 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
         let preview: String = c_packages()?;
         let data1 = read(typ)?;
         let data2 = read(preview)?;
-        utpm_println!(data1);
-        utpm_println!(data2);
+        utpm_log!(data1);
+        utpm_log!(data2);
         return Ok(true)
     }
 
@@ -124,20 +124,20 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
         for e in list {
             if e == "preview" {
                 let data = read(preview)?;
-                utpm_println!(data);
+                utpm_log!(data);
                 return Ok(true);
             }
             let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
 
             match pkg {
-                Err(_)=> {utpm_println!(namespace_read(&format!("{}/{}",typ,e), e.to_string())?);},
-                Ok(data) => {utpm_println!(data)},
+                Err(_)=> {utpm_log!(namespace_read(&format!("{}/{}",typ,e), e.to_string())?);},
+                Ok(data) => {utpm_log!(data)},
             };
         }
         Ok(true)
     } else {
         let data = read(typ)?;
-        utpm_println!(data);
+        utpm_log!(data);
         return Ok(true)
     }
 }

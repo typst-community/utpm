@@ -1,7 +1,7 @@
 use crate::utils::specs::Extra;
 use crate::utils::state::Result;
 use crate::utils::{push_git_packages, regex_package, update_git_packages};
-use crate::utpm_println;
+use crate::utpm_log;
 use std::env;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
@@ -103,7 +103,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         {
             Ok(val) => fork = format!("git@github.com:{}.git", val.full_name.expect("Didn't fork")),
             Err(err) => {
-                utpm_println!("{:?}", err);
+                utpm_log!("{:?}", err);
                 utpm_bail!(General, "Failed to create fork".to_string());
             }
         };
@@ -161,7 +161,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             let path: &Path = result.path();
             let name: String = path.to_str().unwrap().to_string();
             let l: String = name.replace::<&str>(path_curr_str, &path_packages_new);
-            utpm_println!("{}", l);
+            utpm_log!("{}", l);
             if file_type.is_dir() {
                 create_dir_all(l)?;
             } else {

@@ -9,7 +9,7 @@ use crate::{
         paths::get_current_dir,
         specs::Extra,
         state::{Result, UtpmError},
-    }, utpm_println, write_manifest
+    }, utpm_log, write_manifest
 };
 
 use super::DeleteArgs;
@@ -26,9 +26,9 @@ pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
                     match dep.iter().position(|x| x == e) {
                         Some(val) => {
                             dep.remove(val);
-                            utpm_println!("Removed");
+                            utpm_log!("Removed");
                         }
-                        None => utpm_println!("Can't remove it"),
+                        None => utpm_log!("Can't remove it"),
                     };
                 }
                 extra.dependencies = Some(dep);

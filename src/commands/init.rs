@@ -29,7 +29,7 @@ use crate::{
         paths::{check_path_file, get_current_dir},
         specs::Extra,
         state::Result,
-    }, utpm_println, write_manifest
+    }, utpm_log, write_manifest
 };
 
 use super::InitArgs;
@@ -322,6 +322,6 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
 
     write_manifest!(&manif);
 
-    utpm_println!("{}", format!("File created to {typ}"));
+    utpm_log!("{}", format!("File created to {typ}"));
     Ok(true)
 }
