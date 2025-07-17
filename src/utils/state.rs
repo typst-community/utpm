@@ -7,118 +7,154 @@ use typst_project::manifest::{
     Error as ManifestError,
 };
 
+/// A specialized `Result` type for UTPM operations.
 pub type Result<T> = anyhow::Result<T, UtpmError>;
 
 use serde::ser::{SerializeStruct, Serializer};
 
+/// The error type for UTPM operations.
 #[derive(Debug, TError)]
 pub enum UtpmError {
+    /// A semantic versioning error.
     #[error("Semantic version error: {0}")]
     SemVer(#[from] semver::Error),
 
+    /// A git-related error.
     #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
     #[error("Git error: {0}")]
     Git(#[from] git2::Error),
 
+    /// An error from the `inquire` crate, used for interactive prompts.
     #[cfg(any(feature = "init", feature = "unlink"))]
     #[error("Inquire error: {0}")]
     Questions(#[from] inquire::InquireError),
 
+    /// An I/O error.
     #[error("IO error: {0}")]
     IO(#[from] std::io::Error),
 
+    /// An error indicating that a git rebase is required but not yet supported.
     #[error("We can't rebase (for now)")]
     Rebase,
 
+    /// A general-purpose error.
     #[error("General error: {0}")]
     General(String),
 
+    /// An error during JSON serialization or deserialization.
     #[cfg(feature = "output_json")]
     #[error("Can't parse to json: {0}")]
     JsonParse(#[from] serde_json::Error),
 
+    /// An error during Hjson serialization or deserialization.
     #[cfg(feature = "output_hjson")]
     #[error("Can't parse to hjson: {0}")]
     HJsonParse(#[from] serde_hjson::Error),
 
+    /// An error during YAML serialization or deserialization.
     #[cfg(feature = "output_yaml")]
     #[error("Can't parse to yaml: {0}")]
     YamlParse(#[from] serde_yaml::Error),
 
+    /// An error parsing an author string.
     #[error("Author parse error: {0}")]
     Author(#[from] ParseAuthorError),
 
+    /// An error parsing a website URL.
     #[error("Website parse error: {0}")]
     Website(#[from] ParseWebsiteError),
 
+    /// An error parsing an email address.
     #[error("Email parse error: {0}")]
     Email(String),
 
+    /// An error parsing a GitHub handle.
     #[error("GitHub handle parse error: {0}")]
     GithubHandle(String),
 
+    /// An error parsing a package identifier.
     #[error("Identifier parse error: {0}")]
     Ident(#[from] ParseIdentError),
 
+    /// An error parsing a license string.
     #[error("License parse error: {0}")]
     License(#[from] ParseLicenseError),
 
+    /// An error during TOML serialization.
     #[error("TOML serialization error: {0:?}")]
     Serialize(#[from] toml::ser::Error),
 
+    /// An error during TOML deserialization.
     #[error("TOML deserialization error: {0}")]
     Deserialize(#[from] toml::de::Error),
 
+    /// An error from the `ignore` crate.
     #[cfg(any(feature = "publish"))]
     #[error("Ignore crate error: {0}")]
     Ignore(#[from] ignore::Error),
 
+    /// An error from the `octocrab` crate for GitHub API interactions.
     #[cfg(any(feature = "publish"))]
     #[error("Octocrab error: {0}")]
     OctoCrab(#[from] octocrab::Error),
 
+    /// An error from the `typst-project` crate.
     #[error("Typst project error: {0}")]
     Project(#[from] ManifestError),
 
+    /// An unknown or unexpected error.
     #[error("Unknown error: {0}")]
     Unknown(String),
 
+    /// An error for a missing namespace or package name.
     #[error("Missing namespace or package name.")]
     Namespace,
 
+    /// An error for a missing configuration file.
     #[error("Missing configuration file.")]
     ConfigFile,
 
+    /// An error when the current directory cannot be determined.
     #[error("Couldn't find the current directory.")]
     CurrentDir,
 
+    /// An error when a directory fails to be created.
     #[error("Failed to create directory.")]
     CreationDir,
 
+    /// An error when the home directory cannot be determined.
     #[error("Could not determine home directory.")]
     HomeDir,
 
+    /// An error for a missing `typst.toml` manifest.
     #[error("Missing manifest.")]
     Manifest,
 
+    /// An error for not enough arguments provided to a command.
     #[error("Not enough arguments provided.")]
     NotEnoughArgs,
 
+    /// An error for an invalid package string.
     #[error("Can't extract your package. Example of a package: @namespace/package:1.0.0")]
     PackageNotValid,
 
+    /// An error when a specified package does not exist.
     #[error("This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.")]
     PackageNotExist,
 
+    /// An error when content is found in a directory that should be empty.
     #[error("We founded content. Cancelled the operation.")]
     ContentFound,
 
+    /// An error when a package to be linked already exists.
     #[error("{2} Package {0} with version {1} already exist.")]
     AlreadyExist(String, semver::Version, String),
 
+    /// An error when no URIs are provided for a command that requires them.
     #[error("No URI were found. Please check your typst.toml")]
     NoURIFound,
 
+    /// A wrapper for any other error.
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -137,6 +173,7 @@ impl Serialize for UtpmError {
 }
 
 impl UtpmError {
+    /// Returns the string representation of the error variant.
     fn variant_name(&self) -> &'static str {
         use UtpmError::*;
         match self {

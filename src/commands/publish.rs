@@ -24,6 +24,14 @@ use super::PublishArgs;
 
 use ignore::WalkBuilder;
 
+/// Publishes a package to the typst universe.
+///
+/// This involves:
+/// - Forking the `typst/packages` repository if not already forked.
+/// - Cloning or updating the forked repository.
+/// - Copying the package files to the repository.
+/// - Committing and pushing the changes.
+/// - Creating a pull request to the `typst/packages` repository.
 #[tokio::main]
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
@@ -225,24 +233,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     crab.pulls("typst", "packages")
         .create(name_replaced.as_str(), format!("{}:main", us.name.clone().unwrap()), "base")
-        .body("
-I am submitting
-- [ ] a new package
-- [ ] an update for a package
-
-
-Description: Explain what the package does and why it's useful.
-
-I have read and followed the submission guidelines and, in particular, I
-- [ ] selected a name that isn't the most obvious or canonical name for what the package does
-- [ ] added a `typst.toml` file with all required keys
-- [ ] added a `README.md` with documentation for my package
-- [ ] have chosen a license and added a `LICENSE` file or linked one in my `README.md`
-- [ ] tested my package locally on my system and it worked
-- [ ] `exclude`d PDFs or README images, if any, but not the LICENSE
-
-- [ ] ensured that my package is licensed such that users can use and distribute the contents of its template directory without restriction, after modifying them through normal use.
-") // todo: body
+        .body("\nI am submitting\n- [ ] a new package\n- [ ] an update for a package\n\n\nDescription: Explain what the package does and why it's useful.\n\nI have read and followed the submission guidelines and, in particular, I\n- [ ] selected a name that isn't the most obvious or canonical name for what the package does\n- [ ] added a `typst.toml` file with all required keys\n- [ ] added a `README.md` with documentation for my package\n- [ ] have chosen a license and added a `LICENSE` file or linked one in my `README.md`\n- [ ] tested my package locally on my system and it worked\n- [ ] `exclude`d PDFs or README images, if any, but not the LICENSE\n\n- [ ] ensured that my package is licensed such that users can use and distribute the contents of its template directory without restriction, after modifying them through normal use.\n") // todo: body
         .send()
         .await?;
 

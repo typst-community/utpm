@@ -16,6 +16,7 @@ use crate::{
 
 use super::{install, AddArgs, InstallArgs};
 
+/// Adds dependencies to the `typst.toml` manifest and installs them.
 #[instrument]
 pub fn run(cmd: &mut AddArgs) -> Result<bool> {
     let mut config: Manifest = load_manifest!();

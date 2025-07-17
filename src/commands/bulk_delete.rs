@@ -7,6 +7,7 @@ use crate::{
 
 use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 
+/// Deletes multiple packages from the local storage.
 #[instrument]
 pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
     let mut vec: Vec<UtpmError> = Vec::new();

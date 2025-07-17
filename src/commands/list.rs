@@ -14,6 +14,7 @@ use crate::{
     utpm_log,
 };
 
+/// Represents a collection of namespaces at a specific path.
 #[derive(Serialize, Display, Debug, Clone)]
 #[display("{}", list_namespace.iter().map(|ns| ns.to_string()).collect::<Vec<_>>().join(""))]
 pub struct Data {
@@ -46,6 +47,7 @@ impl TreeItem for Data {
     }
 }
 
+/// Represents a package namespace containing multiple packages.
 #[derive(Serialize, Display, Debug, Clone)]
 #[display("\n* {}: \n{}", name, list_packages.iter().map(|ns| ns.to_string()).collect::<Vec<_>>().join("\n"))]
 pub struct Namespace {
@@ -78,6 +80,7 @@ impl TreeItem for Namespace {
     }
 }
 
+/// Represents a package with its available versions.
 #[derive(Serialize, Display, Debug, Clone)]
 #[display("* * {name}: {}", list_version.join(", "))]
 pub struct Package {
@@ -95,7 +98,7 @@ impl Package {
 }
 
 impl TreeItem for Package {
-    type Child = Package; // Peut être n'importe quoi, car sans enfants
+    type Child = Package; // Can be anything, since it has no children
 
     fn write_self<W: std::io::Write>(
         &self,
@@ -106,12 +109,16 @@ impl TreeItem for Package {
     }
 
     fn children(&self) -> Cow<[Self::Child]> {
-        Cow::Borrowed(&[]) // Zéro enfant
+        Cow::Borrowed(&[]) // No children
     }
 }
 
 use super::ListTreeArgs;
 
+/// Lists packages in local storage.
+///
+/// Can display as a simple list or as a tree structure, depending on the
+/// command-line arguments and output format.
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
     if cmd.tree && get_output_format() == OutputFormat::Text {
@@ -154,6 +161,7 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
     }
 }
 
+/// Reads all namespaces and packages from a given directory path.
 pub fn read(typ: String) -> Result<Data> {
     let dirs = fs::read_dir(&typ)?;
     let mut data = Data::new(typ);
@@ -169,6 +177,7 @@ pub fn read(typ: String) -> Result<Data> {
     Ok(data)
 }
 
+/// Reads all versions of a specific package.
 pub fn package_read(typ: &String, name: String) -> Result<Package> {
     let mut pkg = Package::new(name);
     for dir_res in fs::read_dir(&typ)? {
@@ -180,6 +189,7 @@ pub fn package_read(typ: &String, name: String) -> Result<Package> {
     Ok(pkg)
 }
 
+/// Reads all packages within a specific namespace.
 pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
     let mut nms = Namespace::new(name);
     for dir_res in fs::read_dir(&typ)? {
@@ -193,6 +203,7 @@ pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
     Ok(nms)
 }
 
+/// Displays the packages in a tree format.
 #[instrument(skip(cmd))]
 pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
     let typ: String = d_packages()?;

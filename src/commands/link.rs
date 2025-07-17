@@ -16,6 +16,7 @@ use crate::{
 
 use super::LinkArgs;
 
+/// Links the current project to the local package directory, either by copying or symlinking.
 #[instrument(skip(cmd))]
 pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     let curr = path.unwrap_or(get_current_dir()?);

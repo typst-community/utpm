@@ -26,9 +26,11 @@ use self::state::Result;
 #[cfg(any(feature = "publish"))]
 use octocrab::models::UserProfile;
 
-/// Copy all subdirectories from a point to an other
-/// From https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
-/// Edited to prepare a ci version
+/// Recursively copies a directory from a source to a destination.
+///
+/// This function is based on the solution from:
+/// https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
+/// It has been edited to fit the needs of the CI environment.
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
     for entry in fs::read_dir(src)? {
@@ -43,39 +45,47 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
     Ok(())
 }
 
-/// Implementing a symlink function for all platform (unix version)
+/// Creates a symlink. This function is platform-specific.
+///
+/// On Unix systems, it creates a standard symbolic link.
 #[cfg(unix)]
 pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
     use std::os::unix::fs::symlink;
     symlink(origin, new_path)
 }
 
-/// Implementing a symlink function for all platform (windows version)
+/// Creates a symlink. This function is platform-specific.
+///
+/// On Windows, it creates a directory symlink.
 #[cfg(windows)]
 pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
     use std::os::windows::fs::symlink_dir;
     symlink_dir(origin, new_path)
 }
 
+/// Returns a regex for matching typst package specifications (`@namespace/name:version`).
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 pub fn regex_package() -> Regex {
     Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
+
+/// Returns a regex for matching a typst package namespace (`@namespace`).
 #[cfg(any(feature = "unlink"))]
 pub fn regex_namespace() -> Regex {
     Regex::new(r"^@([a-z]+)$").unwrap()
 }
 
+/// Returns a regex for matching a typst package name (`@namespace/name`).
 #[cfg(any(feature = "unlink"))]
 pub fn regex_packagename() -> Regex {
     Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)$").unwrap()
 }
 
 //todo: impl
-/// (Warning) Not implemented yet
+/// A progress indicator for package downloads.
 ///
-/// Create an object to track the progression
-/// of downloaded packages from typst for the user
+/// (Warning) This is not fully implemented yet.
+/// It is intended to provide feedback to the user during package downloads.
 pub struct ProgressPrint {}
 
 impl Progress for ProgressPrint {
@@ -86,7 +96,10 @@ impl Progress for ProgressPrint {
     fn print_finish(&mut self, _state: &DownloadState) {}
 }
 
-/// Get remote indexes into local indexes
+/// Updates a local git repository of packages by pulling from a remote URL.
+///
+/// If the repository does not exist locally, it will be cloned.
+/// If it exists, it will be updated by fetching and fast-forwarding the 'main' branch.
 #[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
 #[instrument]
 pub fn update_git_packages<P>(path_packages: P, url: &str) -> Result<Repository>
@@ -146,6 +159,7 @@ where
     Ok(repo)
 }
 
+/// Commits and pushes changes in a local git repository to the remote.
 #[cfg(any(feature = "publish"))]
 pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> Result<()> {
     use git2::{IndexAddOption, Oid, PushOptions, Signature};

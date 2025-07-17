@@ -65,6 +65,10 @@ use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, La
 
 use crate::utils::output::{get_output_format, OutputFormat};
 
+/// The main entry point of the UTPM application.
+///
+/// This function initializes the command-line interface, parses arguments,
+/// sets up logging, and dispatches to the appropriate command handler.
 #[instrument]
 fn main() {
     let x = Cli::parse();
@@ -167,7 +171,10 @@ fn main() {
     }
 }
 
-/// Last try to print errors. If we can't, we result to use tracing
+/// A fallback mechanism to print errors if the primary logging fails.
+///
+/// If the command execution results in an error, this function is called
+/// to log the error to the console.
 fn check_errors(err: UtpmError) -> Result<()> {
     utpm_log!(error, "{err}");
     return Ok(());

@@ -5,7 +5,10 @@ use crate::{commands::list::run as R, utils::state::Result};
 
 use super::ListTreeArgs;
 
-/// DEPRECIATED
+/// [DEPRECATED] Displays packages as a tree.
+///
+/// This command is deprecated and will be removed in a future version.
+/// Use `list --tree` instead. It delegates to `list::run` with the `--tree` flag.
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
     utpm_log!(warn, "Command is depreciated. Use list --tree instead.");

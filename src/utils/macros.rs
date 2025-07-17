@@ -1,5 +1,14 @@
-/// Load automatically your manifest (typst.toml).
-/// Can specify (or not) the path to the manifest.
+/// A macro to load the `typst.toml` manifest from the current or a specified directory.
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// // Load from the current directory
+/// let manifest = load_manifest!();
+///
+/// // Load from a specific path
+/// let manifest = load_manifest!("/path/to/project");
+/// ```
 #[macro_export]
 macro_rules! load_manifest {
     () => {
@@ -16,8 +25,17 @@ macro_rules! load_manifest {
     };
 }
 
-/// Write data to your manifest (typst.toml)
-/// Can specify (or not) your path. Data must be provided.
+/// A macro to write a `Manifest` struct to a `typst.toml` file.
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// // Write to `typst.toml` in the current directory
+/// write_manifest!(&manifest);
+///
+/// // Write to a specific path
+/// write_manifest!(&manifest => "/path/to/project/typst.toml");
+/// ```
 #[macro_export]
 macro_rules! write_manifest {
     ($var:expr => $path:expr) => {
@@ -30,7 +48,10 @@ macro_rules! write_manifest {
     };
 }
 
-/// Get the path of a package
+/// A macro to format the path to a typst package.
+///
+/// This macro constructs the path to a package based on its namespace, name, and version.
+/// It correctly resolves the base directory for `@preview` and other namespaces.
 #[macro_export]
 macro_rules! format_package {
     ($namespace:expr) => {{
@@ -62,7 +83,11 @@ macro_rules! format_package {
     }};
 }
 
-/// Load ssh credentials
+/// A macro to configure SSH credentials for git operations.
+///
+/// It attempts to use an SSH agent first, then falls back to a private key file.
+/// The key path can be specified via the `UTPM_KEYPATH` environment variable.
+/// A passphrase can be provided via the `UTPM_PASSPHRASE` environment variable.
 #[macro_export]
 macro_rules! load_creds {
     ($callbacks:expr, $val:expr) => {{
@@ -87,7 +112,17 @@ macro_rules! load_creds {
     }};
 }
 
-/// Bail with a UtpmError
+/// A macro to exit a function early with a `UtpmError`.
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// // Bail with a simple error variant
+/// utpm_bail!(Manifest);
+///
+/// // Bail with an error variant that has arguments
+/// utpm_bail!(AlreadyExist, "mypackage".into(), "1.0.0".into(), "Info".into());
+/// ```
 #[macro_export]
 macro_rules! utpm_bail {
     ($variant:ident) => {
@@ -98,6 +133,10 @@ macro_rules! utpm_bail {
     };
 }
 
+/// A flexible logging macro that adapts to the configured output format.
+///
+/// This macro supports different log levels and can handle various data types,
+/// serializing them to JSON, YAML, etc., if the corresponding output format is selected.
 #[macro_export]
 macro_rules! utpm_log {
     ($(@g)? $lvl:ident, $data:expr, $($args:expr => $val:expr),+) => {{

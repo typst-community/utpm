@@ -21,6 +21,9 @@ use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};
 
 use super::{link, InstallArgs};
 
+/// Entry point for the install command.
+///
+/// Cleans up temporary directories before starting the installation process.
 #[instrument]
 pub fn run(cmd: &InstallArgs) -> Result<bool> {
     let path = format!("{}/tmp", datalocalutpm()?);
@@ -31,6 +34,10 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
     Ok(true)
 }
 
+/// Installs dependencies recursively.
+///
+/// If a URL is provided, it clones the repository from the given URL.
+/// Otherwise, it installs dependencies from the `typst.toml` manifest in the current directory.
 #[instrument(skip(cmd))]
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let path = if let Some(url) = &cmd.url {

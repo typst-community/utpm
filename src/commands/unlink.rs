@@ -14,6 +14,7 @@ use crate::{
 
 use super::UnlinkArgs;
 
+/// Unlinks/deletes a package from the local storage.
 #[instrument(skip(cmd))]
 pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let packages = &cmd.package;

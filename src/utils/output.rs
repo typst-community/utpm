@@ -1,23 +1,32 @@
 use clap::ValueEnum;
 use once_cell::sync::OnceCell;
 
-// Differents format we want to support
+/// Defines the supported output formats for command results.
 #[derive(Copy, Clone, PartialEq, Eq, shadow_rs::Debug, ValueEnum)]
 pub enum OutputFormat {
+    /// JSON format.
     #[cfg(feature = "output_json")]
     Json,
+    /// YAML format.
     #[cfg(feature = "output_yaml")]
     Yaml,
+    /// TOML format.
     #[cfg(feature = "output_toml")]
     Toml,
+    /// Plain text format.
     #[cfg(feature = "output_text")]
     Text,
+    /// Hjson format.
     #[cfg(feature = "output_hjson")]
     Hjson,
 }
 
+/// A global static variable to hold the configured output format.
 pub static OUTPUT_FORMAT: OnceCell<OutputFormat> = OnceCell::new();
 
+/// Returns the currently configured output format.
+///
+/// Defaults to `OutputFormat::Text` if not explicitly set.
 pub fn get_output_format() -> OutputFormat {
     *OUTPUT_FORMAT.get().unwrap_or(&OutputFormat::Text)
 }

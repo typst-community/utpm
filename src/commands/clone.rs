@@ -21,6 +21,7 @@ use super::CloneArgs;
 
 use regex::Regex;
 
+/// Clones a typst package from the official repository or a local path.
 #[instrument]
 pub fn run(cmd: &CloneArgs) -> Result<bool> {
     let path: PathBuf = if let Some(path) = &cmd.path {

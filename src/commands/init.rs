@@ -35,6 +35,10 @@ use crate::{
 
 use super::InitArgs;
 
+/// Initializes a new typst project by creating a `typst.toml` manifest.
+///
+/// This function can run in interactive mode, prompting the user for configuration details,
+/// or in non-interactive mode using command-line arguments.
 #[instrument(skip(cmd))]
 pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
