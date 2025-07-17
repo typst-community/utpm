@@ -15,7 +15,7 @@ use crate::{
 };
 
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
-use tracing::{debug, instrument};
+use tracing::instrument;
 use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};
 
 use super::{link, InstallArgs};
@@ -34,11 +34,11 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let path = if let Some(url) = &cmd.url {
         let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
-        debug!("url is set to {}, creating {}", url, dir);
+        utpm_log!(debug, "url is set to {}, creating {}", url, dir);
         dir
     } else {
         let dir = get_current_dir()?;
-        debug!("url is none, current dir: {}", dir);
+        utpm_log!(debug, "url is none, current dir: {}", dir);
         dir
     };
 

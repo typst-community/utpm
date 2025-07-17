@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tracing::{debug, error, info, instrument, warn};
+use tracing::instrument;
 use typst_kit::{download::Downloader, package::PackageStorage};
 
 use crate::{
@@ -12,8 +12,9 @@ use crate::{
         state::Result,
         symlink_all, ProgressPrint,
     },
-    utpm_bail,
+    utpm_bail, utpm_log,
 };
+
 
 use typst_syntax::package::{PackageSpec, PackageVersion};
 
@@ -29,9 +30,9 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         get_current_dir()?.into()
     };
     if has_content(&path)? {
-        debug!("found content");
+        utpm_log!(debug, "found content");
         if cmd.force {
-            warn!("force used, ignore content");
+            utpm_log!(warn, "force used, ignore content");
         } else {
             utpm_bail!(ContentFound);
         }
@@ -43,30 +44,29 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         let val = format!(
             "{}/{namespace}/{package}/{major}.{minor}.{patch}",
             if namespace == "preview" {
-                info!("preview found, cache dir use");
+                utpm_log!(info, "preview found, cache dir use");
                 c_packages()?
             } else {
-                info!("no preview found, data dir use");
+                utpm_log!(info, "no preview found, data dir use");
                 d_packages()?
             }
         );
         if check_path_dir(&val) {
             if cmd.download_only {
-                info!("download only, nothing to do.");
+                utpm_log!(info, "download only, nothing to do.");
                 return Ok(true);
             }
             if !cmd.redownload || namespace != "preview" {
-                info!(
-                    namespace = namespace,
-                    redownload = cmd.redownload,
-                    "Skip download..."
+                utpm_log!(info, 
+                    "namespace" => namespace,
+                    "redownload" => cmd.redownload
                 );
                 if cmd.symlink {
                     symlink_all(val, path)?;
-                    info!("symlinked!");
+                    utpm_log!(info, "symlinked!");
                 } else {
                     copy_dir_all(val, path)?;
-                    info!("copied!");
+                    utpm_log!(info, "copied!");
                 }
                 return Ok(true);
             }
@@ -94,18 +94,18 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             printer,
         ) {
             Ok(val) => {
-                info!(path = val.to_str().unwrap(), "package downloaded");
+                utpm_log!(info, "package downloaded", "path" => val.to_str().unwrap());
                 if cmd.download_only {
-                    debug!("download complete, nothing to do");
+                    utpm_log!(debug, "download complete, nothing to do");
                     return Ok(true);
                 }
 
                 if cmd.symlink {
                     symlink_all(val, path)?;
-                    info!("symlinked!");
+                    utpm_log!(info, "symlinked!");
                 } else {
                     copy_dir_all(val, path)?;
-                    info!("copied!");
+                    utpm_log!(info, "copied!");
                 }
 
                 Ok(true)
@@ -115,7 +115,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             }
         };
     } else {
-        error!("package not found, input: {}", package);
+        utpm_log!(error, "package not found, input: {}", package);
         utpm_bail!(PackageNotValid);
     }
 }

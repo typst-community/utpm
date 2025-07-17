@@ -16,7 +16,8 @@ use crate::utils::paths::get_current_dir;
 use ignore::overrides::OverrideBuilder;
 use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;
-use tracing::{error, info, instrument, trace};
+use tracing::instrument;
+
 use typst_project::manifest::Manifest;
 
 use super::PublishArgs;
@@ -32,7 +33,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     let config: Manifest = load_manifest!();
 
-    info!("Manifest load");
+    utpm_log!(info, "Manifest load");
 
     let path_curr: &PathBuf = if let Some(path) = &cmd.path {
         path
@@ -40,7 +41,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         &get_current_dir()?.into()
     };
 
-    info!("Path: {}", path_curr.to_str().unwrap());
+    utpm_log!(info, "Path: {}", path_curr.to_str().unwrap());
 
     let version: String = config.package.version.to_string();
     let name: String = config.package.name.into();
@@ -48,10 +49,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     let package_format = format!("@preview/{name}:{version}");
 
-    info!("Package: {package_format}");
+    utpm_log!(info, "Package: {package_format}");
 
     if !re.is_match(package_format.as_str()) {
-        error!("Package didn't match, the name or the version is incorrect.");
+        utpm_log!(error, "Package didn't match, the name or the version is incorrect.");
         utpm_bail!(Unknown, "todo".into()); // todo: u k
     }
 
@@ -104,7 +105,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             Ok(val) => fork = format!("git@github.com:{}.git", val.full_name.expect("Didn't fork")),
             Err(err) => {
                 utpm_log!("{:?}", err);
-                utpm_bail!(General, "Failed to create fork".to_string());
+                utpm_bail!(OctoCrab, err);
             }
         };
     }
@@ -113,7 +114,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     let repos = update_git_packages(path_packages, fork.as_str())?;
 
-    info!("Path to the new package {}", path_packages_new);
+    utpm_log!(info, "Path to the new package {}", path_packages_new);
 
     // Prepare files
 
@@ -132,24 +133,24 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .git_global(cmd.git_global_ignore)
         .git_exclude(cmd.git_exclude);
 
-    info!(
-        git_ignore = cmd.git_ignore,
-        git_global_ignore = cmd.git_global_ignore,
-        git_exclude = cmd.git_exclude
+    utpm_log!(info, 
+        "git_ignore" => cmd.git_ignore,
+        "git_global_ignore" => cmd.git_global_ignore,
+        "git_exclude" => cmd.git_exclude
     );
 
     let mut path_check = path_curr.clone().into_os_string();
     path_check.push("/.typstignore");
     if check_path_file(path_check) {
-        info!("Added .typstignore");
+        utpm_log!(info, "Added .typstignore");
         wb.add_custom_ignore_filename(".typstignore");
     }
 
     if let Some(custom_ignore) = &cmd.custom_ignore {
         let filename = custom_ignore.file_name().unwrap().to_str().unwrap();
-        info!(custom_ignore = filename, "Trying a new ignore file");
+        utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
         if check_path_file(custom_ignore) {
-            info!(custom_ignore = filename, "File exist, adding it");
+            utpm_log!(info, "File exist, adding it", "custom_ignore" => filename);
             wb.add_custom_ignore_filename(filename);
         }
     }
@@ -183,25 +184,25 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     entryfile.push(&entry);
     let entrystr = entry.to_str().unwrap();
 
-    trace!(entryfile = entrystr);
+    utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(entryfile) {
         utpm_bail!(Unknown, format!("Can't find {entrystr} file in {path_packages_new}. Did you omit it in your ignored files?"));
     }
 
-    info!("files copied to {path_packages_new}");
+    utpm_log!(info, "files copied to {path_packages_new}");
 
     // Push
 
-    info!("Getting information from github");
+    utpm_log!(info, "Getting information from github");
 
     let author_user: Author = crab.current().user().await?;
     let user: UserProfile = crab.users_by_id(author_user.id).profile().await?;
 
     let us = &user;
-    info!(
-        email = us.email,
-        id = us.id.to_string(),
-        name = us.name.clone().unwrap()
+    utpm_log!(info, 
+        "email" => us.email,
+        "id" => us.id.to_string(),
+        "name" => us.name.clone().unwrap()
     );
 
     let name_replaced = name_package.replace('-', ":");
@@ -212,7 +213,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     push_git_packages(repos, user.clone(), msg.as_str())?;
 
-    info!("Ended push");
+    utpm_log!(info, "Ended push");
 
     // Pull request
 

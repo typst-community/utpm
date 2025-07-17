@@ -1,18 +1,15 @@
 use std::{collections::BTreeMap, fs};
 
 use toml::map::Map;
-use tracing::{debug, instrument, trace};
+use tracing::instrument;
 use typst_project::manifest::{tool::Tool, Manifest};
 
 use crate::{
-    load_manifest,
-    utpm_bail,
-    utils::{
+    load_manifest, utils::{
         paths::get_current_dir,
         specs::Extra,
         state::{Result, UtpmError},
-    },
-    write_manifest,
+    }, utpm_bail, utpm_log, write_manifest
 };
 
 use super::{install, AddArgs, InstallArgs};
@@ -21,26 +18,26 @@ use super::{install, AddArgs, InstallArgs};
 pub fn run(cmd: &mut AddArgs) -> Result<bool> {
     let mut config: Manifest = load_manifest!();
     if cmd.uri.len() == 0 {
-        debug!("0 URI found in cmd.uri");
-        utpm_bail!(General, "Error".into());
+        utpm_log!(debug, "0 URI found in cmd.uri");
+        utpm_bail!(NoURIFound);
     }
 
-    debug!("{} URIs found: {}", cmd.uri.len(), cmd.uri.join(", "));
+    utpm_log!(debug, "{} URIs found: {}", cmd.uri.len(), cmd.uri.join(", "));
     if let Some(mut tool) = config.clone().tool {
-        trace!("- tool section found");
+        utpm_log!(trace, "- tool section found");
         if let Some(ex) = tool.keys.get("utpm") {
-            trace!("- utpm section found in tool");
+            utpm_log!(trace, "- utpm section found in tool");
             let mut extra: Extra = toml::from_str(toml::to_string(ex)?.as_str())?; //Todo: change this hack
-            trace!("hacky conversion done");
+            utpm_log!(trace, "hacky conversion done");
             if let Some(mut dependencies) = extra.dependencies.clone() {
-                trace!("- dependencies found, adding uris");
+                utpm_log!(trace, "- dependencies found, adding uris");
                 for e in &cmd.uri {
                     match dependencies.iter().position(|x| x == e) {
                         Some(_) => {
-                            trace!("{} dependency already in the load_manifest skipping", e);
+                            utpm_log!(trace, "{e} dependency already in the load_manifest skipping");
                         }
                         None => {
-                            trace!("{} added", e);
+                            utpm_log!(trace, "{e} added");
                             dependencies.push(e.clone())
                         }
                     };

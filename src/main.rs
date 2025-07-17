@@ -59,7 +59,7 @@ use commands::{Cli, Commands};
 
 use utils::state::UtpmError;
 
-use tracing::{error, instrument, level_filters::LevelFilter};
+use tracing::{instrument, error, level_filters::LevelFilter};
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
 use crate::utils::output::{get_output_format, OutputFormat};
@@ -162,8 +162,7 @@ fn main() {
         Commands::Generate(cmd) => generate::run(cmd),
     };
 
-    match res {
-        Ok(_) => {}
-        Err(val) => error!("{}", val),
+    if let Err(err) = res {
+        error!("That type of error shouldn't be possible. Please report this with your command: {}", err)
     }
 }

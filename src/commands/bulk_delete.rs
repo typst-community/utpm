@@ -1,4 +1,4 @@
-use tracing::{error, info, instrument};
+use tracing::instrument;
 
 use crate::{utils::state::{Result, UtpmError}, utpm_log};
 
@@ -13,11 +13,11 @@ pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
             yes: true,
         }) {
             Ok(_) => {
-                info!("- {name} deleted");
+                utpm_log!(info, "- {} deleted", name);
             }
             Err(err) => {
-                info!("X {name} not found");
-                error!("{err}");
+                utpm_log!(info, "X {} not found", name);
+                utpm_log!(error, "{}", err);
                 vec.push(err);
             }
         };
