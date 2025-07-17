@@ -7,7 +7,7 @@ use super::ListTreeArgs;
 /// DEPRECIATED
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
-    warn!("WARNING: Command is depreciated. Use list --tree instead.");
+    warn!("Command is depreciated. Use list --tree instead.");
     let mut new_cmd = cmd.clone();
     new_cmd.tree = true;
     return R(&new_cmd);

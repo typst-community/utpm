@@ -161,6 +161,7 @@ pub fn package_read(typ: &String, name: String) -> Result<Package> {
         let dir: fs::DirEntry = dir_res?;
         pkg.list_version.push(dir.file_name().to_str().unwrap().into());
     }
+    pkg.list_version.sort();
     Ok(pkg)
 }
 
