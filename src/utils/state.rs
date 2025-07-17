@@ -177,7 +177,9 @@ impl UtpmError {
             Other(_) => "Other",
             Rebase => "Rebase",
             JsonParse(_) => "JSONParse",
+            #[cfg(feature = "output_hjson")]
             HJsonParse(_) => "HJSONParse",
+            #[cfg(feature = "output_yaml")]
             YamlParse(_) => "YamlParse",
             NoURIFound => "NoURIFound",
         }
