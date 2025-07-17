@@ -39,7 +39,6 @@
 - [x] 📤 Flexible output formats
   - [x] 📝 Classic text and JSON output (fully supported)
   - [x] ⚠️ YAML, HJSON, and TOML output (experimental, under active development, and not included in official utpm builds — requires manual build for access)
-
 - [ ] 🚀 Automated publication directly to Typst Universe!
 
 **_...And more soon!_**
