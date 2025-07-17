@@ -18,27 +18,37 @@ use super::DeleteArgs;
 pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
     let mut config = load_manifest!();
 
-    if let Some(mut tool) = config.clone().tool {
-        if let Some(ex) = tool.keys.get("utpm") {
-            let mut extra: Extra = toml::from_str(toml::to_string(ex)?.as_str())?; //Todo: change this hack
-            if let Some(mut dep) = extra.clone().dependencies {
-                for e in &cmd.uri {
-                    match dep.iter().position(|x| x == e) {
-                        Some(val) => {
-                            dep.remove(val);
-                            utpm_log!("Removed");
+    if let Some(mut tool_section) = config.tool.take() {
+        if let Some(entry) = tool_section.keys.get_mut("utpm") {
+            let mut extra: Extra = toml::from_str(&toml::to_string(entry)?)?;
+            if let Some(mut dependencies) = extra.dependencies.take() {
+                for uri in &cmd.uri {
+                    match dependencies.iter().position(|x| x == uri) {
+                        Some(idx) => {
+                            dependencies.remove(idx);
+                            utpm_log!("Removed {}", uri);
                         }
-                        None => utpm_log!("Can't remove it"),
-                    };
+                        None => utpm_log!("Can't remove {} (not found)", uri),
+                    }
                 }
-                extra.dependencies = Some(dep);
-                tool.keys.insert("utpm".to_string(), Map::try_from(extra)?);
+                extra.dependencies = Some(dependencies);
+                // Mettre à jour l'entrée utpm dans tool_section avec la nouvelle structure modifiée
+                tool_section.keys.insert(
+                    "utpm".to_string(),
+                    Map::try_from(extra)?
+                );
+            } else {
+                utpm_log!("Nothing has changed! There isn't a key for 'dependencies' in the typst.toml.")
             }
+        } else {
+            utpm_log!("Nothing has changed! There isn't a tool section dedicated to utpm in the typst.toml.")
         }
-        config.tool = Some(tool);
+        config.tool = Some(tool_section);
+    } else {
+        utpm_log!("Nothing has changed! There isn't a tool section in the typst.toml.")
     }
 
+    // Sauvegarder la configuration modifiée
     write_manifest!(&config);
-
     Ok(true)
 }

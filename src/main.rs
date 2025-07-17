@@ -1,3 +1,4 @@
+use anyhow::Result;
 use shadow_rs::shadow;
 shadow!(build);
 
@@ -163,6 +164,18 @@ fn main() {
     };
 
     if let Err(err) = res {
-        error!("That type of error shouldn't be possible. Please report this with your command: {}", err)
+        if get_output_format() != OutputFormat::Text {
+            OUTPUT_FORMAT.set(OutputFormat::Json).unwrap();
+        }
+        match check_errors(err) {
+            Ok(_) => (),
+            Err(err2) => error!("{}", err2),
+        };
     }
+}
+
+/// Last try to print errors. If we can't, we result to use tracing
+fn check_errors(err: UtpmError) -> Result<()> {
+    utpm_log!(error, "{}", err);
+    return Ok(());
 }
