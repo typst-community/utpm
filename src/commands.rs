@@ -1,4 +1,5 @@
-/// Linker
+/// Linker: This module dynamically links all the command modules.
+/// Each command is a separate module, conditionally compiled based on feature flags.
 #[cfg(feature = "add")]
 pub mod add;
 #[cfg(feature = "bulk_delete")]
@@ -42,6 +43,7 @@ use crate::build;
 use crate::utils::output::OutputFormat;
 
 /// Arguments for the `init` command.
+/// This command initializes a new `typst.toml` manifest file in the current directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "init")]
 pub struct InitArgs {
@@ -132,6 +134,7 @@ pub struct InitArgs {
 }
 
 /// Arguments for the `link` command.
+/// This command links a local project to the UTPM package directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "link")]
 pub struct LinkArgs {
@@ -145,6 +148,7 @@ pub struct LinkArgs {
 }
 
 /// Arguments for the `list` and `tree` commands.
+/// These commands display the packages in the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(any(feature = "list", feature = "tree"))]
 pub struct ListTreeArgs {
@@ -162,6 +166,7 @@ pub struct ListTreeArgs {
 }
 
 /// Arguments for the `publish` command.
+/// This command publishes a package to the typst universe.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "publish")]
 pub struct PublishArgs {
@@ -207,6 +212,7 @@ pub struct PublishArgs {
 }
 
 /// Arguments for the `generate` command.
+/// This command generates shell completion scripts.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "generate")]
 pub struct GenerateArgs {
@@ -216,6 +222,7 @@ pub struct GenerateArgs {
 }
 
 /// Arguments for the `clone` command.
+/// This command clones a package from the typst universe or a local directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "clone")]
 pub struct CloneArgs {
@@ -245,6 +252,7 @@ pub struct CloneArgs {
 }
 
 /// Arguments for the `unlink` command.
+/// This command removes a package from the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "unlink")]
 pub struct UnlinkArgs {
@@ -257,6 +265,7 @@ pub struct UnlinkArgs {
 }
 
 /// Arguments for the `bulk-delete` command.
+/// This command removes multiple packages at once.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "bulk_delete")]
 pub struct BulkDeleteArgs {
@@ -270,6 +279,7 @@ pub struct BulkDeleteArgs {
 }
 
 /// Arguments for the `install` command.
+/// This command installs dependencies from the manifest or a given URL.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "install")]
 pub struct InstallArgs {
@@ -283,6 +293,7 @@ pub struct InstallArgs {
 }
 
 /// Arguments for the `delete` command.
+/// This command removes dependencies from the manifest.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "delete")]
 pub struct DeleteArgs {
@@ -292,6 +303,7 @@ pub struct DeleteArgs {
 }
 
 /// Arguments for the `add` command.
+/// This command adds dependencies to the manifest.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "add")]
 pub struct AddArgs {
@@ -299,7 +311,7 @@ pub struct AddArgs {
     pub uri: Vec<String>,
 }
 
-/// Commands for managing local packages.
+/// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
 #[cfg(any(
     feature = "tree",
@@ -336,7 +348,7 @@ pub enum Packages {
     BulkDelete(BulkDeleteArgs),
 }
 
-/// Commands for managing the project workspace.
+/// An enumeration of subcommands for managing the project workspace.
 #[derive(Subcommand, Debug, PartialEq)]
 #[cfg(any(
     feature = "link",

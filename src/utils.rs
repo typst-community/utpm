@@ -128,6 +128,8 @@ where
     load_creds!(callbacks, val);
     let mut fo = FetchOptions::new();
     fo.remote_callbacks(callbacks);
+
+    // Check if the repository already exists.
     if has_content(&path_packages)? {
         utpm_log!(info, "Content found, starting a 'git pull origin main'");
         repo = Repository::open(path_packages)?;
@@ -136,6 +138,7 @@ where
         let fetch_head = repo.find_reference("FETCH_HEAD")?;
         let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
         let analysis = repo.merge_analysis(&[&fetch_commit])?;
+
         if analysis.0.is_up_to_date() {
             utpm_log!(info, "up to date, nothing to do");
         } else if analysis.0.is_fast_forward() {
@@ -150,6 +153,7 @@ where
             utpm_bail!(Rebase)
         }
     } else {
+        // If the repository doesn't exist, clone it.
         utpm_log!(info, "Start cloning");
         let mut builder = RepoBuilder::new();
         builder.fetch_options(fo);
@@ -167,32 +171,30 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
 
     use crate::{load_creds, utpm_log};
 
-    // Can't use instrument here.
+    // `instrument` macro cannot be used here, so we create a span manually.
     let spans = span!(Level::INFO, "push_git_packages");
     let _guard = spans.enter();
 
-    // Real start
-
+    // --- Git Commit ---
     utpm_log!(info, "Starting commit");
     let uid = user.id.to_string();
 
+    // Create a git signature for the commit author.
     let author = Signature::now(
         user.name.unwrap_or(uid.clone()).as_str(),
         user.email.unwrap_or(format!("{uid}@github.com")).as_str(),
     )?;
 
+    // Stage all changes.
     let mut index = repo.index()?;
-
     index.add_all(&["."], IndexAddOption::DEFAULT, None)?;
-
     index.write()?;
     let oid = index.write_tree()?;
-
     utpm_log!(info, "Index added");
 
+    // Create the commit.
     let last_commit = repo.head()?.peel_to_commit()?;
     let tree = repo.find_tree(oid)?;
-
     let oid: Oid = repo.commit(
         Some("HEAD"),
         &author,
@@ -203,7 +205,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
     )?;
     utpm_log!(info, "Commit created", "id" => oid.to_string());
 
-    // From above
+    // --- Git Push ---
     let sshpath = get_ssh_dir()?;
     let ed: String = sshpath.clone() + "/id_ed25519";
     let rsa: String = sshpath + "/id_rsa";
@@ -224,6 +226,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
     let mut po = PushOptions::new();
     po.remote_callbacks(callbacks);
 
+    // Push the changes to the remote repository.
     repo.find_remote("origin")?
         .push::<&str>(&["refs/heads/main"], Some(&mut po))?;
 

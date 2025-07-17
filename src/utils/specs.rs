@@ -17,6 +17,7 @@ pub struct Extra {
 }
 
 impl Default for Extra {
+    /// Creates a default `Extra` instance with the namespace set to "local".
     fn default() -> Self {
         Self {
             namespace: Some("local".to_string()),

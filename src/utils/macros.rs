@@ -121,7 +121,7 @@ macro_rules! load_creds {
 /// utpm_bail!(Manifest);
 ///
 /// // Bail with an error variant that has arguments
-/// utpm_bail!(AlreadyExist, "mypackage".into(), "1.0.0".into(), "Info".into());
+/// utpm_bail!(AlreadyExist, "mypackage".to_string(), "1.0.0".into(), "Info".to_string());
 /// ```
 #[macro_export]
 macro_rules! utpm_bail {

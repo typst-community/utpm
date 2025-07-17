@@ -40,21 +40,26 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
 /// Otherwise, it installs dependencies from the `typst.toml` manifest in the current directory.
 #[instrument(skip(cmd))]
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
+    // Determine the source path for the installation.
     let path = if let Some(url) = &cmd.url {
+        // If a URL is provided, create a temporary directory for cloning.
         let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
         utpm_log!(debug, "url is set to {}, creating {}", url, dir);
         dir
     } else {
+        // Otherwise, use the current directory.
         let dir = get_current_dir()?;
         utpm_log!(debug, "url is none, current dir: {}", dir);
         dir
     };
 
+    // If a URL is provided, clone or copy the repository.
     if let Some(x) = &cmd.url {
         fs::create_dir_all(&path)?;
         let sshpath = get_ssh_dir()?;
         let ed: String = sshpath.clone() + "/id_ed25519";
         let rsa: String = sshpath + "/id_rsa";
+        // Determine the SSH key to use.
         let val: String = match env::var("UTPM_KEYPATH") {
             Ok(val) => val,
             Err(_) => {
@@ -65,6 +70,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
                 }
             }
         };
+        // Handle git and http(s) URLs.
         if x.starts_with("git") || x.starts_with("http") {
             let mut callbacks = RemoteCallbacks::new();
             callbacks.credentials(|_, username_from_url, _| {
@@ -93,16 +99,20 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             builder.fetch_options(fo);
             builder.clone(&x, Path::new(&path))?;
         } else {
+            // Handle local paths.
             copy_dir_all(&x, &path)?;
         }
     };
 
+    // Check for a manifest file in the source directory.
     let typstfile = path.clone() + "/" + MANIFEST_FILE;
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
         utpm_log!("{}", format!("x {}", origin));
         return Ok(false);
     }
+
+    // Load the manifest and extract UTPM-specific configurations.
     let file = load_manifest!(&path);
     let utpm = if let Some(value) = file.tool {
         value.get_section("utpm")?.unwrap_or(Extra::default())
@@ -110,6 +120,8 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         Extra::default()
     };
     let namespace = utpm.namespace.unwrap_or("local".into());
+
+    // Check if the package is already installed.
     if check_path_dir(&format!(
         "{}/{}/{}/{}",
         d_packages()?,
@@ -124,6 +136,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         return Ok(true);
     }
 
+    // Recursively install dependencies.
     utpm_log!("{}", format!("Installing {}...", file.package.name));
     if let Some(vec_depend) = utpm.dependencies {
         let mut y = 0;
@@ -140,6 +153,8 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             })
             .collect::<Result<Vec<bool>>>()?;
     }
+
+    // Link the installed package and clean up temporary files.
     if !cmd.url.is_none() {
         let lnk = LinkArgs {
             force: cmd.force,

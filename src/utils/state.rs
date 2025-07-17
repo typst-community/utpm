@@ -13,6 +13,9 @@ pub type Result<T> = anyhow::Result<T, UtpmError>;
 use serde::ser::{SerializeStruct, Serializer};
 
 /// The error type for UTPM operations.
+///
+/// This enum consolidates all possible errors that can occur within the application,
+/// providing a single, consistent error handling mechanism.
 #[derive(Debug, TError)]
 pub enum UtpmError {
     /// A semantic versioning error.
@@ -159,7 +162,8 @@ pub enum UtpmError {
     Other(#[from] anyhow::Error),
 }
 
-// Custom serialize impl
+// Custom `Serialize` implementation for `UtpmError`.
+// This allows errors to be serialized into structured formats like JSON.
 impl Serialize for UtpmError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where

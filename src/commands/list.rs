@@ -23,6 +23,7 @@ pub struct Data {
 }
 
 impl Data {
+    /// Creates a new `Data` instance.
     pub fn new(path: String) -> Self {
         Self {
             list_namespace: vec![],
@@ -56,6 +57,7 @@ pub struct Namespace {
 }
 
 impl Namespace {
+    /// Creates a new `Namespace` instance.
     pub fn new(name: String) -> Self {
         Self {
             list_packages: vec![],
@@ -89,6 +91,7 @@ pub struct Package {
 }
 
 impl Package {
+    /// Creates a new `Package` instance.
     pub fn new(name: String) -> Self {
         Self {
             list_version: vec![],
@@ -121,10 +124,12 @@ use super::ListTreeArgs;
 /// command-line arguments and output format.
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
+    // If tree view is requested with text output, use the tree-specific function.
     if cmd.tree && get_output_format() == OutputFormat::Text {
         return run_tree(cmd);
     }
     let typ: String = d_packages()?;
+    // If `--all` is specified, list packages from both data and cache directories.
     if cmd.all {
         let preview: String = c_packages()?;
         let data1 = read(typ)?;
@@ -134,6 +139,7 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
         return Ok(true);
     }
 
+    // If specific packages/namespaces are included, list only those.
     if let Some(list) = &cmd.include {
         let preview: String = c_packages()?;
         for e in list {
@@ -155,6 +161,7 @@ pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
         }
         Ok(true)
     } else {
+        // By default, list packages from the data directory.
         let data = read(typ)?;
         utpm_log!(data);
         return Ok(true);

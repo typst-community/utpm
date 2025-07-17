@@ -19,11 +19,13 @@ use super::UnlinkArgs;
 pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let packages = &cmd.package;
 
-    // RegEx
+    // Use regex to parse the package string, which can be a full package spec,
+    // a package name, or just a namespace.
     let re_all = regex_package();
     let re_name = regex_packagename();
     let re_namespace = regex_namespace();
     let path: String;
+
     if let Some(cap) = re_all.captures(packages.as_str()) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
         path = format_package!(namespace, package, major, minor, patch);
@@ -37,10 +39,12 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
         utpm_bail!(PackageNotValid);
     }
 
+    // Check if the package directory exists.
     if !check_path_dir(&path) {
         utpm_bail!(PackageNotExist)
     }
 
+    // Confirm with the user before deleting, unless `--yes` is provided.
     if !cmd.yes {
         match Confirm::new("Are you sure to delete this? This is irreversible.")
             .with_help_message(format!("You want to delete {packages}").as_str())

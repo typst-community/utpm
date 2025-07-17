@@ -22,6 +22,8 @@ pub enum OutputFormat {
 }
 
 /// A global static variable to hold the configured output format.
+/// This allows the output format to be set once and accessed from anywhere
+/// in the application.
 pub static OUTPUT_FORMAT: OnceCell<OutputFormat> = OnceCell::new();
 
 /// Returns the currently configured output format.

@@ -21,11 +21,16 @@ use super::DeleteArgs;
 pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
     let mut config = load_manifest!();
 
+    // Check for the `[tool]` section in the manifest.
     if let Some(mut tool_section) = config.tool.take() {
+        // Check for the `[tool.utpm]` subsection.
         if let Some(entry) = tool_section.keys.get_mut("utpm") {
             let mut extra: Extra = toml::from_str(&toml::to_string(entry)?)?;
+            // Check for the `dependencies` key.
             if let Some(mut dependencies) = extra.dependencies.take() {
+                // Iterate over the URIs to remove.
                 for uri in &cmd.uri {
+                    // Find and remove the dependency.
                     match dependencies.iter().position(|x| x == uri) {
                         Some(idx) => {
                             dependencies.remove(idx);
@@ -35,7 +40,7 @@ pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
                     }
                 }
                 extra.dependencies = Some(dependencies);
-                // Mettre à jour l'entrée utpm dans tool_section avec la nouvelle structure modifiée
+                // Update the `[tool.utpm]` section with the modified dependencies.
                 tool_section
                     .keys
                     .insert("utpm".to_string(), Map::try_from(extra)?);
@@ -52,7 +57,7 @@ pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
         utpm_log!("Nothing has changed! There isn't a tool section in the typst.toml.")
     }
 
-    // Sauvegarder la configuration modifiée
+    // Write the modified manifest back to the file.
     write_manifest!(&config);
     Ok(true)
 }

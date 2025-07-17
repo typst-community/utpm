@@ -71,26 +71,29 @@ use crate::utils::output::{get_output_format, OutputFormat};
 /// sets up logging, and dispatches to the appropriate command handler.
 #[instrument]
 fn main() {
+    // Parse command-line arguments.
     let x = Cli::parse();
 
-    // Fetching variables from the environment.
+    // Set up logging level from `UTPM_DEBUG` env var or default to `info`.
     let debug_str: String = match env::var("UTPM_DEBUG") {
         Err(_) => "info".into(),
         Ok(val) => val,
     };
 
-    // Transform the env var into a levelfilter to
-    // filter logs from the tracing
+    // Convert the log level string to a `LevelFilter`.
     let level_filter: LevelFilter = match LevelFilter::from_str(debug_str.as_str()) {
         Ok(val) => val,
         Err(_) => LevelFilter::INFO,
     };
 
+    // Set the global output format.
     OUTPUT_FORMAT
         .set(x.output_format.unwrap_or(OutputFormat::Text))
         .unwrap();
 
+    // Initialize the tracing subscriber based on the output format.
     if get_output_format() != OutputFormat::Text {
+        // Use JSON format for logs if output is not plain text.
         tracing_subscriber::registry()
             .with(tracing_subscriber::fmt::layer().json().with_filter(
                 if let Some(debug) = x.verbose {
@@ -101,6 +104,7 @@ fn main() {
             ))
             .init();
     } else {
+        // Use standard format for text output.
         tracing_subscriber::registry()
             .with(
                 tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.verbose {
@@ -112,6 +116,7 @@ fn main() {
             .init();
     }
 
+    // Dispatch the command to its handler.
     let res: Result<bool, UtpmError> = match &x.command {
         #[cfg(any(
             feature = "link",
@@ -147,7 +152,7 @@ fn main() {
             feature = "bulk_delete"
         ))]
         Commands::Packages(p) => match p {
-            // Maybe a move command to change namespace? Or name or version
+            // TODO: Consider a `move` command to change namespace, name, or version.
             #[cfg(feature = "tree")]
             Packages::Tree(cmd) => tree::run(cmd),
             #[cfg(feature = "list")]
@@ -163,6 +168,7 @@ fn main() {
         Commands::Generate(cmd) => generate::run(cmd),
     };
 
+    // Handle any errors that occurred during command execution.
     if let Err(err) = res {
         match check_errors(err) {
             Ok(_) => (),
