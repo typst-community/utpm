@@ -4,10 +4,11 @@ use tracing::{info, instrument};
 
 use crate::{
     format_package,
+    utpm_bail,
     utils::{
         paths::{c_packages, d_packages},
         regex_namespace, regex_package, regex_packagename,
-        state::{Error, ErrorKind, Result},
+        state::Result,
     },
 };
 
@@ -32,7 +33,7 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
         let (_, [namespace]) = cap.extract();
         path = format_package!(namespace);
     } else {
-        return Err(Error::empty(ErrorKind::PackageNotValid));
+        utpm_bail!(PackageNotValid);
     }
 
     if !cmd.yes {

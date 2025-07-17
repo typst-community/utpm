@@ -10,13 +10,13 @@ use git2::{
 };
 use paths::{check_path_file, get_ssh_dir, has_content};
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
-use regex::Regex;
-use state::{Error, ErrorKind};
 use std::{env, io, result::Result as R};
-use tracing::{error, info, instrument};
+use regex::Regex;
+use tracing::{info, instrument};
 use typst_kit::download::{DownloadState, Progress};
 
 pub mod macros;
+pub mod output;
 pub mod paths;
 pub mod specs;
 pub mod state;
@@ -93,7 +93,7 @@ pub fn update_git_packages<P>(path_packages: P, url: &str) -> Result<Repository>
 where
     P: AsRef<Path> + AsRef<OsStr> + Debug,
 {
-    use crate::load_creds;
+    use crate::{load_creds, utpm_bail, utpm_log};
 
     create_dir_all(&path_packages)?;
     let repo: Repository;
@@ -110,13 +110,13 @@ where
             }
         }
     };
-    info!(path = val);
+    utpm_log!(info, "path" => val);
     let mut callbacks = RemoteCallbacks::new();
     load_creds!(callbacks, val);
     let mut fo = FetchOptions::new();
     fo.remote_callbacks(callbacks);
     if has_content(&path_packages)? {
-        info!("Content found, starting a 'git pull origin main'");
+        utpm_log!(info, "Content found, starting a 'git pull origin main'");
         repo = Repository::open(path_packages)?;
         let mut remote = repo.find_remote("origin")?;
         remote.fetch(&["main"], Some(&mut fo), None)?;
@@ -124,24 +124,24 @@ where
         let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
         let analysis = repo.merge_analysis(&[&fetch_commit])?;
         if analysis.0.is_up_to_date() {
-            info!("up to date, nothing to do");
+            utpm_log!(info, "up to date, nothing to do");
         } else if analysis.0.is_fast_forward() {
             let refname = format!("refs/heads/{}", "main");
             let mut reference = repo.find_reference(&refname)?;
             reference.set_target(fetch_commit.id(), "Fast-Forward")?;
             repo.set_head(&refname)?;
             repo.checkout_head(Some(CheckoutBuilder::default().force()))?;
-            info!("fast forward done");
+            utpm_log!(info, "fast forward done");
         } else {
-            error!("Can't rebase for now.");
-            return Err(Error::empty(ErrorKind::UnknowError("todo".into())));
+            utpm_log!(error, "Can't rebase for now.");
+            utpm_bail!(Rebase)
         }
     } else {
-        info!("Start cloning");
+        utpm_log!(info, "Start cloning");
         let mut builder = RepoBuilder::new();
         builder.fetch_options(fo);
         repo = builder.clone(url, Path::new(&path_packages))?;
-        info!("Package cloned");
+        utpm_log!(info, "Package cloned");
     };
     Ok(repo)
 }
@@ -151,7 +151,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
     use git2::{IndexAddOption, Oid, PushOptions, Signature};
     use tracing::{span, Level};
 
-    use crate::load_creds;
+    use crate::{load_creds, utpm_log};
 
     // Can't use instrument here.
     let spans = span!(Level::INFO, "push_git_packages");
@@ -159,7 +159,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
 
     // Real start
 
-    info!("Starting commit");
+    utpm_log!(info, "Starting commit");
     let uid = user.id.to_string();
 
     let author = Signature::now(
@@ -174,7 +174,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
     index.write()?;
     let oid = index.write_tree()?;
 
-    info!("Index added");
+    utpm_log!(info, "Index added");
 
     let last_commit = repo.head()?.peel_to_commit()?;
     let tree = repo.find_tree(oid)?;
@@ -187,7 +187,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
         &tree,
         &[&last_commit],
     )?;
-    info!(id = oid.to_string(), "Commit created");
+    utpm_log!(info, "Commit created", "id" => oid.to_string());
 
     // From above
     let sshpath = get_ssh_dir()?;
@@ -203,7 +203,7 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
             }
         }
     };
-    info!(path = val);
+    utpm_log!(info, "path" => val);
     let mut callbacks = RemoteCallbacks::new();
     load_creds!(callbacks, val);
 
@@ -213,7 +213,6 @@ pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> 
     repo.find_remote("origin")?
         .push::<&str>(&["refs/heads/main"], Some(&mut po))?;
 
-    
     return Ok(());
 }
 

@@ -10,12 +10,12 @@ use crate::{
             get_ssh_dir,
         },
         specs::Extra,
-        state::{Error, ErrorKind, Result},
-    },
+        state::{Result, UtpmError},
+    }, utpm_log,
 };
 
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
-use tracing::{debug, instrument};
+use tracing::instrument;
 use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};
 
 use super::{link, InstallArgs};
@@ -34,11 +34,11 @@ pub fn run(cmd: &InstallArgs) -> Result<bool> {
 pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let path = if let Some(url) = &cmd.url {
         let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
-        debug!("url is set to {}, creating {}", url, dir);
+        utpm_log!(debug, "url is set to {}, creating {}", url, dir);
         dir
     } else {
         let dir = get_current_dir()?;
-        debug!("url is none, current dir: {}", dir);
+        utpm_log!(debug, "url is none, current dir: {}", dir);
         dir
     };
 
@@ -92,7 +92,7 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     let typstfile = path.clone() + "/" + MANIFEST_FILE;
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
-        println!("{}", format!("x {}", origin));
+        utpm_log!("{}", format!("x {}", origin));
         return Ok(false);
     }
     let file = load_manifest!(&path);
@@ -109,14 +109,14 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         &file.package.name,
         &file.package.version
     )) {
-        println!(
+        utpm_log!(
             "{}",
             format!("~ {}:{}", file.package.name, file.package.version)
         );
         return Ok(true);
     }
 
-    println!("{}", format!("Installing {}...", file.package.name));
+    utpm_log!("{}", format!("Installing {}...", file.package.name));
     if let Some(vec_depend) = utpm.dependencies {
         let mut y = 0;
         vec_depend
@@ -139,12 +139,12 @@ pub fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         };
         link::run(&lnk, Some(path.clone()), false)?; //TODO: change here too
         fs::remove_dir_all(&path)?;
-        println!(
+        utpm_log!(
             "{}",
             format!("+ {}:{}", file.package.name, file.package.version)
         );
     } else {
-        println!("* Installation complete! If you want to use it as a lib, just do a `utpm link`!")
+        utpm_log!("* Installation complete! If you want to use it as a lib, just do a `utpm link`!")
     }
 
     Ok(true)

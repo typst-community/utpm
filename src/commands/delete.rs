@@ -5,13 +5,11 @@ use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
-    load_manifest,
-    utils::{
+    load_manifest, utils::{
         paths::get_current_dir,
         specs::Extra,
-        state::{Error, ErrorKind, Result},
-    },
-    write_manifest,
+        state::{Result, UtpmError},
+    }, utpm_log, write_manifest
 };
 
 use super::DeleteArgs;
@@ -28,9 +26,9 @@ pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
                     match dep.iter().position(|x| x == e) {
                         Some(val) => {
                             dep.remove(val);
-                            println!("Removed");
+                            utpm_log!("Removed");
                         }
-                        None => println!("Can't remove it"),
+                        None => utpm_log!("Can't remove it"),
                     };
                 }
                 extra.dependencies = Some(dep);

@@ -3,14 +3,13 @@ use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
-    load_manifest,
-    utils::{
+    load_manifest, utils::{
         copy_dir_all,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir},
         specs::Extra,
-        state::{Error, ErrorKind, Result},
+        state::{Result, UtpmError},
         symlink_all,
-    },
+    }, utpm_bail, utpm_log
 };
 
 use super::LinkArgs;
@@ -38,11 +37,7 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
         format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
     };
     if check_path_dir(&path) && !cmd.force {
-        return Err(Error::empty(ErrorKind::AlreadyExist(
-            name.into(),
-            version,
-            "Info:".into(),
-        )));
+        utpm_bail!(AlreadyExist, name.to_string(), version, "Info:".to_string());
     }
 
     fs::create_dir_all(&path)?;
@@ -54,19 +49,20 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     if cmd.no_copy {
         symlink_all(&curr, &path)?;
         if pt {
-            println!(
-                "Project linked to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
+            utpm_log!(
+                "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
                 path, namespace, name, version
             );
         }
     } else {
         copy_dir_all(&curr, &path)?;
         if pt {
-            println!(
-                "Project copied to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
+            utpm_log!(
+                "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
                 path, namespace, name, version
             );
         }
     }
     Ok(true)
 }
+

@@ -1,85 +1,15 @@
-use std::fs;
-use tracing::instrument;
+use tracing::{instrument, warn};
 
-use crate::utils::{
-    paths::{c_packages, d_packages},
-    state::Result,
-};
+use crate::{commands::list::run as R, utils::state::Result};
+use crate::utpm_log;
 
 use super::ListTreeArgs;
 
-use std::result::Result as R;
-
+/// DEPRECIATED
 #[instrument(skip(cmd))]
 pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
-    let typ: String = d_packages()?;
-    println!("{}", "Tree listing of your packages\n");
-    if cmd.all {
-        let preview: String = c_packages()?;
-        read(typ)?;
-        return read(preview);
-    }
-
-    if let Some(list) = &cmd.include {
-        let preview: String = c_packages()?;
-        for e in list {
-            if e == "preview" {
-                return read(preview);
-            }
-            match package_read(&format!("{}/local/{}", typ, e)) {
-                Ok(_) => true,
-                Err(_) => namespace_read(&format!("{}/{}", typ, e))?,
-            };
-        }
-        Ok(true)
-    } else {
-        read(typ)
-    }
-}
-
-fn read(typ: String) -> Result<bool> {
-    let dirs = fs::read_dir(&typ)?;
-
-    for dir_res in dirs {
-        let dir = dir_res?;
-        println!("@{}:", dir.file_name().to_str().unwrap());
-        let subupdirs = fs::read_dir(dir.path())?;
-
-        for dir_res in subupdirs {
-            let dir = dir_res?;
-            println!("  {}:", dir.file_name().to_str().unwrap());
-
-            let subdirs = fs::read_dir(dir.path())?;
-            for sub_dir_res in subdirs {
-                let subdir = sub_dir_res?;
-                println!("    - {}", subdir.file_name().to_str().unwrap());
-            }
-        }
-    }
-    Ok(true)
-}
-
-fn package_read(typ: &String) -> Result<bool> {
-    let dirs = fs::read_dir(&typ)?;
-
-    for dir_res in dirs {
-        let dir = dir_res?;
-        print!("{}", dir.file_name().to_str().unwrap());
-    }
-    println!();
-    Ok(true)
-}
-
-fn namespace_read(typ: &String) -> Result<bool> {
-    let dirs = fs::read_dir(&typ)?;
-
-    for dir_res in dirs.into_iter().collect::<R<Vec<_>, _>>()? {
-        println!("{}:", dir_res.file_name().into_string().unwrap());
-        let subupdirs = fs::read_dir(dir_res.path())?;
-        for dir_res in subupdirs.into_iter().collect::<R<Vec<_>, _>>()? {
-            println!("  - {}", dir_res.file_name().to_str().unwrap());
-        }
-        println!();
-    }
-    Ok(true)
+    utpm_log!(warn, "Command is depreciated. Use list --tree instead.");
+    let mut new_cmd = cmd.clone();
+    new_cmd.tree = true;
+    return R(&new_cmd);
 }

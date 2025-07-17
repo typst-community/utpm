@@ -1,28 +1,28 @@
-use tracing::{error, info, instrument};
+use tracing::instrument;
 
-use crate::utils::state::{Error, Result};
+use crate::{utils::state::{Result, UtpmError}, utpm_log};
 
 use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 
 #[instrument]
 pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
-    let mut vec: Vec<Error> = Vec::new();
+    let mut vec: Vec<UtpmError> = Vec::new();
     for name in &cmd.names {
         match unlink::run(&UnlinkArgs {
             package: name.into(),
             yes: true,
         }) {
             Ok(_) => {
-                info!("- {name} deleted");
+                utpm_log!(info, "- {} deleted", name);
             }
             Err(err) => {
-                info!("X {name} not found");
-                error!("{err}");
+                utpm_log!(info, "X {} not found", name);
+                utpm_log!(error, "{}", err);
                 vec.push(err);
             }
         };
     }
-    println!(
+    utpm_log!(
         "{}/{} successful",
         cmd.names.len() - vec.len(),
         cmd.names.len()

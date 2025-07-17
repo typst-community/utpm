@@ -9,7 +9,7 @@ use std::{
 use inquire::{required, validator::Validation, Select, Text};
 use semver::Version;
 use toml::Table;
-use tracing::{info, instrument, trace, warn};
+use tracing::instrument;
 use typst_project::{
     heuristics::MANIFEST_FILE,
     manifest::{
@@ -29,8 +29,7 @@ use crate::{
         paths::{check_path_file, get_current_dir},
         specs::Extra,
         state::Result,
-    },
-    write_manifest,
+    }, utpm_log, write_manifest
 };
 
 use super::InitArgs;
@@ -38,13 +37,13 @@ use super::InitArgs;
 #[instrument(skip(cmd))]
 pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
-    info!("Current dir: {}", curr);
+    utpm_log!(info, "Current dir: {}", curr);
     let typ = curr.clone() + "/" + MANIFEST_FILE;
-    info!("Current typst file: {}", typ);
+    utpm_log!(info, "Current typst file: {}", typ);
 
     let mut extra = Extra::default();
     extra.namespace = cmd.namespace.to_owned();
-    trace!(
+    utpm_log!(trace, 
         "Namespace extracted? {}",
         if extra.namespace.is_none() {
             "no".into()
@@ -55,7 +54,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let mut authors: HashSet<Author> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.authors {
-        trace!("Authors extracted from cli");
+        utpm_log!(trace, "Authors extracted from cli");
         for e in auts {
             authors.insert(Author::from_str(&e)?);
         }
@@ -64,7 +63,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let mut keywords: HashSet<String> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.keywords {
-        trace!("Keywords extracted from cli");
+        utpm_log!(trace, "Keywords extracted from cli");
         for e in auts {
             keywords.insert(e.clone());
         }
@@ -73,7 +72,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let mut exclude: HashSet<PathBuf> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.exclude {
-        trace!("Exclude extracted from cli");
+        utpm_log!(trace, "Exclude extracted from cli");
         for e in auts {
             exclude.insert(e.into());
         }
@@ -82,7 +81,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let mut categories: HashSet<Category> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.categories {
-        trace!("Catgories extracted from cli");
+        utpm_log!(trace, "Catgories extracted from cli");
 
         for e in auts {
             categories.insert(*e);
@@ -92,7 +91,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     let mut disciplines: HashSet<Discipline> = HashSet::new();
     // temp
     if let Some(auts) = &cmd.disciplines {
-        trace!("Disciplines extracted from cli");
+        utpm_log!(trace, "Disciplines extracted from cli");
         for e in auts {
             disciplines.insert(*e);
         }
@@ -137,7 +136,7 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
     }
 
     if cmd.force {
-        warn!("--force is a dangerous flag, use it cautiously");
+        utpm_log!(warn, "--force is a dangerous flag, use it cautiously");
     }
 
     if !cmd.cli {
@@ -323,6 +322,6 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
 
     write_manifest!(&manif);
 
-    println!("{}", format!("File created to {typ}"));
+    utpm_log!("File created to {typ}");
     Ok(true)
 }

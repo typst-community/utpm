@@ -1,17 +1,20 @@
 use std::path::PathBuf;
 
-use tracing::{debug, error, info, instrument, warn};
+use tracing::instrument;
 use typst_kit::{download::Downloader, package::PackageStorage};
 
-use crate::utils::regex_package;
-use crate::{build, utils::ProgressPrint};
-
-use crate::utils::{
-    copy_dir_all,
-    paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
-    state::{Error, ErrorKind, Result},
-    symlink_all,
+use crate::{
+    build,
+    utils::{
+        copy_dir_all,
+        paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
+        regex_package,
+        state::Result,
+        symlink_all, ProgressPrint,
+    },
+    utpm_bail, utpm_log,
 };
+
 
 use typst_syntax::package::{PackageSpec, PackageVersion};
 
@@ -27,14 +30,11 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         get_current_dir()?.into()
     };
     if has_content(&path)? {
-        debug!("found content");
+        utpm_log!(debug, "found content");
         if cmd.force {
-            warn!("force used, ignore content");
+            utpm_log!(warn, "force used, ignore content");
         } else {
-            return Err(Error::new(
-                ErrorKind::ContentFound,
-                "Content found, cancelled",
-            ));
+            utpm_bail!(ContentFound);
         }
     }
     let re: Regex = regex_package();
@@ -44,30 +44,29 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
         let val = format!(
             "{}/{namespace}/{package}/{major}.{minor}.{patch}",
             if namespace == "preview" {
-                info!("preview found, cache dir use");
+                utpm_log!(info, "preview found, cache dir use");
                 c_packages()?
             } else {
-                info!("no preview found, data dir use");
+                utpm_log!(info, "no preview found, data dir use");
                 d_packages()?
             }
         );
         if check_path_dir(&val) {
             if cmd.download_only {
-                info!("download only, nothing to do.");
+                utpm_log!(info, "download only, nothing to do.");
                 return Ok(true);
             }
             if !cmd.redownload || namespace != "preview" {
-                info!(
-                    namespace = namespace,
-                    redownload = cmd.redownload,
-                    "Skip download..."
+                utpm_log!(info, 
+                    "namespace" => namespace,
+                    "redownload" => cmd.redownload
                 );
                 if cmd.symlink {
                     symlink_all(val, path)?;
-                    info!("symlinked!");
+                    utpm_log!(info, "symlinked!");
                 } else {
                     copy_dir_all(val, path)?;
-                    info!("copied!");
+                    utpm_log!(info, "copied!");
                 }
                 return Ok(true);
             }
@@ -95,34 +94,28 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             printer,
         ) {
             Ok(val) => {
-                info!(path = val.to_str().unwrap(), "package downloaded");
+                utpm_log!(info, "package downloaded", "path" => val.to_str().unwrap());
                 if cmd.download_only {
-                    debug!("download complete, nothing to do");
+                    utpm_log!(debug, "download complete, nothing to do");
                     return Ok(true);
                 }
 
                 if cmd.symlink {
                     symlink_all(val, path)?;
-                    info!("symlinked!");
+                    utpm_log!(info, "symlinked!");
                 } else {
                     copy_dir_all(val, path)?;
-                    info!("copied!");
+                    utpm_log!(info, "copied!");
                 }
 
                 Ok(true)
             }
             Err(_) => {
-                return Err(Error::new(
-                    ErrorKind::PackageNotExist,
-                    "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.",
-                ));
+                utpm_bail!(PackageNotExist);
             }
         };
     } else {
-        error!("package not found, input: {}", package);
-        return Err(Error::new(
-            ErrorKind::PackageNotValid,
-            "Can't extract your package. Example of a package: @namespace/package:1.0.0",
-        ));
+        utpm_log!(error, "package not found, input: {}", package);
+        utpm_bail!(PackageNotValid);
     }
 }

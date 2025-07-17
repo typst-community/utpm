@@ -38,6 +38,8 @@ use tracing::level_filters::LevelFilter;
 use typst_project::manifest::{categories::Category, disciplines::Discipline};
 
 use crate::build;
+#[cfg(not(feature = "nightly"))]
+use crate::utils::output::OutputFormat;
 
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "init")]
@@ -148,6 +150,10 @@ pub struct ListTreeArgs {
     /// List all subdirectory you want
     #[arg(short, long, num_args = 1..)]
     pub include: Option<Vec<String>>,
+
+    /// If you want a tree output. Only work with text output.
+    #[arg(short, long)]
+    pub tree: bool
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
@@ -283,9 +289,9 @@ pub struct AddArgs {
     feature = "bulk_delete"
 ))]
 pub enum Packages {
-    /// List all of packages from your dir, in a form of a tree
     #[command(visible_alias = "t")]
     #[cfg(feature = "tree")]
+    #[command(about="[DEPRECIATED] Use list with --tree.")]
     Tree(ListTreeArgs),
 
     /// List all of packages from your dir, in a form of a list
@@ -392,7 +398,7 @@ pub enum Commands {
 
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(feature = "nightly")]
-#[command(author = "Thumus", version = build::COMMIT_HASH)]
+#[command(author = "Thumuss & typst-community", version = build::COMMIT_HASH)]
 /// An unofficial typst package manager for your projects.
 pub struct Cli {
     #[command(subcommand)]
@@ -405,7 +411,7 @@ pub struct Cli {
 
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(not(feature = "nightly"))]
-#[command(author = "Thumus", version = build::PKG_VERSION)]
+#[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
 /// An unofficial typst package manager for your projects.
 pub struct Cli {
     #[command(subcommand)]
@@ -414,4 +420,7 @@ pub struct Cli {
     /// Gives you more information, permit debug.
     #[arg(short = 'v', long)]
     pub verbose: Option<LevelFilter>,
+
+    #[arg(short = 'o', long, global = true, value_enum)]
+    pub output_format: Option<OutputFormat>
 }

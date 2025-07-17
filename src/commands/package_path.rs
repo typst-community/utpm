@@ -1,10 +1,9 @@
 use tracing::instrument;
 
-use crate::utils::{paths::d_packages, state::Result};
+use crate::{utils::{paths::d_packages, state::{Result}}, utpm_log};
 
 #[instrument]
 pub fn run() -> Result<bool> {
-    println!("Packages are located at: '{}'", d_packages()?);
-    eprintln!("{}", d_packages()?);
+    utpm_log!("Packages are located at: '{}'", d_packages()?);
     Ok(true)
 }

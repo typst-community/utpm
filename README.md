@@ -23,6 +23,7 @@
 
 
 ## 🔥 Features
+
 - [x] ✨Create packages rapidly (`utpm workspace create`)
   - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
   - [x] ⌨️ Intuitive Clap CLI
@@ -34,7 +35,10 @@
   - [x] 🔒 Portable installer (limited for now)
 - [x] 📃 Visualization 
   - [x] 🗃️ list `utpm pkg list`
-  - [x] 🌲 tree `utpm pkg tree`
+  - [x] 🌲 tree ~~`utpm pkg tree`~~ (use `list --tree` instead)
+- [x] 📤 Flexible output formats
+  - [x] 📝 Classic text and JSON output (fully supported)
+  - [x] ⚠️ YAML, HJSON, and TOML output (experimental, under active development, and not included in official utpm builds — requires manual build for access)
 - [ ] 🚀 Automated publication directly to Typst Universe!
 
 **_...And more soon!_**

@@ -6,6 +6,8 @@ pub mod utils;
 
 use std::{env, str::FromStr};
 
+use utils::output::OUTPUT_FORMAT;
+
 use clap::Parser;
 #[cfg(feature = "add")]
 use commands::add;
@@ -55,10 +57,12 @@ use commands::Packages;
 use commands::Workspace;
 use commands::{Cli, Commands};
 
-use utils::state::Error;
+use utils::state::UtpmError;
 
-use tracing::{error, instrument, level_filters::LevelFilter};
+use tracing::{instrument, error, level_filters::LevelFilter};
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+
+use crate::utils::output::{get_output_format, OutputFormat};
 
 #[instrument]
 fn main() {
@@ -66,7 +70,7 @@ fn main() {
 
     // Fetching variables from the environment.
     let debug_str: String = match env::var("UTPM_DEBUG") {
-        Err(_) => "warn".into(),
+        Err(_) => "info".into(),
         Ok(val) => val,
     };
 
@@ -74,20 +78,40 @@ fn main() {
     // filter logs from the tracing
     let level_filter: LevelFilter = match LevelFilter::from_str(debug_str.as_str()) {
         Ok(val) => val,
-        Err(_) => LevelFilter::WARN,
+        Err(_) => LevelFilter::INFO,
     };
 
-    tracing_subscriber::registry()
+    OUTPUT_FORMAT.set(x.output_format.unwrap_or(OutputFormat::Text)).unwrap();
+
+    if get_output_format() != OutputFormat::Text {
+        tracing_subscriber::registry()
         .with(
-            tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.verbose {
+            tracing_subscriber::fmt::layer()
+            .json()
+            .with_filter(if let Some(debug) = x.verbose {
                 debug
             } else {
                 level_filter
             }),
         )
         .init();
+    } else {
+        tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+            .with_filter(if let Some(debug) = x.verbose {
+                debug
+            } else {
+                level_filter
+            }),
+        )
+        .init();
+    }
 
-    let res: Result<bool, Error> = match &x.command {
+    
+
+
+    let res: Result<bool, UtpmError> = match &x.command {
         #[cfg(any(
             feature = "link",
             feature = "init",
@@ -138,8 +162,7 @@ fn main() {
         Commands::Generate(cmd) => generate::run(cmd),
     };
 
-    match res {
-        Ok(_) => {}
-        Err(val) => error!("{}", val),
+    if let Err(err) = res {
+        error!("That type of error shouldn't be possible. Please report this with your command: {}", err)
     }
 }
