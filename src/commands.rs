@@ -269,6 +269,7 @@ pub struct InstallArgs {
 #[cfg(feature = "delete")]
 pub struct DeleteArgs {
     /// URIs to remove.
+    #[clap(short, long, num_args = 1..)]
     pub uri: Vec<String>,
 }
 
