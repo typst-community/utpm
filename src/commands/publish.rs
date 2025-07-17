@@ -8,11 +8,11 @@ use std::path::{Path, PathBuf};
 use std::result::Result as R;
 use std::str::FromStr;
 
-use crate::{load_manifest, utpm_bail, utils::state::UtpmError};
+use crate::utils::paths::get_current_dir;
 use crate::utils::paths::{
     check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL,
 };
-use crate::utils::paths::get_current_dir;
+use crate::{load_manifest, utils::state::UtpmError, utpm_bail};
 use ignore::overrides::OverrideBuilder;
 use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;
@@ -52,7 +52,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     utpm_log!(info, "Package: {package_format}");
 
     if !re.is_match(package_format.as_str()) {
-        utpm_log!(error, "Package didn't match, the name or the version is incorrect.");
+        utpm_log!(
+            error,
+            "Package didn't match, the name or the version is incorrect."
+        );
         utpm_bail!(Unknown, "todo".into()); // todo: u k
     }
 
@@ -133,7 +136,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .git_global(cmd.git_global_ignore)
         .git_exclude(cmd.git_exclude);
 
-    utpm_log!(info, 
+    utpm_log!(info,
         "git_ignore" => cmd.git_ignore,
         "git_global_ignore" => cmd.git_global_ignore,
         "git_exclude" => cmd.git_exclude
@@ -172,7 +175,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     if !has_content(&path_packages_new)? {
-        utpm_bail!(Unknown, "There is no files in the new package. Consider to change your ignored files.".into());
+        utpm_bail!(
+            Unknown,
+            "There is no files in the new package. Consider to change your ignored files.".into()
+        );
     }
 
     if !check_path_file(format!("{path_packages_new}/typst.toml")) {
@@ -199,7 +205,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let user: UserProfile = crab.users_by_id(author_user.id).profile().await?;
 
     let us = &user;
-    utpm_log!(info, 
+    utpm_log!(info,
         "email" => us.email,
         "id" => us.id.to_string(),
         "name" => us.name.clone().unwrap()

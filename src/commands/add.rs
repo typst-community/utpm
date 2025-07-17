@@ -5,11 +5,13 @@ use tracing::instrument;
 use typst_project::manifest::{tool::Tool, Manifest};
 
 use crate::{
-    load_manifest, utils::{
+    load_manifest,
+    utils::{
         paths::get_current_dir,
         specs::Extra,
         state::{Result, UtpmError},
-    }, utpm_bail, utpm_log, write_manifest
+    },
+    utpm_bail, utpm_log, write_manifest,
 };
 
 use super::{install, AddArgs, InstallArgs};
@@ -22,7 +24,12 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
         utpm_bail!(NoURIFound);
     }
 
-    utpm_log!(debug, "{} URIs found: {}", cmd.uri.len(), cmd.uri.join(", "));
+    utpm_log!(
+        debug,
+        "{} URIs found: {}",
+        cmd.uri.len(),
+        cmd.uri.join(", ")
+    );
     if let Some(mut tool) = config.clone().tool {
         utpm_log!(trace, "- tool section found");
         if let Some(ex) = tool.keys.get("utpm") {
@@ -34,7 +41,10 @@ pub fn run(cmd: &mut AddArgs) -> Result<bool> {
                 for e in &cmd.uri {
                     match dependencies.iter().position(|x| x == e) {
                         Some(_) => {
-                            utpm_log!(trace, "{e} dependency already in the load_manifest skipping");
+                            utpm_log!(
+                                trace,
+                                "{e} dependency already in the load_manifest skipping"
+                            );
                         }
                         None => {
                             utpm_log!(trace, "{e} added");

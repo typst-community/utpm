@@ -30,7 +30,6 @@ macro_rules! write_manifest {
     };
 }
 
-
 /// Get the path of a package
 #[macro_export]
 macro_rules! format_package {
@@ -88,7 +87,6 @@ macro_rules! load_creds {
     }};
 }
 
-
 /// Bail with a UtpmError
 #[macro_export]
 macro_rules! utpm_bail {
@@ -102,7 +100,7 @@ macro_rules! utpm_bail {
 
 #[macro_export]
 macro_rules! utpm_log {
-    ($(@g)? $lvl:ident, $data:expr, $($args:expr => $val:expr),+) => {{ 
+    ($(@g)? $lvl:ident, $data:expr, $($args:expr => $val:expr),+) => {{
         match $crate::utils::output::get_output_format() {
             #[cfg(feature = "output_json")]
             $crate::OutputFormat::Json => tracing::$lvl!($($args = $val),+, data = &$data),
@@ -116,7 +114,7 @@ macro_rules! utpm_log {
             $crate::OutputFormat::Hjson => tracing::$lvl!($($args = $val),+, "{}", serde_hjson::ser::to_string(&$data)?),
         }
     }};
-    ($(@g)? $lvl:ident, $data:expr,? $($args:expr => $val:expr),*) => {{ 
+    ($(@g)? $lvl:ident, $data:expr,? $($args:expr => $val:expr),*) => {{
         match $crate::utils::output::get_output_format() {
             #[cfg(feature = "output_json")]
             $crate::OutputFormat::Json => tracing::$lvl!($($args = $val),* data = &$data),
@@ -130,7 +128,7 @@ macro_rules! utpm_log {
             $crate::OutputFormat::Hjson => tracing::$lvl!($($args = $val),* "{}", serde_hjson::ser::to_string(&$data)?),
         }
     }};
-    ($lvl:ident, $($args:expr => $val:expr),+) => {{ 
+    ($lvl:ident, $($args:expr => $val:expr),+) => {{
         tracing::$lvl!($($args = $val),+)
     }};
     ($lvl:ident, $fmt:expr, $($args:tt)*) => {
@@ -153,4 +151,3 @@ macro_rules! utpm_log {
         $crate::utpm_log!(info, "{}", $data)
     };
 }
-

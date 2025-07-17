@@ -1,7 +1,7 @@
 use tracing::{instrument, warn};
 
-use crate::{commands::list::run as R, utils::state::Result};
 use crate::utpm_log;
+use crate::{commands::list::run as R, utils::state::Result};
 
 use super::ListTreeArgs;
 

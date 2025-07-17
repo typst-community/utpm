@@ -14,7 +14,7 @@ use serde::ser::{SerializeStruct, Serializer};
 #[derive(Debug, TError)]
 pub enum UtpmError {
     #[error("Semantic version error: {0}")]
-    SemVer(#[from]  semver::Error),
+    SemVer(#[from] semver::Error),
 
     #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
     #[error("Git error: {0}")]
@@ -25,7 +25,7 @@ pub enum UtpmError {
     Questions(#[from] inquire::InquireError),
 
     #[error("IO error: {0}")]
-    IO (#[from] std::io::Error),
+    IO(#[from] std::io::Error),
 
     #[error("We can't rebase (for now)")]
     Rebase,
@@ -120,14 +120,14 @@ pub enum UtpmError {
     NoURIFound,
 
     #[error(transparent)]
-    Other(#[from] anyhow::Error)
+    Other(#[from] anyhow::Error),
 }
-
 
 // Custom serialize impl
 impl Serialize for UtpmError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where S: Serializer,
+    where
+        S: Serializer,
     {
         let mut st = serializer.serialize_struct("UtpmError", 2)?;
         st.serialize_field("type", self.variant_name())?;
@@ -142,9 +142,9 @@ impl UtpmError {
         match self {
             SemVer(_) => "SemVer",
             #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
-                                    Git(_) => "Git",
+            Git(_) => "Git",
             #[cfg(any(feature = "init", feature = "unlink"))]
-                                    Questions(_) => "Questions",
+            Questions(_) => "Questions",
             IO(_) => "IO",
             General(_) => "General",
             Author(_) => "Author",
@@ -156,9 +156,9 @@ impl UtpmError {
             Serialize(_) => "Serialize",
             Deserialize(_) => "Deserialize",
             #[cfg(any(feature = "publish"))]
-                                    Ignore(_) => "Ignore",
+            Ignore(_) => "Ignore",
             #[cfg(any(feature = "publish"))]
-                                    OctoCrab(_) => "OctoCrab",
+            OctoCrab(_) => "OctoCrab",
             Project(_) => "Project",
             Unknown(_) => "Unknown",
             Namespace => "Namespace",

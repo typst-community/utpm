@@ -1,6 +1,9 @@
 use tracing::instrument;
 
-use crate::{utils::state::{Result, UtpmError}, utpm_log};
+use crate::{
+    utils::state::{Result, UtpmError},
+    utpm_log,
+};
 
 use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 

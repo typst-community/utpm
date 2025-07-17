@@ -7,7 +7,7 @@ pub enum OutputFormat {
     #[cfg(feature = "output_json")]
     Json,
     #[cfg(feature = "output_yaml")]
-    Yaml, 
+    Yaml,
     #[cfg(feature = "output_toml")]
     Toml,
     #[cfg(feature = "output_text")]
@@ -21,4 +21,3 @@ pub static OUTPUT_FORMAT: OnceCell<OutputFormat> = OnceCell::new();
 pub fn get_output_format() -> OutputFormat {
     *OUTPUT_FORMAT.get().unwrap_or(&OutputFormat::Text)
 }
-

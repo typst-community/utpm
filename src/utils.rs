@@ -9,9 +9,9 @@ use git2::{
     Cred, FetchOptions, RemoteCallbacks, Repository,
 };
 use paths::{check_path_file, get_ssh_dir, has_content};
+use regex::Regex;
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 use std::{env, io, result::Result as R};
-use regex::Regex;
 use tracing::{info, instrument};
 use typst_kit::download::{DownloadState, Progress};
 

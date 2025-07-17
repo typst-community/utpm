@@ -3,13 +3,15 @@ use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
-    load_manifest, utils::{
+    load_manifest,
+    utils::{
         copy_dir_all,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir},
         specs::Extra,
         state::{Result, UtpmError},
         symlink_all,
-    }, utpm_bail, utpm_log
+    },
+    utpm_bail, utpm_log,
 };
 
 use super::LinkArgs;
@@ -51,7 +53,10 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
         if pt {
             utpm_log!(
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                path, namespace, name, version
+                path,
+                namespace,
+                name,
+                version
             );
         }
     } else {
@@ -59,10 +64,12 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
         if pt {
             utpm_log!(
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                path, namespace, name, version
+                path,
+                namespace,
+                name,
+                version
             );
         }
     }
     Ok(true)
 }
-

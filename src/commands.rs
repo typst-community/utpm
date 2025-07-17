@@ -153,7 +153,7 @@ pub struct ListTreeArgs {
 
     /// If you want a tree output. Only work with text output.
     #[arg(short, long)]
-    pub tree: bool
+    pub tree: bool,
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
@@ -292,7 +292,7 @@ pub struct AddArgs {
 pub enum Packages {
     #[command(visible_alias = "t")]
     #[cfg(feature = "tree")]
-    #[command(about="[DEPRECIATED] Use list with --tree.")]
+    #[command(about = "[DEPRECIATED] Use list with --tree.")]
     Tree(ListTreeArgs),
 
     /// List all of packages from your dir, in a form of a list
@@ -423,5 +423,5 @@ pub struct Cli {
     pub verbose: Option<LevelFilter>,
 
     #[arg(short = 'o', long, global = true, value_enum)]
-    pub output_format: Option<OutputFormat>
+    pub output_format: Option<OutputFormat>,
 }

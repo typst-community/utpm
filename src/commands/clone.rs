@@ -15,7 +15,6 @@ use crate::{
     utpm_bail, utpm_log,
 };
 
-
 use typst_syntax::package::{PackageSpec, PackageVersion};
 
 use super::CloneArgs;
@@ -57,7 +56,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                 return Ok(true);
             }
             if !cmd.redownload || namespace != "preview" {
-                utpm_log!(info, 
+                utpm_log!(info,
                     "namespace" => namespace,
                     "redownload" => cmd.redownload
                 );

@@ -4,5 +4,6 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     ShadowBuilder::builder()
         .build_pattern(BuildPattern::RealTime)
-        .build().unwrap();
+        .build()
+        .unwrap();
 }

@@ -11,7 +11,8 @@ use crate::{
         },
         specs::Extra,
         state::{Result, UtpmError},
-    }, utpm_log,
+    },
+    utpm_log,
 };
 
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};

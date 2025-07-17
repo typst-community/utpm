@@ -60,7 +60,7 @@ use commands::{Cli, Commands};
 
 use utils::state::UtpmError;
 
-use tracing::{instrument, error, level_filters::LevelFilter};
+use tracing::{error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
 use crate::utils::output::{get_output_format, OutputFormat};
@@ -82,35 +82,31 @@ fn main() {
         Err(_) => LevelFilter::INFO,
     };
 
-    OUTPUT_FORMAT.set(x.output_format.unwrap_or(OutputFormat::Text)).unwrap();
+    OUTPUT_FORMAT
+        .set(x.output_format.unwrap_or(OutputFormat::Text))
+        .unwrap();
 
     if get_output_format() != OutputFormat::Text {
         tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-            .json()
-            .with_filter(if let Some(debug) = x.verbose {
-                debug
-            } else {
-                level_filter
-            }),
-        )
-        .init();
+            .with(tracing_subscriber::fmt::layer().json().with_filter(
+                if let Some(debug) = x.verbose {
+                    debug
+                } else {
+                    level_filter
+                },
+            ))
+            .init();
     } else {
         tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-            .with_filter(if let Some(debug) = x.verbose {
-                debug
-            } else {
-                level_filter
-            }),
-        )
-        .init();
+            .with(
+                tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.verbose {
+                    debug
+                } else {
+                    level_filter
+                }),
+            )
+            .init();
     }
-
-    
-
 
     let res: Result<bool, UtpmError> = match &x.command {
         #[cfg(any(

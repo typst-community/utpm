@@ -29,7 +29,8 @@ use crate::{
         paths::{check_path_file, get_current_dir},
         specs::Extra,
         state::Result,
-    }, utpm_log, write_manifest
+    },
+    utpm_log, write_manifest,
 };
 
 use super::InitArgs;
@@ -43,7 +44,8 @@ pub fn run(cmd: &mut InitArgs) -> Result<bool> {
 
     let mut extra = Extra::default();
     extra.namespace = cmd.namespace.to_owned();
-    utpm_log!(trace, 
+    utpm_log!(
+        trace,
         "Namespace extracted? {}",
         if extra.namespace.is_none() {
             "no".into()

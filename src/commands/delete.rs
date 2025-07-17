@@ -5,11 +5,13 @@ use tracing::instrument;
 use typst_project::manifest::Manifest;
 
 use crate::{
-    load_manifest, utils::{
+    load_manifest,
+    utils::{
         paths::get_current_dir,
         specs::Extra,
         state::{Result, UtpmError},
-    }, utpm_log, write_manifest
+    },
+    utpm_log, write_manifest,
 };
 
 use super::DeleteArgs;
@@ -33,12 +35,13 @@ pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
                 }
                 extra.dependencies = Some(dependencies);
                 // Mettre à jour l'entrée utpm dans tool_section avec la nouvelle structure modifiée
-                tool_section.keys.insert(
-                    "utpm".to_string(),
-                    Map::try_from(extra)?
-                );
+                tool_section
+                    .keys
+                    .insert("utpm".to_string(), Map::try_from(extra)?);
             } else {
-                utpm_log!("Nothing has changed! There isn't a key for 'dependencies' in the typst.toml.")
+                utpm_log!(
+                    "Nothing has changed! There isn't a key for 'dependencies' in the typst.toml."
+                )
             }
         } else {
             utpm_log!("Nothing has changed! There isn't a tool section dedicated to utpm in the typst.toml.")

@@ -1,6 +1,9 @@
 use tracing::instrument;
 
-use crate::{utils::{paths::d_packages, state::{Result}}, utpm_log};
+use crate::{
+    utils::{paths::d_packages, state::Result},
+    utpm_log,
+};
 
 #[instrument]
 pub fn run() -> Result<bool> {

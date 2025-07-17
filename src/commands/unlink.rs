@@ -3,11 +3,13 @@ use std::fs;
 use tracing::{info, instrument};
 
 use crate::{
-    format_package, utils::{
+    format_package,
+    utils::{
         paths::{c_packages, check_path_dir, d_packages},
         regex_namespace, regex_package, regex_packagename,
         state::Result,
-    }, utpm_bail
+    },
+    utpm_bail,
 };
 
 use super::UnlinkArgs;
@@ -33,7 +35,7 @@ pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
     } else {
         utpm_bail!(PackageNotValid);
     }
-    
+
     if !check_path_dir(&path) {
         utpm_bail!(PackageNotExist)
     }
