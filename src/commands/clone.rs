@@ -21,13 +21,17 @@ use super::CloneArgs;
 
 use regex::Regex;
 
+/// Clones a typst package from the official repository or a local path.
 #[instrument]
 pub fn run(cmd: &CloneArgs) -> Result<bool> {
+    // Determine the target path for the clone operation.
     let path: PathBuf = if let Some(path) = &cmd.path {
         path.clone()
     } else {
         get_current_dir()?.into()
     };
+
+    // Check if the target directory already has content.
     if has_content(&path)? {
         utpm_log!(debug, "found content");
         if cmd.force {
@@ -36,10 +40,14 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             utpm_bail!(ContentFound);
         }
     }
+
+    // Use regex to parse the package specification string.
     let re: Regex = regex_package();
     let package: &String = &cmd.package;
     if let Some(cap) = re.captures(package) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
+
+        // Determine the local path for the package based on its namespace.
         let val = format!(
             "{}/{namespace}/{package}/{major}.{minor}.{patch}",
             if namespace == "preview" {
@@ -50,6 +58,8 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                 d_packages()?
             }
         );
+
+        // If the package already exists locally, copy or symlink it.
         if check_path_dir(&val) {
             if cmd.download_only {
                 utpm_log!(info, "download only, nothing to do.");
@@ -71,15 +81,20 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             }
         }
 
-        if cmd.redownload {}
+        // If the package needs to be downloaded.
+        if cmd.redownload {
+            // TODO: Implement removal of the existing directory for redownload.
+        }
 
+        // Prepare to download the package.
         let pkg_sto = PackageStorage::new(
             Some(c_packages()?.into()),
             Some(d_packages()?.into()),
             Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
         );
         let printer = &mut ProgressPrint {};
-        //todo: redownload = rm dir;
+
+        // Download the package.
         return match pkg_sto.prepare_package(
             &PackageSpec {
                 namespace: namespace.into(),
@@ -99,6 +114,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                     return Ok(true);
                 }
 
+                // Copy or symlink the downloaded package to the target path.
                 if cmd.symlink {
                     symlink_all(val, path)?;
                     utpm_log!(info, "symlinked!");

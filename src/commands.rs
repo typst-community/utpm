@@ -1,4 +1,5 @@
-// Linker
+/// Linker: This module dynamically links all the command modules.
+/// Each command is a separate module, conditionally compiled based on feature flags.
 #[cfg(feature = "add")]
 pub mod add;
 #[cfg(feature = "bulk_delete")]
@@ -41,147 +42,163 @@ use crate::build;
 #[cfg(not(feature = "nightly"))]
 use crate::utils::output::OutputFormat;
 
+/// Arguments for the `init` command.
+/// This command initializes a new `typst.toml` manifest file in the current directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "init")]
 pub struct InitArgs {
-    /// Desactivate interactive session
+    /// Disable interactive session and use command-line arguments only.
     #[arg(short = 'm', long, requires = "ni")]
     cli: bool,
 
-    /// Force the creation of a file
+    /// Force the creation of the manifest file, overwriting if it exists.
     #[arg(short, long)]
     force: bool,
 
-    /// Name of the project
+    /// Name of the project.
     #[arg(short, long, group = "ni")]
     name: Option<String>,
 
-    /// Version of the project
+    /// Version of the project.
     #[arg(short, long, default_value_t=semver::Version::parse("1.0.0").unwrap())]
     version: semver::Version,
 
-    /// Path to the main file of the project
+    /// Path to the main file of the project.
     #[arg(short, long, default_value_t=String::from("main.typ"))]
     entrypoint: String,
 
-    /// Authors of the project
+    /// Authors of the project.
     #[arg(short, long)]
     #[clap(value_delimiter = ',')]
     authors: Option<Vec<String>>,
 
-    /// License
+    /// License of the project.
     #[arg(short, long)]
     license: Option<String>,
 
-    /// A little description
+    /// A short description of the project.
     #[arg(short, long)]
     description: Option<String>,
 
-    /// The link to your repository
+    /// The link to your repository.
     #[arg(short, long)]
     repository: Option<String>,
 
-    /// Link to your homepage
+    /// Link to your homepage.
     #[arg(short = 'H', long)]
     homepage: Option<String>,
 
-    /// Keywords to find your project
+    /// Keywords to find your project.
     #[arg(short, long)]
     #[clap(value_delimiter = ',')]
     keywords: Option<Vec<String>>,
 
-    /// Minimum compiler version
+    /// Minimum compiler version required.
     #[arg(short, long)]
     compiler: Option<semver::Version>,
 
-    /// Excludes files
+    /// Files to exclude from the package.
     #[arg(short = 'x', long)]
     #[clap(value_delimiter = ',')]
     exclude: Option<Vec<String>>,
 
-    /// Namespace to put your package
+    /// Namespace to put your package in.
     #[arg(short = 'N', long)]
     namespace: Option<String>,
 
-    /// Add examples file to your projects.
+    /// Populate the project with example files.
     #[arg(short = 'p', long)]
     populate: bool,
 
-    /// Add categories to your typst.toml
+    /// Categories to add to your typst.toml.
     #[arg(short = 'C', long)]
     #[clap(value_delimiter = ',')]
     categories: Option<Vec<Category>>,
 
-    /// Add disciplines to your typst.toml
+    /// Disciplines to add to your typst.toml.
     #[arg(short = 'D', long)]
     #[clap(value_delimiter = ',')]
     disciplines: Option<Vec<Discipline>>,
 
-    /// Add a link to your template. Example: "./template.typ"
+    /// Path to a template file to use.
     #[arg(long, requires = "template")]
     template_path: Option<String>,
 
+    /// Entrypoint for the template.
     #[arg(long, requires = "template")]
     template_entrypoint: Option<String>,
 
+    /// Thumbnail for the template.
     #[arg(long)]
     template_thumbnail: Option<String>,
 }
 
+/// Arguments for the `link` command.
+/// This command links a local project to the UTPM package directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "link")]
 pub struct LinkArgs {
-    /// Force the copy of the dir / creation of the symlink
+    /// Force the copy of the directory or creation of the symlink.
     #[arg(short, long)]
     pub force: bool,
 
-    /// Will create a symlink instead of copying
+    /// Create a symlink instead of copying the project files.
     #[arg(short, long)]
     pub no_copy: bool,
 }
 
+/// Arguments for the `list` and `tree` commands.
+/// These commands display the packages in the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(any(feature = "list", feature = "tree"))]
 pub struct ListTreeArgs {
-    /// Will list all packages including @preview
+    /// List all packages, including those in the `@preview` namespace.
     #[arg(short, long)]
     pub all: bool,
 
-    /// List all subdirectory you want
+    /// Specify subdirectories to include in the list.
     #[arg(short, long, num_args = 1..)]
     pub include: Option<Vec<String>>,
 
-    /// If you want a tree output. Only work with text output.
+    /// Display the packages as a tree. Only works with text output.
     #[arg(short, long)]
     pub tree: bool,
 }
 
+/// Arguments for the `publish` command.
+/// This command publishes a package to the typst universe.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "publish")]
 pub struct PublishArgs {
+    /// Path to the project to publish. Defaults to the current directory.
     #[arg()]
     path: Option<PathBuf>,
 
-    /// Add rules of .ignore files to the check
+    /// Use .ignore files to filter packaged files.
     #[arg(short = 'i', default_value_t = false)]
     ignore: bool,
 
+    /// Use .gitignore files to filter packaged files.
     #[arg(short = 'g', default_value_t = true)]
     git_ignore: bool,
 
+    /// Use .typstignore files to filter packaged files.
     #[arg(short = 't', default_value_t = true)]
     typst_ignore: bool,
 
+    /// Use global .gitignore to filter packaged files.
     #[arg(short = 'G', default_value_t = true)]
     git_global_ignore: bool,
 
+    /// Use .git/info/exclude files to filter packaged files.
     #[arg(short = 'x', default_value_t = true)]
     git_exclude: bool,
 
-    /// Bypass the warning
+    /// Bypass the warning prompts.
     #[arg(default_value_t = false)]
     bypass_warning: bool,
 
+    /// Path to a custom ignore file.
     #[arg(short = 'c')]
     custom_ignore: Option<PathBuf>,
 
@@ -189,98 +206,112 @@ pub struct PublishArgs {
     #[arg(short = 'm')]
     message: Option<String>,
 
-    /// Won't create a PR on typst/packages
+    /// Prepare the package for publishing without creating a pull request.
     #[arg(short = 'p', default_value_t = false)]
     prepare_only: bool,
 }
 
+/// Arguments for the `generate` command.
+/// This command generates shell completion scripts.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "generate")]
 pub struct GenerateArgs {
-    /// The type of your shell
+    /// The shell to generate a completion script for.
     #[arg(value_enum)]
     generator: Shell,
 }
 
+/// Arguments for the `clone` command.
+/// This command clones a package from the typst universe or a local directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "clone")]
 pub struct CloneArgs {
-    /// The name of the package you want to clone
+    /// The name of the package to clone (e.g., `@preview/example:1.0.0`).
     #[arg()]
     pub package: String,
 
-    /// Path to your dir
+    /// The directory to clone the package into.
     #[arg()]
     pub path: Option<PathBuf>,
 
-    /// Download the package without copying it.
+    /// Download the package to the cache without copying it to the target directory.
     #[arg(short = 'd')]
     pub download_only: bool,
 
-    /// Continue without veryfing anything.
+    /// Force cloning even if the destination path is not empty.
     #[arg(short = 'f')]
     pub force: bool,
 
-    /// Force the redownload of the package.
+    /// Force re-downloading the package even if it exists in the cache.
     #[arg(short = 'r')]
     pub redownload: bool,
 
-    /// Create a symlink to the package clone (similar to link --no-copy)
+    /// Create a symlink to the cloned package instead of copying.
     #[arg(short = 's')]
     pub symlink: bool,
 }
 
+/// Arguments for the `unlink` command.
+/// This command removes a package from the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "unlink")]
 pub struct UnlinkArgs {
-    /// The name of the package
+    /// The name of the package to unlink.
     package: String,
 
-    /// Confirm the deletion of a dir
+    /// Confirm the deletion of the package directory without a prompt.
     #[arg(short, long)]
     yes: bool,
 }
 
+/// Arguments for the `bulk-delete` command.
+/// This command removes multiple packages at once.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "bulk_delete")]
 pub struct BulkDeleteArgs {
-    /// Names of your packages, use version with this syntax: mypackage:1.0.0
+    /// A comma-separated list of package names to delete (e.g., `mypackage:1.0.0,another:2.1.0`).
     #[clap(value_delimiter = ',')]
     names: Vec<String>,
 
-    /// The namespace you want to bulk-delete
+    /// The namespace to bulk-delete packages from.
     #[arg(short, long)]
     namespace: Option<String>,
 }
 
+/// Arguments for the `install` command.
+/// This command installs dependencies from the manifest or a given URL.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "install")]
 pub struct InstallArgs {
-    /// If you want to install a specific package
+    /// URL or path to a specific package to install. If not provided, installs dependencies from the manifest.
     #[arg(num_args = 1..)]
     pub url: Option<String>,
 
-    /// Passed force to all link commands
+    /// Force link commands for all dependencies.
     #[arg(short, long, default_value_t = false)]
     pub force: bool,
 }
 
+/// Arguments for the `delete` command.
+/// This command removes dependencies from the manifest.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "delete")]
 pub struct DeleteArgs {
-    /// URIs to remove.
+    /// URIs of dependencies to remove from the manifest.
     #[clap(short, long, num_args = 1..)]
     pub uri: Vec<String>,
 }
 
+/// Arguments for the `add` command.
+/// This command adds dependencies to the manifest.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "add")]
 pub struct AddArgs {
-    /// The url or path of your repository.
+    /// The URL or path of the repository to add as a dependency.
     pub uri: Vec<String>,
 }
 
-/// Commands to use packages related to typst
+/// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
 #[cfg(any(
     feature = "tree",
@@ -290,33 +321,34 @@ pub struct AddArgs {
     feature = "bulk_delete"
 ))]
 pub enum Packages {
+    /// [DEPRECATED] Display packages as a tree. Use `list --tree` instead.
     #[command(visible_alias = "t")]
     #[cfg(feature = "tree")]
     #[command(about = "[DEPRECIATED] Use list with --tree.")]
     Tree(ListTreeArgs),
 
-    /// List all of packages from your dir, in a form of a list
+    /// List all packages in your local storage.
     #[command(visible_alias = "l")]
     #[cfg(feature = "list")]
     List(ListTreeArgs),
 
-    /// Display path to typst packages folder
+    /// Display the path to the typst packages folder.
     #[command(visible_alias = "p")]
     #[cfg(feature = "path")]
     Path,
 
-    /// Delete package previously install with utpm
+    /// Delete a package from your local storage.
     #[command(visible_alias = "u")]
     #[cfg(feature = "unlink")]
     Unlink(UnlinkArgs),
 
-    /// Delete multiple packages/namespace at once
+    /// Delete multiple packages or a whole namespace at once.
     #[command(visible_alias = "bd")]
     #[cfg(feature = "bulk_delete")]
     BulkDelete(BulkDeleteArgs),
 }
 
-/// Commands to create, edit, delete your workspace for your package.
+/// An enumeration of subcommands for managing the project workspace.
 #[derive(Subcommand, Debug, PartialEq)]
 #[cfg(any(
     feature = "link",
@@ -329,43 +361,45 @@ pub enum Packages {
     feature = "clone"
 ))]
 pub enum Workspace {
-    /// Link your project to your dirs
+    /// Link the current project to the local package directory.
     #[command(visible_alias = "l")]
     #[cfg(feature = "link")]
     Link(LinkArgs),
 
-    /// Install all dependencies from the `typst.toml`
+    /// Install all dependencies from the `typst.toml` manifest.
     #[command(visible_alias = "i")]
     #[cfg(feature = "install")]
     Install(InstallArgs),
 
-    /// Add dependencies and then install them
+    /// Add dependencies to the manifest and then install them.
     #[command(visible_alias = "a")]
     #[cfg(feature = "add")]
     Add(AddArgs),
 
-    /// Delete dependencies
+    /// Delete dependencies from the manifest.
     #[command(visible_alias = "d")]
     #[cfg(feature = "delete")]
     Delete(DeleteArgs),
 
-    /// Create your workspace to start a typst package
+    /// Create a new `typst.toml` manifest for a project.
     #[cfg(feature = "init")]
     Init(InitArgs),
 
-    /// Publish directly your packages to typst universe. (WIP)
+    /// Publish your package to the typst universe. (WIP)
     // #[command(visible_alias = "p")]
     // #[cfg(feature = "publish")]
     // Publish(PublishArgs),
 
-    /// Clone like a git clone packages from typst universe or your local directory
+    /// Clone a package from the typst universe or a local directory.
     #[command()]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
 }
 
+/// The main command-line interface for UTPM.
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
+    /// Subcommands for managing the project workspace.
     #[command(subcommand)]
     #[command(visible_alias = "ws")]
     #[cfg(any(
@@ -380,6 +414,7 @@ pub enum Commands {
     ))]
     Workspace(Workspace),
 
+    /// Subcommands for managing local packages.
     #[command(subcommand)]
     #[command(visible_alias = "pkg")]
     #[cfg(any(
@@ -391,37 +426,40 @@ pub enum Commands {
     ))]
     Packages(Packages),
 
-    /// Generate shell completion
+    /// Generate shell completion scripts.
     #[command(visible_alias = "gen")]
     #[cfg(feature = "generate")]
     Generate(GenerateArgs),
 }
 
+/// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(feature = "nightly")]
 #[command(author = "Thumuss & typst-community", version = build::COMMIT_HASH)]
-/// An unofficial typst package manager for your projects.
 pub struct Cli {
+    /// The subcommand to execute.
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Gives you more information, permit debug.
+    /// Enable verbose logging for debugging purposes.
     #[arg(short = 'v', long)]
     pub verbose: Option<LevelFilter>,
 }
 
+/// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(not(feature = "nightly"))]
 #[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
-/// An unofficial typst package manager for your projects.
 pub struct Cli {
+    /// The subcommand to execute.
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Gives you more information, permit debug.
+    /// Enable verbose logging for debugging purposes.
     #[arg(short = 'v', long)]
     pub verbose: Option<LevelFilter>,
 
+    /// The output format for command results.
     #[arg(short = 'o', long, global = true, value_enum)]
     pub output_format: Option<OutputFormat>,
 }

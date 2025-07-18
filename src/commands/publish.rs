@@ -24,15 +24,22 @@ use super::PublishArgs;
 
 use ignore::WalkBuilder;
 
+/// Publishes a package to the typst universe.
+///
+/// This involves:
+/// - Forking the `typst/packages` repository if not already forked.
+/// - Cloning or updating the forked repository.
+/// - Copying the package files to the repository.
+/// - Committing and pushing the changes.
+/// - Creating a pull request to the `typst/packages` repository.
 #[tokio::main]
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
-    //todo: github create fork if not exist (checkout and everything), link to local packages, create PR, git push
-    //todo: Check dependencies, a way to add them?
-    //todo: check if there are files in the package...
+    // TODO: Implement GitHub fork creation, linking to local packages, PR creation, and git push.
+    // TODO: Check for dependencies and provide a way to add them.
+    // TODO: Ensure there are files in the package before publishing.
 
     let config: Manifest = load_manifest!();
-
     utpm_log!(info, "Manifest load");
 
     let path_curr: &PathBuf = if let Some(path) = &cmd.path {
@@ -40,7 +47,6 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     } else {
         &get_current_dir()?.into()
     };
-
     utpm_log!(info, "Path: {}", path_curr.to_str().unwrap());
 
     let version: String = config.package.version.to_string();
@@ -48,7 +54,6 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let re: regex::Regex = regex_package();
 
     let package_format = format!("@preview/{name}:{version}");
-
     utpm_log!(info, "Package: {package_format}");
 
     if !re.is_match(package_format.as_str()) {
@@ -56,16 +61,14 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             error,
             "Package didn't match, the name or the version is incorrect."
         );
-        utpm_bail!(Unknown, "todo".into()); // todo: u k
+        utpm_bail!(Unknown, "todo".into()); // TODO: Improve error handling.
     }
 
     let path_curr_str: &str = path_curr.to_str().unwrap();
-
     let path_packages: String = default_typst_packages()?;
     let path_packages_new: String = format!("{path_packages}/packages/preview/{name}/{version}");
 
-    // Github handle
-
+    // --- GitHub Handling ---
     let crab = Octocrab::builder()
         .personal_token(
             env::var("UTPM_GITHUB_TOKEN")
@@ -74,6 +77,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .build()
         .unwrap();
 
+    // Check if a fork of typst/packages already exists.
     let pages = match crab
         .current()
         .list_repos_for_authenticated_user()
@@ -82,7 +86,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .await
     {
         Ok(a) => a,
-        Err(_) => todo!(),
+        Err(_) => todo!(), // TODO: Better error handling
     };
 
     let repo: Option<&octocrab::models::Repository> = pages.items.iter().find(|f| match &f.forks_url {
@@ -96,8 +100,8 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     if let Some(rep) = repo {
         fork = rep.url.clone().into();
     } else {
-        // Format into: "mypackage-1.0.0"
-        // Github doesn't allow ':'
+        // If no fork exists, create one.
+        // Format into: "mypackage-1.0.0" as GitHub doesn't allow ':' in repo names.
         match crab
             .repos("typst", "packages")
             .create_fork()
@@ -113,35 +117,33 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         };
     }
 
-    // Download typst/packages
-
+    // --- File Preparation ---
+    // Download or update the typst/packages repository.
     let repos = update_git_packages(path_packages, fork.as_str())?;
-
     utpm_log!(info, "Path to the new package {}", path_packages_new);
 
-    // Prepare files
-
+    // Use WalkBuilder to respect ignore files.
     let mut wb: WalkBuilder = WalkBuilder::new(path_curr);
-
     let mut overr: OverrideBuilder = OverrideBuilder::new(path_curr);
 
+    // Add excludes from the manifest to the override builder.
     for exclude in Extra::from(config.tool).exclude.unwrap_or(vec![]) {
         overr.add(("!".to_string() + &exclude).as_str())?;
     }
-
     wb.overrides(overr.build()?);
 
+    // Configure which ignore files to use.
     wb.ignore(cmd.ignore)
         .git_ignore(cmd.git_ignore)
         .git_global(cmd.git_global_ignore)
         .git_exclude(cmd.git_exclude);
-
     utpm_log!(info,
         "git_ignore" => cmd.git_ignore,
         "git_global_ignore" => cmd.git_global_ignore,
         "git_exclude" => cmd.git_exclude
     );
 
+    // Add .typstignore if it exists.
     let mut path_check = path_curr.clone().into_os_string();
     path_check.push("/.typstignore");
     if check_path_file(path_check) {
@@ -149,6 +151,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         wb.add_custom_ignore_filename(".typstignore");
     }
 
+    // Add custom ignore file if specified.
     if let Some(custom_ignore) = &cmd.custom_ignore {
         let filename = custom_ignore.file_name().unwrap().to_str().unwrap();
         utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
@@ -158,8 +161,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         }
     }
 
-    // Copy
-
+    // --- Copy Files ---
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
             let path: &Path = result.path();
@@ -174,36 +176,30 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         }
     }
 
+    // --- Validation ---
     if !has_content(&path_packages_new)? {
         utpm_bail!(
             Unknown,
             "There is no files in the new package. Consider to change your ignored files.".into()
         );
     }
-
     if !check_path_file(format!("{path_packages_new}/typst.toml")) {
         utpm_bail!(Unknown, format!("Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?"));
     }
-
     let entry = config.package.entrypoint;
     let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
     entryfile.push(&entry);
     let entrystr = entry.to_str().unwrap();
-
     utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(entryfile) {
         utpm_bail!(Unknown, format!("Can't find {entrystr} file in {path_packages_new}. Did you omit it in your ignored files?"));
     }
-
     utpm_log!(info, "files copied to {path_packages_new}");
 
-    // Push
-
+    // --- Git Push ---
     utpm_log!(info, "Getting information from github");
-
     let author_user: Author = crab.current().user().await?;
     let user: UserProfile = crab.users_by_id(author_user.id).profile().await?;
-
     let us = &user;
     utpm_log!(info,
         "email" => us.email,
@@ -218,11 +214,9 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .unwrap_or(format!("{} using utpm", &name_replaced));
 
     push_git_packages(repos, user.clone(), msg.as_str())?;
-
     utpm_log!(info, "Ended push");
 
-    // Pull request
-
+    // --- Pull Request ---
     crab.pulls("typst", "packages")
         .create(name_replaced.as_str(), format!("{}:main", us.name.clone().unwrap()), "base")
         .body("
@@ -242,7 +236,7 @@ I have read and followed the submission guidelines and, in particular, I
 - [ ] `exclude`d PDFs or README images, if any, but not the LICENSE
 
 - [ ] ensured that my package is licensed such that users can use and distribute the contents of its template directory without restriction, after modifying them through normal use.
-") // todo: body
+") // TODO: Improve PR body.
         .send()
         .await?;
 
