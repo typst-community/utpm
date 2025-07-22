@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs};
+use std::collections::BTreeMap;
 
 use toml::map::Map;
 use tracing::instrument;
@@ -7,9 +7,8 @@ use typst_project::manifest::{tool::Tool, Manifest};
 use crate::{
     load_manifest,
     utils::{
-        paths::get_current_dir,
         specs::Extra,
-        state::{Result, UtpmError},
+        state::Result,
     },
     utpm_bail, utpm_log, write_manifest,
 };

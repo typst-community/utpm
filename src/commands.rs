@@ -4,6 +4,7 @@
 pub mod add;
 #[cfg(feature = "bulk_delete")]
 pub mod bulk_delete;
+pub mod bump;
 #[cfg(feature = "clone")]
 pub mod clone;
 #[cfg(feature = "delete")]
@@ -163,6 +164,23 @@ pub struct ListTreeArgs {
     /// Display the packages as a tree. Only works with text output.
     #[arg(short, long)]
     pub tree: bool,
+}
+
+/// Arguments for the `bump` command.
+/// This command bump the version of your package
+#[derive(Parser, Clone, Debug, PartialEq)]
+#[cfg(feature = "bump")]
+pub struct BumpArgs {
+    /// The tag to look at when you bump other files.
+    /// If the file is written in markdown or html, it will looks into the code to find `<tag>0.1.0<tag/>`
+    #[arg(short, long)]
+    pub tag: Option<String>,
+
+    /// Files to include in the list. (typst.toml is already included)
+    #[arg(short, long, num_args = 1..)]
+    pub include: Vec<String>,
+
+    pub new_version: String,
 }
 
 /// Arguments for the `publish` command.
@@ -394,6 +412,11 @@ pub enum Workspace {
     #[command()]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
+
+    /// Todo: Message
+    #[command()]
+    #[cfg(feature = "bump")]
+    Bump(BumpArgs),
 }
 
 /// The main command-line interface for UTPM.

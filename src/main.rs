@@ -10,32 +10,6 @@ use std::{env, str::FromStr};
 use utils::output::OUTPUT_FORMAT;
 
 use clap::Parser;
-#[cfg(feature = "add")]
-use commands::add;
-#[cfg(feature = "bulk_delete")]
-use commands::bulk_delete;
-#[cfg(feature = "clone")]
-use commands::clone;
-#[cfg(feature = "delete")]
-use commands::delete;
-#[cfg(feature = "generate")]
-use commands::generate;
-#[cfg(feature = "init")]
-use commands::init;
-#[cfg(feature = "install")]
-use commands::install;
-#[cfg(feature = "link")]
-use commands::link;
-#[cfg(feature = "list")]
-use commands::list;
-#[cfg(feature = "path")]
-use commands::package_path;
-// #[cfg(feature = "publish")]
-// use commands::publish;
-#[cfg(feature = "tree")]
-use commands::tree;
-#[cfg(feature = "unlink")]
-use commands::unlink;
 #[cfg(any(
     feature = "tree",
     feature = "list",
@@ -130,19 +104,18 @@ fn main() {
         ))]
         Commands::Workspace(w) => match w {
             #[cfg(feature = "link")]
-            Workspace::Link(cmd) => link::run(cmd, None, true),
+            Workspace::Link(cmd) => commands::link::run(cmd, None, true),
             #[cfg(feature = "install")]
-            Workspace::Install(cmd) => install::run(cmd),
+            Workspace::Install(cmd) => commands::install::run(cmd),
             #[cfg(feature = "add")]
-            Workspace::Add(cmd) => add::run(&mut cmd.clone()),
+            Workspace::Add(cmd) => commands::add::run(&mut cmd.clone()),
             #[cfg(feature = "delete")]
-            Workspace::Delete(cmd) => delete::run(&mut cmd.clone()),
+            Workspace::Delete(cmd) => commands::delete::run(&mut cmd.clone()),
             #[cfg(feature = "init")]
-            Workspace::Init(cmd) => init::run(&mut cmd.clone()),
-            // #[cfg(feature = "publish")]
-            // Workspace::Publish(cmd) => publish::run(cmd),
+            Workspace::Init(cmd) => commands::init::run(&mut cmd.clone()),
             #[cfg(feature = "clone")]
-            Workspace::Clone(cmd) => clone::run(cmd),
+            Workspace::Clone(cmd) => commands::clone::run(cmd),
+            Workspace::Bump(cmd) => commands::bump::run(cmd),
         },
         #[cfg(any(
             feature = "tree",
@@ -154,18 +127,18 @@ fn main() {
         Commands::Packages(p) => match p {
             // TODO: Consider a `move` command to change namespace, name, or version.
             #[cfg(feature = "tree")]
-            Packages::Tree(cmd) => tree::run(cmd),
+            Packages::Tree(cmd) => commands::tree::run(cmd),
             #[cfg(feature = "list")]
-            Packages::List(cmd) => list::run(cmd),
+            Packages::List(cmd) => commands::list::run(cmd),
             #[cfg(feature = "path")]
-            Packages::Path => package_path::run(),
+            Packages::Path => commands::package_path::run(),
             #[cfg(feature = "unlink")]
-            Packages::Unlink(cmd) => unlink::run(cmd),
+            Packages::Unlink(cmd) => commands::unlink::run(cmd),
             #[cfg(feature = "bulk_delete")]
-            Packages::BulkDelete(cmd) => bulk_delete::run(cmd),
+            Packages::BulkDelete(cmd) => commands::bulk_delete::run(cmd),
         },
         #[cfg(feature = "generate")]
-        Commands::Generate(cmd) => generate::run(cmd),
+        Commands::Generate(cmd) => commands::generate::run(cmd),
     };
 
     // Handle any errors that occurred during command execution.

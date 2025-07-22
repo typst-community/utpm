@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashSet},
-    fs::{self, create_dir_all, File},
+    fs::{create_dir_all, File},
     io::Write,
     path::PathBuf,
     str::FromStr,

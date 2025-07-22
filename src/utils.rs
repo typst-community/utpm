@@ -6,13 +6,13 @@ use std::{fs, path::Path};
 #[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
 use git2::{
     build::{CheckoutBuilder, RepoBuilder},
-    Cred, FetchOptions, RemoteCallbacks, Repository,
+    FetchOptions, RemoteCallbacks, Repository,
 };
 use paths::{check_path_file, get_ssh_dir, has_content};
 use regex::Regex;
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 use std::{env, io, result::Result as R};
-use tracing::{info, instrument};
+use tracing::instrument;
 use typst_kit::download::{DownloadState, Progress};
 
 pub mod macros;

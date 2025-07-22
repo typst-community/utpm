@@ -67,8 +67,9 @@ list = []
 path = []
 publish = ["dep:git2", "dep:octocrab", "dep:ignore", "dep:regex"]
 tree = []
+bump = []
 unlink = ["dep:inquire", "dep:regex"]
-workspace = ["link", "init", "install", "add", "delete", "publish", "clone"]
+workspace = ["link", "init", "install", "add", "delete", "publish", "clone", "bump"]
 packages = ["tree", "list", "path", "unlink", "bulk_delete"]
 
 
