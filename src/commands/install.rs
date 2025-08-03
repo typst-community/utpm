@@ -10,14 +10,14 @@ use crate::{
             get_ssh_dir,
         },
         specs::Extra,
-        state::{Result, UtpmError},
+        state::Result,
     },
     utpm_log,
 };
 
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
 use tracing::instrument;
-use typst_project::{heuristics::MANIFEST_FILE, manifest::Manifest};
+use typst_project::heuristics::MANIFEST_FILE;
 
 use super::{link, InstallArgs};
 

@@ -1,8 +1,17 @@
 use std::fs;
 use tracing::instrument;
-use typst_project::manifest::Manifest;
 
-use crate::{ load_manifest, utils::{ copy_dir_all, paths::{c_packages, check_path_dir, d_packages, get_current_dir}, specs::Extra, state::{Result, UtpmError}, symlink_all, }, utpm_bail, utpm_log,};
+use crate::{
+    load_manifest,
+    utils::{
+        copy_dir_all,
+        paths::{c_packages, check_path_dir, d_packages, get_current_dir},
+        specs::Extra,
+        state::Result,
+        symlink_all,
+    },
+    utpm_bail, utpm_log,
+};
 
 use super::LinkArgs;
 

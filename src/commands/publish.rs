@@ -12,7 +12,7 @@ use crate::utils::paths::get_current_dir;
 use crate::utils::paths::{
     check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL,
 };
-use crate::{load_manifest, utils::state::UtpmError, utpm_bail};
+use crate::{load_manifest, utpm_bail};
 use ignore::overrides::OverrideBuilder;
 use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;

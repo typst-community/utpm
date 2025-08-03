@@ -12,15 +12,16 @@
 #[macro_export]
 macro_rules! load_manifest {
     () => {
-        match Manifest::try_find(get_current_dir()?)? {
+        match typst_project::manifest::Manifest::try_find($crate::utils::paths::get_current_dir()?)?
+        {
             Some(val) => Ok(val),
-            None => Err(UtpmError::Manifest),
+            None => Err($crate::utils::state::UtpmError::Manifest),
         }?
     };
     ($var:expr) => {
-        match Manifest::try_find($var)? {
+        match typst_project::manifest::Manifest::try_find($var)? {
             Some(val) => Ok(val),
-            None => Err(UtpmError::Manifest),
+            None => Err($crate::utils::state::UtpmError::Manifest),
         }?
     };
 }
@@ -30,6 +31,7 @@ macro_rules! load_manifest {
 /// # Usage
 ///
 /// ```rust,ignore
+/// let manifest: Manifest = load_manifest!().unwrap();
 /// // Write to `typst.toml` in the current directory
 /// write_manifest!(&manifest);
 ///
@@ -40,11 +42,11 @@ macro_rules! load_manifest {
 macro_rules! write_manifest {
     ($var:expr => $path:expr) => {
         let tomlfy: String = toml::to_string_pretty($var)?;
-        fs::write($path, tomlfy)?
+        std::fs::write($path, tomlfy)?
     };
     ($var:expr) => {
         let tomlfy: String = toml::to_string_pretty($var)?;
-        fs::write("./typst.toml", tomlfy)?
+        std::fs::write("./typst.toml", tomlfy)?
     };
 }
 
@@ -58,24 +60,24 @@ macro_rules! format_package {
         (format!(
             "{}/{}",
             if $namespace == "preview" {
-                info!("preview found, cache dir use");
-                c_packages()?
+                $crate::utpm_log!("preview found, cache dir use");
+                $crate::utils::paths::c_packages()?
             } else {
-                info!("no preview found, data dir use");
-                d_packages()?
+                $crate::utpm_log!("no preview found, data dir use");
+                $crate::utils::paths::d_packages()?
             },
             $namespace
         ))
     }};
 
     ($namespace:expr, $package:expr) => {{
-        (format!("{}/{}", format_package!($namespace), $package))
+        (format!("{}/{}", $crate::format_package!($namespace), $package))
     }};
 
     ($namespace:ident, $package:ident, $major:ident, $minor:ident, $patch:ident) => {{
         (format!(
             "{}/{}.{}.{}",
-            format_package!($namespace, $package),
+            $crate::format_package!($namespace, $package),
             $major,
             $minor,
             $patch
@@ -95,16 +97,16 @@ macro_rules! load_creds {
             let binding: String =
                 env::var("UTPM_USERNAME").unwrap_or(username_from_url.unwrap_or("git").to_string());
             let username: &str = binding.as_str();
-            match Cred::ssh_key_from_agent(username) {
+            match git2::Cred::ssh_key_from_agent(username) {
                 Ok(cred) => Ok(cred),
                 Err(_) => Ok(match env::var("UTPM_PASSPHRASE") {
                     Ok(s) => {
-                        info!(passphrase = true);
-                        Cred::ssh_key(username, None, Path::new(&$val), Some(s.as_str()))?
+                        $crate::utpm_log!(info, "passphrase" => false);
+                        git2::Cred::ssh_key(username, None, Path::new(&$val), Some(s.as_str()))?
                     }
                     Err(_) => {
-                        info!(passphrase = false);
-                        Cred::ssh_key(username, None, Path::new(&$val), None)?
+                        $crate::utpm_log!(info, "passphrase" => false);
+                        git2::Cred::ssh_key(username, None, Path::new(&$val), None)?
                     }
                 }),
             }

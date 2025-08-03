@@ -1,11 +1,11 @@
 use inquire::Confirm;
 use std::fs;
-use tracing::{info, instrument};
+use tracing::instrument;
 
 use crate::{
     format_package,
     utils::{
-        paths::{c_packages, check_path_dir, d_packages},
+        paths::check_path_dir,
         regex_namespace, regex_package, regex_packagename,
         state::Result,
     },

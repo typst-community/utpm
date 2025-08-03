@@ -1,15 +1,11 @@
-use std::fs;
-
 use toml::map::Map;
 use tracing::instrument;
-use typst_project::manifest::Manifest;
 
 use crate::{
     load_manifest,
     utils::{
-        paths::get_current_dir,
         specs::Extra,
-        state::{Result, UtpmError},
+        state::Result,
     },
     utpm_log, write_manifest,
 };
