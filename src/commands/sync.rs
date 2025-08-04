@@ -6,11 +6,13 @@ use tracing::instrument;
 use std::result::Result as R;
 
 use crate::{
-    commands::get::get_packages_name_version, utils::{
+    commands::get::get_packages_name_version,
+    utils::{
         paths::{d_packages, get_current_dir},
         regex_import,
         state::Result,
-    }, utpm_bail, utpm_log
+    },
+    utpm_bail, utpm_log,
 };
 
 use super::SyncArgs;
@@ -18,22 +20,21 @@ use super::SyncArgs;
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
     if cmd.files.len() == 0 {
-        default_run().await?;
+        default_run(cmd.check_only).await?;
         Ok(true)
     } else {
-        files_run(&cmd.files).await?;
+        files_run(&cmd.files, cmd.check_only).await?;
         Ok(true)
     }
 }
 
-
-async fn default_run() -> Result<bool> {
+async fn default_run(cmd: bool) -> Result<bool> {
     let wb: WalkBuilder = WalkBuilder::new(&Path::new(&get_current_dir()?));
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
             if !file_type.is_dir() {
                 utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
-                file_run(result.path()).await?;
+                file_run(result.path(), cmd).await?;
             }
         }
     }
@@ -41,7 +42,7 @@ async fn default_run() -> Result<bool> {
 }
 
 // TODO: Comments using utpm_log
-async fn file_run(path: &Path) -> Result<bool> {
+async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
     let re = regex_import();
     let content_bytes = match std::fs::read(path) {
         Ok(bytes) => Ok(bytes),
@@ -99,28 +100,40 @@ async fn file_run(path: &Path) -> Result<bool> {
         }
 
         // Replace the import by the new
+
         let new_import: String = format!(
-            "#import \"@{namespace}/{package}:{}\" /* From {major}.{minor}.{patch} */",
-            version.unwrap()
+            "#import \"@{namespace}/{package}:{}\" {}",
+            if comment_only {
+                format!("{major}.{minor}.{patch}")
+            } else {
+                version.clone().unwrap()
+            },
+            if comment_only {
+                format!("/* New version available: {} */", version.unwrap())
+            } else {
+                format!("/* From {major}.{minor}.{patch} */")
+            }
         );
         utpm_log!(info, new_import);
         let old_len = string.len();
-        string.replace_range(range, &new_import);
+        if !comment_only {
+            string.replace_range(range, &new_import);
+        }
 
         // Set the offet and the new string.
         offset += (string.len() as isize) - (old_len as isize);
     }
-    
+
     if modified {
         write(path, &string)?;
     }
     Ok(true)
 }
 
-async fn files_run(files: &Vec<String>) -> Result<bool> {
+async fn files_run(files: &Vec<String>, cmd: bool) -> Result<bool> {
     for file in files {
         let path = Path::new(file.as_str());
-        file_run(path).await?;
+        file_run(path, cmd).await?;
     }
     Ok(true)
 }

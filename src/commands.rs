@@ -332,6 +332,10 @@ pub struct SyncArgs {
     /// Files to sync packages. Default to all files
     #[clap(short, long)]
     pub files: Vec<String>,
+
+    /// Only check if they are new versions and write them on the file itself
+    #[clap(short, long)]
+    pub check_only: bool
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
