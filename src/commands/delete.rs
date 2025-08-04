@@ -14,7 +14,7 @@ use super::DeleteArgs;
 
 /// Removes dependencies from the `typst.toml` manifest.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &mut DeleteArgs) -> Result<bool> {
+pub async fn run(cmd: &mut DeleteArgs) -> Result<bool> {
     let mut config = load_manifest!();
 
     // Check for the `[tool]` section in the manifest.

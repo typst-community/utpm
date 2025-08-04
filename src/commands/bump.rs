@@ -22,7 +22,7 @@ fn tag_change(tag: Option<String>, value: &String) -> String {
 }
 
 #[instrument(skip(cmd))]
-pub fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
+pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
     let mut config = load_manifest!();
     let ver = Version::parse(&cmd.new_version)?;
  

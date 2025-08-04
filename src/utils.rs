@@ -81,6 +81,11 @@ pub fn regex_packagename() -> Regex {
     Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)$").unwrap()
 }
 
+/// Returns a regex for matching a import of a package (`#import "@namespace/name:1.0.0"`).
+pub fn regex_import() -> Regex {
+    Regex::new("\\#import \"@([a-z]+)\\/([a-z]+(?:\\-[a-z]+)?)\\:(\\d+)\\.(\\d+)\\.(\\d+)\"").unwrap()
+}
+
 //todo: impl
 /// A progress indicator for package downloads.
 ///

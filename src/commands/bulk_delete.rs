@@ -9,7 +9,7 @@ use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 
 /// Deletes multiple packages from the local storage.
 #[instrument]
-pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
+pub async fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
     let mut vec: Vec<UtpmError> = Vec::new();
     // Iterate over the list of package names provided.
     for name in &cmd.names {
@@ -18,7 +18,7 @@ pub fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
         match unlink::run(&UnlinkArgs {
             package: name.into(),
             yes: true,
-        }) {
+        }).await {
             Ok(_) => {
                 utpm_log!(info, "- {} deleted", name);
             }

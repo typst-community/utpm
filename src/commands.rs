@@ -28,6 +28,9 @@ pub mod publish;
 pub mod tree;
 #[cfg(feature = "unlink")]
 pub mod unlink;
+#[cfg(feature = "sync")]
+pub mod sync;
+pub mod get;
 
 #[cfg(any(feature = "clone", feature = "publish"))]
 use std::path::PathBuf;
@@ -322,6 +325,22 @@ pub struct DeleteArgs {
     pub uri: Vec<String>,
 }
 
+
+#[derive(Parser, Clone, Debug, PartialEq)]
+#[cfg(feature = "sync")]
+pub struct SyncArgs {
+    /// Files to sync packages. Default to all files
+    #[clap(short, long)]
+    pub files: Vec<String>,
+}
+
+#[derive(Parser, Clone, Debug, PartialEq)]
+#[cfg(feature = "get")]
+pub struct GetArgs {
+    /// Files to sync packages. Default to all files
+    pub packages: Vec<String>,
+}
+
 /// Arguments for the `add` command.
 /// This command adds dependencies to the manifest.
 #[derive(Parser, Clone, Debug, PartialEq)]
@@ -366,6 +385,11 @@ pub enum Packages {
     #[command(visible_alias = "bd")]
     #[cfg(feature = "bulk_delete")]
     BulkDelete(BulkDeleteArgs),
+
+    /// Todo: Message
+    #[command()]
+    #[cfg(feature = "get")]
+    Get(GetArgs),
 }
 
 /// An enumeration of subcommands for managing the project workspace.
@@ -419,6 +443,11 @@ pub enum Workspace {
     #[command()]
     #[cfg(feature = "bump")]
     Bump(BumpArgs),
+
+    /// Todo: Message
+    #[command()]
+    #[cfg(feature = "sync")]
+    Sync(SyncArgs),
 }
 
 /// The main command-line interface for UTPM.
