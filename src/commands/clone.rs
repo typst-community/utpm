@@ -83,6 +83,7 @@ pub async fn run(cmd: &CloneArgs) -> Result<bool> {
 
         // If the package needs to be downloaded.
         if cmd.redownload {
+            utpm_log!(warn, "REDOWNLOAD IN WIP");
             // TODO: Implement removal of the existing directory for redownload.
         }
 

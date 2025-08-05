@@ -1,6 +1,6 @@
 use std::{fs::write, path::Path};
 
-use ignore::WalkBuilder;
+use ignore::{overrides::OverrideBuilder, WalkBuilder};
 use tracing::instrument;
 
 use std::result::Result as R;
@@ -10,7 +10,7 @@ use crate::{
     utils::{
         paths::{d_packages, get_current_dir},
         regex_import,
-        state::Result,
+        state::{Result, UtpmError},
     },
     utpm_bail, utpm_log,
 };
@@ -20,16 +20,22 @@ use super::SyncArgs;
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
     if cmd.files.len() == 0 {
+        utpm_log!(trace, "Running default check...");
         default_run(cmd.check_only).await?;
         Ok(true)
     } else {
+        utpm_log!(trace, "Running specific check...", "files" => cmd.files.join(","));
         files_run(&cmd.files, cmd.check_only).await?;
         Ok(true)
     }
 }
 
 async fn default_run(cmd: bool) -> Result<bool> {
-    let wb: WalkBuilder = WalkBuilder::new(&Path::new(&get_current_dir()?));
+    let dir = &get_current_dir()?;
+    let path = Path::new(dir);
+    let wb: WalkBuilder = WalkBuilder::new(path);
+    let mut overr: OverrideBuilder = OverrideBuilder::new(path);
+    overr.add("*.typ")?;
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
             if !file_type.is_dir() {
@@ -75,29 +81,36 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
         let start = (e.0.start() as isize + offset) as usize;
         let end = (e.0.end() as isize + offset) as usize;
         let range = start..end;
+        utpm_log!(trace, "Range: {:?}", range);
 
         // Extract infos from the import
         let (_, [namespace, package, major, minor, patch]) = e.1.extract();
-
+        utpm_log!(
+            trace,
+            "Last import: @{namespace}/{package}:{major}.{minor}.{}",
+            patch
+        );
         let version = if namespace == "preview" {
             let pkgs = get_packages_name_version().await?;
-            // TODO: check if the package exist
-            Some(pkgs.get(package).unwrap().version.clone())
+            if let Some(pkg) = pkgs.get(package) {
+                Ok::<std::string::String, UtpmError>(pkg.version.clone())
+            } else {
+                utpm_bail!(PackageNotExist);
+            }
         } else {
-            // TODO: Check here too
             let r = std::fs::read_dir(d_packages()? + format!("/{namespace}/{package}").as_str())?;
             let mut list_dir = r
                 .into_iter()
-                .map(|a| a.unwrap().file_name().to_str().unwrap().to_string())
+                .filter_map(|a| a.ok())
+                .filter_map(|a| a.file_name().into_string().ok())
                 .collect::<Vec<_>>();
             list_dir.sort();
-            Some(list_dir.last().unwrap().clone())
-        };
-
-        if version.is_none() {
-            utpm_log!(error, "Can't find the package");
-            utpm_bail!(PackageNotExist);
-        }
+            let var = match list_dir.last() {
+                Some(e) => Ok::<std::string::String, UtpmError>(e.clone()),
+                None => utpm_bail!(PackageNotExist),
+            }?;
+            Ok(var)
+        }?;
 
         // Replace the import by the new
 
@@ -106,10 +119,10 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
             if comment_only {
                 format!("{major}.{minor}.{patch}")
             } else {
-                version.clone().unwrap()
+                version.clone()
             },
             if comment_only {
-                format!("/* New version available: {} */", version.unwrap())
+                format!("/* New version available: {} */", version)
             } else {
                 format!("/* From {major}.{minor}.{patch} */")
             }
@@ -126,6 +139,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
 
     if modified {
         write(path, &string)?;
+        utpm_log!(info, "{} written", path.to_str().unwrap());
     }
     Ok(true)
 }

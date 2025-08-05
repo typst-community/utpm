@@ -12,6 +12,7 @@ pub mod clone;
 pub mod delete;
 #[cfg(feature = "generate")]
 pub mod generate;
+pub mod get;
 #[cfg(feature = "init")]
 pub mod init;
 #[cfg(feature = "install")]
@@ -24,13 +25,12 @@ pub mod list;
 pub mod package_path;
 #[cfg(feature = "publish")]
 pub mod publish;
+#[cfg(feature = "sync")]
+pub mod sync;
 #[cfg(feature = "tree")]
 pub mod tree;
 #[cfg(feature = "unlink")]
 pub mod unlink;
-#[cfg(feature = "sync")]
-pub mod sync;
-pub mod get;
 
 #[cfg(any(feature = "clone", feature = "publish"))]
 use std::path::PathBuf;
@@ -169,7 +169,6 @@ pub struct ListTreeArgs {
     #[arg(short, long)]
     pub tree: bool,
 }
-
 
 /// Arguments for the `bump` command.
 /// This command bump the version of your package
@@ -325,9 +324,11 @@ pub struct DeleteArgs {
     pub uri: Vec<String>,
 }
 
-
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "sync")]
+/// Arguments for the `sync` command.
+/// This command synchronise package from the remote or the local .
+/// Can't check remote unofficial packages.
 pub struct SyncArgs {
     /// Files to sync packages. Default to all files
     #[clap(short, long)]
@@ -335,11 +336,14 @@ pub struct SyncArgs {
 
     /// Only check if they are new versions and write them on the file itself
     #[clap(short, long)]
-    pub check_only: bool
+    pub check_only: bool,
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "get")]
+/// Arguments for the `get` command.
+/// This command gets from the remote the package you research.
+/// By default: Give you all packages available
 pub struct GetArgs {
     /// Files to sync packages. Default to all files
     pub packages: Vec<String>,
@@ -361,7 +365,8 @@ pub struct AddArgs {
     feature = "list",
     feature = "path",
     feature = "unlink",
-    feature = "bulk_delete"
+    feature = "bulk_delete",
+    feature = "get"
 ))]
 pub enum Packages {
     /// [DEPRECATED] Display packages as a tree. Use `list --tree` instead.
@@ -390,8 +395,8 @@ pub enum Packages {
     #[cfg(feature = "bulk_delete")]
     BulkDelete(BulkDeleteArgs),
 
-    /// Todo: Message
-    #[command()]
+    /// Get specific/all package from the remote
+    #[command(visible_alias = "g")]
     #[cfg(feature = "get")]
     Get(GetArgs),
 }
@@ -406,6 +411,8 @@ pub enum Packages {
     feature = "delete",
     feature = "init",
     feature = "publish",
+    feature = "bump",
+    feature = "sync",
     feature = "clone"
 ))]
 pub enum Workspace {
@@ -430,25 +437,27 @@ pub enum Workspace {
     Delete(DeleteArgs),
 
     /// Create a new `typst.toml` manifest for a project.
+    #[command(visible_alias = "n")]
     #[cfg(feature = "init")]
     Init(InitArgs),
 
-    /// Publish your package to the typst universe. (WIP)
+    // Publish your package to the typst universe. (WIP)
     // #[command(visible_alias = "p")]
     // #[cfg(feature = "publish")]
     // Publish(PublishArgs),
 
     /// Clone a package from the typst universe or a local directory.
     #[command()]
+    #[command(visible_alias = "d")]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
 
-    /// Todo: Message
+    /// Bump all version of your package into an other.
     #[command()]
     #[cfg(feature = "bump")]
     Bump(BumpArgs),
 
-    /// Todo: Message
+    /// Synchronise all your dependencies into their last version.
     #[command()]
     #[cfg(feature = "sync")]
     Sync(SyncArgs),
@@ -468,6 +477,8 @@ pub enum Commands {
         feature = "delete",
         feature = "init",
         feature = "publish",
+        feature = "bump",
+        feature = "sync",
         feature = "clone"
     ))]
     Workspace(Workspace),
@@ -480,12 +491,13 @@ pub enum Commands {
         feature = "list",
         feature = "path",
         feature = "unlink",
-        feature = "bulk_delete"
+        feature = "bulk_delete",
+        feature = "get"
     ))]
     Packages(Packages),
 
     /// Generate shell completion scripts.
-    #[command(visible_alias = "gen")]
+    #[command(visible_alias = "g")]
     #[cfg(feature = "generate")]
     Generate(GenerateArgs),
 }
@@ -500,8 +512,12 @@ pub struct Cli {
     pub command: Commands,
 
     /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long)]
+    #[arg(short = 'v', long, global = true)]
     pub verbose: Option<LevelFilter>,
+
+    /// The output format for command results.
+    #[arg(short = 'o', long, global = true, value_enum)]
+    pub output_format: Option<OutputFormat>,
 }
 
 /// An unofficial typst package manager for your projects.
@@ -514,7 +530,7 @@ pub struct Cli {
     pub command: Commands,
 
     /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long)]
+    #[arg(short = 'v', long, global = true)]
     pub verbose: Option<LevelFilter>,
 
     /// The output format for command results.
