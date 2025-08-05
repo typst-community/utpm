@@ -24,18 +24,24 @@
 
 ## 🔥 Features
 
-- [x] ✨Create packages rapidly (`utpm workspace create`)
-  - [x] ⏯️ Alias shorthand e.g. (`workspace = ws`)
+- [x] ✨ Create and initialize packages rapidly (`utpm workspace init`)
+  - [x] ⏯️ Alias shorthands (e.g., `workspace` -> `ws`, `packages` -> `pkg`)
   - [x] ⌨️ Intuitive Clap CLI
-- [x] 🛠 Manage existing packages (`utpm ws link --no-copy`)
-  - [x] 🔗 Link remote and local packages (`utpm workspace link`)
-  - [x] 🗄️ Delete and bulk delete your packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
-- [x] 🌐 Dependencies outside of Typst!
-  - [x] 📦 Support for third party application and plugins
-  - [x] 🔒 Portable installer (limited for now)
-- [x] 📃 Visualization 
-  - [x] 🗃️ list `utpm pkg list`
-  - [x] 🌲 tree ~~`utpm pkg tree`~~ (use `list --tree` instead)
+- [x] 🛠️ Manage project dependencies
+  - [x] ➕ Add dependencies (`utpm ws add`)
+  - [x] ➖ Remove dependencies (`utpm ws delete`)
+  - [x] 🔄 Sync dependencies to the latest versions (`utpm ws sync`)
+  - [x] 📦 Install dependencies from `typst.toml` (`utpm ws install`)
+- [x] 📦 Manage local and remote packages
+  - [x] 📥 Clone packages from the Typst Universe (`utpm ws clone`)
+  - [x] 🔗 Link local packages for development (`utpm ws link`)
+  - [x] 🗑️ Unlink and bulk-delete packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
+  - [x] ⬆️ Bump package version (`utpm ws bump`)
+- [x] 🔎 Discover and inspect packages
+  - [x] 🗃️ List local packages (`utpm pkg list`)
+  - [x] 🌲 Tree view for packages (`utpm pkg list --tree`)
+  - [x] ℹ️ Get package information from the remote (`utpm pkg get`)
+  - [x] ✅ Check for new package versions without updating (`utpm ws sync -c`)
 - [x] 📤 Flexible output formats
   - [x] 📝 Classic text and JSON output (fully supported)
   - [x] ⚠️ YAML, HJSON, and TOML output (experimental, under active development, and not included in official utpm builds — requires manual build for access)
@@ -126,24 +132,30 @@ Options:
   -V, --version            Print version
 ```
 
-**Workspace** (ws): Manage Your Project Workspace
-- `link (l)`: Link your project to existing directories.
-- `create (c) (Deprecated)`: Creates a typst.toml file. Use init instead.
-- `install (i)`: Install dependencies listed in typst.toml.
-- `add (a)`: Add and install new dependencies.
-- `delete (d)`: Remove specific dependencies.
-- `init`: Initialize a new workspace for a Typst package.
-- `publish (p) (WIP)`: Intended for publishing packages.
-- `clone (WIP)`: Clone an existing workspace.
+### **Workspace (`ws`)**: Manage Your Project Workspace
+| Command | Alias | Description |
+| :--- | :---: | :--- |
+| `link` | `l` | Link the current project to the local package directory. |
+| `install` | `i` | Install all dependencies from the `typst.toml` manifest. |
+| `add` | `a` | Add dependencies to the manifest and then install them. |
+| `delete` | `d` | Delete dependencies from the manifest. |
+| `init` | `n` | Create a new `typst.toml` manifest for a project. |
+| `clone` | | Clone a package from the typst universe or a local directory. |
+| `bump` | | Bump the version of your package. |
+| `sync` | | Synchronise all your dependencies to their last version. |
+| `publish` | `p` | **(WIP)** Intended for publishing packages. |
 
-**Packages** (pkg): Manage Typst Packages
-- `tree (t)`: Display all packages in a directory as a tree.
-- `list (l)`: List all packages in a directory in a flat list.
-- `path (p)`: Show the path to the Typst packages folder.
-- `unlink (u)`: Remove a previously installed package.
-- `bulk-delete (bd)`: Delete multiple packages at once.
+### **Packages (`pkg`)**: Manage Typst Packages
+| Command | Alias | Description |
+| :--- | :---: | :--- |
+| `list` | `l` | List all packages in your local storage. |
+| `path` | `p` | Display the path to the typst packages folder. |
+| `unlink` | `u` | Delete a package from your local storage. |
+| `bulk-delete` | `bd` | Delete multiple packages or a whole namespace at once. |
+| `get` | `g` | Get specific/all package from the remote. |
+| `tree` | `t` | **[DEPRECATED]** Display packages as a tree. Use `list --tree` instead. |
 
-**generate** (gen): Generate Shell Completions
+### **generate (`gen`)**: Generate Shell Completions
 
 <div/>
 
