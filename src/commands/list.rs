@@ -123,7 +123,7 @@ use super::ListTreeArgs;
 /// Can display as a simple list or as a tree structure, depending on the
 /// command-line arguments and output format.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &ListTreeArgs) -> Result<bool> {
+pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
     // If tree view is requested with text output, use the tree-specific function.
     if cmd.tree && get_output_format() == OutputFormat::Text {
         return run_tree(cmd);

@@ -40,7 +40,7 @@ use super::InitArgs;
 /// This function can run in interactive mode, prompting the user for configuration details,
 /// or in non-interactive mode using command-line arguments.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &mut InitArgs) -> Result<bool> {
+pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     let curr = get_current_dir()?;
     utpm_log!(info, "Current dir: {}", curr);
     let typ = curr.clone() + "/" + MANIFEST_FILE;

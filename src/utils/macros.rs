@@ -141,18 +141,18 @@ macro_rules! utpm_bail {
 /// serializing them to JSON, YAML, etc., if the corresponding output format is selected.
 #[macro_export]
 macro_rules! utpm_log {
-    ($(@g)? $lvl:ident, $data:expr, $($args:expr => $val:expr),+) => {{
+    ($(@g)? $lvl:ident, $data:expr $(, $($args:expr => $val:expr),*)?) => {{
         match $crate::utils::output::get_output_format() {
             #[cfg(feature = "output_json")]
-            $crate::OutputFormat::Json => tracing::$lvl!($($args = $val),+, data = &$data),
+            $crate::OutputFormat::Json => tracing::$lvl!($($($args = $val),*,)? "{}", serde_json::to_string(&$data).unwrap()),
             #[cfg(feature = "output_yaml")]
-            $crate::OutputFormat::Yaml => tracing::$lvl!($($args = $val),+, "{}", serde_yaml::to_string(&$data)?),
+            $crate::OutputFormat::Yaml => tracing::$lvl!($($($args = $val),*,)? "{}", serde_yaml::to_string(&$data).unwrap()),
             #[cfg(feature = "output_toml")]
-            $crate::OutputFormat::Toml => tracing::$lvl!($($args = $val),+, "{}", toml::to_string(&$data)?),
+            $crate::OutputFormat::Toml => tracing::$lvl!($($($args = $val),*,)? "{}", toml::to_string(&$data).unwrap()),
             #[cfg(feature = "output_text")]
-            $crate::OutputFormat::Text => tracing::$lvl!($($args = $val),+, "{}", $data),
+            $crate::OutputFormat::Text => tracing::$lvl!($($($args = $val),*,)? "{}", $data),
             #[cfg(feature = "output_hjson")]
-            $crate::OutputFormat::Hjson => tracing::$lvl!($($args = $val),+, "{}", serde_hjson::ser::to_string(&$data)?),
+            $crate::OutputFormat::Hjson => tracing::$lvl!($($($args = $val),*,)? "{}", serde_hjson::to_string(&$data).unwrap()),
         }
     }};
     ($(@g)? $lvl:ident, $data:expr,? $($args:expr => $val:expr),*) => {{

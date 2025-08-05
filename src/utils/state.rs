@@ -157,6 +157,12 @@ pub enum UtpmError {
     #[error("No URI were found. Please check your typst.toml")]
     NoURIFound,
 
+    #[error("Reqwest Error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+
+    #[error("FromUTF8 Error: {0}")]
+    FromUTF8Error(#[from] std::string::FromUtf8Error),
+
     /// A wrapper for any other error.
     #[error(transparent)]
     Other(#[from] anyhow::Error),
@@ -221,6 +227,8 @@ impl UtpmError {
             #[cfg(feature = "output_yaml")]
             YamlParse(_) => "YamlParse",
             NoURIFound => "NoURIFound",
+            ReqwestError(_) => "ReqwestError",
+            FromUTF8Error(_) => "FromUTF8Error",
         }
     }
 }

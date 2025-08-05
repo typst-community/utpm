@@ -44,7 +44,8 @@ use crate::utils::output::{get_output_format, OutputFormat};
 /// This function initializes the command-line interface, parses arguments,
 /// sets up logging, and dispatches to the appropriate command handler.
 #[instrument]
-fn main() {
+#[tokio::main]
+async fn main() {
     // Parse command-line arguments.
     let x = Cli::parse();
 
@@ -91,61 +92,73 @@ fn main() {
     }
 
     // Dispatch the command to its handler.
-    let res: Result<bool, UtpmError> = match &x.command {
-        #[cfg(any(
-            feature = "link",
-            feature = "init",
-            feature = "install",
-            feature = "add",
-            feature = "delete",
-            feature = "init",
-            feature = "publish",
-            feature = "clone"
-        ))]
-        Commands::Workspace(w) => match w {
-            #[cfg(feature = "link")]
-            Workspace::Link(cmd) => commands::link::run(cmd, None, true),
-            #[cfg(feature = "install")]
-            Workspace::Install(cmd) => commands::install::run(cmd),
-            #[cfg(feature = "add")]
-            Workspace::Add(cmd) => commands::add::run(&mut cmd.clone()),
-            #[cfg(feature = "delete")]
-            Workspace::Delete(cmd) => commands::delete::run(&mut cmd.clone()),
-            #[cfg(feature = "init")]
-            Workspace::Init(cmd) => commands::init::run(&mut cmd.clone()),
-            #[cfg(feature = "clone")]
-            Workspace::Clone(cmd) => commands::clone::run(cmd),
-            Workspace::Bump(cmd) => commands::bump::run(cmd),
-        },
-        #[cfg(any(
-            feature = "tree",
-            feature = "list",
-            feature = "path",
-            feature = "unlink",
-            feature = "bulk_delete"
-        ))]
-        Commands::Packages(p) => match p {
-            // TODO: Consider a `move` command to change namespace, name, or version.
-            #[cfg(feature = "tree")]
-            Packages::Tree(cmd) => commands::tree::run(cmd),
-            #[cfg(feature = "list")]
-            Packages::List(cmd) => commands::list::run(cmd),
-            #[cfg(feature = "path")]
-            Packages::Path => commands::package_path::run(),
-            #[cfg(feature = "unlink")]
-            Packages::Unlink(cmd) => commands::unlink::run(cmd),
-            #[cfg(feature = "bulk_delete")]
-            Packages::BulkDelete(cmd) => commands::bulk_delete::run(cmd),
-        },
-        #[cfg(feature = "generate")]
-        Commands::Generate(cmd) => commands::generate::run(cmd),
-    };
+    let res = async move {
+        match &x.command {
+            #[cfg(any(
+                feature = "link",
+                feature = "init",
+                feature = "install",
+                feature = "add",
+                feature = "delete",
+                feature = "init",
+                feature = "publish",
+                feature = "sync",
+                feature = "bump",
+                feature = "clone"
+            ))]
+            Commands::Workspace(w) => match w {
+                #[cfg(feature = "link")]
+                Workspace::Link(cmd) => commands::link::run(cmd, None, true).await,
+                #[cfg(feature = "install")]
+                Workspace::Install(cmd) => commands::install::run(cmd).await,
+                #[cfg(feature = "add")]
+                Workspace::Add(cmd) => commands::add::run(&mut cmd.clone()).await,
+                #[cfg(feature = "delete")]
+                Workspace::Delete(cmd) => commands::delete::run(&mut cmd.clone()).await,
+                #[cfg(feature = "init")]
+                Workspace::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
+                #[cfg(feature = "clone")]
+                Workspace::Clone(cmd) => commands::clone::run(cmd).await,
+                #[cfg(feature = "bump")]
+                Workspace::Bump(cmd) => commands::bump::run(cmd).await,
+                #[cfg(feature = "sync")]
+                Workspace::Sync(cmd) => commands::sync::run(cmd).await,
+            },
+            #[cfg(any(
+                feature = "tree",
+                feature = "list",
+                feature = "path",
+                feature = "unlink",
+                feature = "bulk_delete",
+                feature = "get"
+            ))]
+            Commands::Packages(p) => {
+                match p {
+                    // TODO: Consider a `move` command to change namespace, name, or version.
+                    #[cfg(feature = "tree")]
+                    Packages::Tree(cmd) => commands::tree::run(cmd).await,
+                    #[cfg(feature = "list")]
+                    Packages::List(cmd) => commands::list::run(cmd).await,
+                    #[cfg(feature = "path")]
+                    Packages::Path => commands::package_path::run().await,
+                    #[cfg(feature = "unlink")]
+                    Packages::Unlink(cmd) => commands::unlink::run(cmd).await,
+                    #[cfg(feature = "bulk_delete")]
+                    Packages::BulkDelete(cmd) => commands::bulk_delete::run(cmd).await,
+                    #[cfg(feature = "get")]
+                    Packages::Get(cmd) => commands::get::run(cmd).await,
+                }
+            }
+            #[cfg(feature = "generate")]
+            Commands::Generate(cmd) => commands::generate::run(cmd).await,
+        }
+    }.await;
 
     // Handle any errors that occurred during command execution.
     if let Err(err) = res {
         match check_errors(err) {
             Ok(_) => (),
-            Err(err2) => error!("{}", err2),
+            Err(err2) => error!("{err2}"),
         };
     }
 }
@@ -155,6 +168,6 @@ fn main() {
 /// If the command execution results in an error, this function is called
 /// to log the error to the console.
 fn check_errors(err: UtpmError) -> Result<()> {
-    utpm_log!(error, "{err}");
+    utpm_log!(@f error, "{err}");
     return Ok(());
 }

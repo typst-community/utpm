@@ -42,6 +42,8 @@ serde_json = { version = "1.0.140", optional = true }
 serde-hjson = { version = "1.1.0", optional = true }
 fmt-derive = "0.1.2"
 ptree = "0.5.2"
+reqwest = { version = "0.12.22", optional = false, features = ["json"] }
+futures = "0.3.31"
 
 [build-dependencies]
 shadow-rs = "1.1.1"
@@ -68,9 +70,11 @@ path = []
 publish = ["dep:git2", "dep:octocrab", "dep:ignore", "dep:regex"]
 tree = []
 bump = []
+sync = []
+get = []
 unlink = ["dep:inquire", "dep:regex"]
-workspace = ["link", "init", "install", "add", "delete", "publish", "clone", "bump"]
-packages = ["tree", "list", "path", "unlink", "bulk_delete"]
+workspace = ["link", "init", "install", "add", "delete", "publish", "clone", "bump", "sync"]
+packages = ["tree", "list", "path", "unlink", "bulk_delete", "get"]
 
 
 #### Output format

@@ -23,7 +23,7 @@ use regex::Regex;
 
 /// Clones a typst package from the official repository or a local path.
 #[instrument]
-pub fn run(cmd: &CloneArgs) -> Result<bool> {
+pub async fn run(cmd: &CloneArgs) -> Result<bool> {
     // Determine the target path for the clone operation.
     let path: PathBuf = if let Some(path) = &cmd.path {
         path.clone()
@@ -83,6 +83,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
 
         // If the package needs to be downloaded.
         if cmd.redownload {
+            utpm_log!(warn, "REDOWNLOAD IN WIP");
             // TODO: Implement removal of the existing directory for redownload.
         }
 
@@ -130,7 +131,7 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
             }
         };
     } else {
-        utpm_log!(error, "package not found, input: {}", package);
+        utpm_log!(error, "Package not found, input: {}", package);
         utpm_bail!(PackageNotValid);
     }
 }

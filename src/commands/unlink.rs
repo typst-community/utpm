@@ -16,7 +16,7 @@ use super::UnlinkArgs;
 
 /// Unlinks/deletes a package from the local storage.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &UnlinkArgs) -> Result<bool> {
+pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let packages = &cmd.package;
 
     // Use regex to parse the package string, which can be a full package spec,

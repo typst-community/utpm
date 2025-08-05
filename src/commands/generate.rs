@@ -15,7 +15,7 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
 
 /// Generates shell completion scripts.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &GenerateArgs) -> Result<bool> {
+pub async fn run(cmd: &GenerateArgs) -> Result<bool> {
     let generator = cmd.generator;
     let mut cmd: Command = Cli::command();
     eprintln!("Generating completion file for {generator:?}...");
