@@ -58,6 +58,7 @@ impl<'b> RawPck<'b> {
 /// Clones a typst package from the official repository or a local path.
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
+    utpm_log!(trace, "executing clone command");
     // Determine the target path for the clone operation.
     let path: PathBuf = if let Some(path) = &cmd.path {
         path.clone()
@@ -112,6 +113,7 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     // If the package already exists locally, copy or symlink it.
     if check_path_dir(&val) {
+        utpm_log!(info, "Package found locally at {}", val);
         if cmd.download_only {
             utpm_log!(info, "download only, nothing to do.");
             return Ok(true);

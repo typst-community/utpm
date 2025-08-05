@@ -145,6 +145,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
 }
 
 async fn files_run(files: &Vec<String>, cmd: bool) -> Result<bool> {
+    utpm_log!(trace, "executing files_run for sync command");
     for file in files {
         let path = Path::new(file.as_str());
         file_run(path, cmd).await?;

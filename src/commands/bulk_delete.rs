@@ -10,6 +10,7 @@ use super::{unlink, BulkDeleteArgs, UnlinkArgs};
 /// Deletes multiple packages from the local storage.
 #[instrument]
 pub async fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
+    utpm_log!(trace, "executing bulk_delete command");
     let mut vec: Vec<UtpmError> = Vec::new();
     // Iterate over the list of package names provided.
     for name in &cmd.names {

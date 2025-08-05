@@ -35,6 +35,7 @@ use ignore::WalkBuilder;
 #[tokio::main]
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
+    utpm_log!(trace, "executing publish command");
     // TODO: Implement GitHub fork creation, linking to local packages, PR creation, and git push.
     // TODO: Check for dependencies and provide a way to add them.
     // TODO: Ensure there are files in the package before publishing.

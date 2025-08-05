@@ -18,6 +18,7 @@ use super::LinkArgs;
 /// Links the current project to the local package directory, either by copying or symlinking.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
+    utpm_log!(trace, "executing link command");
     // Determine the source directory for the link operation.
     let curr = path.unwrap_or(get_current_dir()?);
 
@@ -59,6 +60,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
         symlink_all(&curr, &path)?;
         if pt {
             utpm_log!(
+                info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
                 path,
                 namespace,
@@ -70,6 +72,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
         copy_dir_all(&curr, &path)?;
         if pt {
             utpm_log!(
+                info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
                 path,
                 namespace,

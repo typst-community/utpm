@@ -23,7 +23,9 @@ fn tag_change(tag: Option<String>, value: &String) -> String {
 
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
+    utpm_log!(trace, "executing bump command");
     let mut config = load_manifest!();
+
     let ver = Version::parse(&cmd.new_version)?;
  
     let strs = &cmd.new_version;
@@ -37,6 +39,7 @@ pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
         let new_version = &tag_change(cmd.tag.clone(), strs);
         string = string.replace(ancien_version, new_version);
         write(file, string)?;
+        utpm_log!(info, "Modified {}", file.clone());
     }
 
     // Borrow is very anoying sometimes, this hack is necessary

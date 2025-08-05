@@ -11,6 +11,7 @@ use super::ListTreeArgs;
 /// Use `list --tree` instead. It delegates to `list::run` with the `--tree` flag.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
+    utpm_log!(trace, "executing tree command");
     utpm_log!(warn, "Command is depreciated. Use list --tree instead.");
     let mut new_cmd = cmd.clone();
     new_cmd.tree = true;

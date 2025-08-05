@@ -15,6 +15,7 @@ use super::DeleteArgs;
 /// Removes dependencies from the `typst.toml` manifest.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &mut DeleteArgs) -> Result<bool> {
+    utpm_log!(trace, "executing delete command");
     let mut config = load_manifest!();
 
     // Check for the `[tool]` section in the manifest.
@@ -30,9 +31,9 @@ pub async fn run(cmd: &mut DeleteArgs) -> Result<bool> {
                     match dependencies.iter().position(|x| x == uri) {
                         Some(idx) => {
                             dependencies.remove(idx);
-                            utpm_log!("Removed {}", uri);
+                            utpm_log!(info, "Removed {}", uri);
                         }
-                        None => utpm_log!("Can't remove {} (not found)", uri),
+                        None => utpm_log!(warn, "Can't remove {} (not found)", uri),
                     }
                 }
                 extra.dependencies = Some(dependencies);

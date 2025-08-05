@@ -213,6 +213,7 @@ pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
 /// Displays the packages in a tree format.
 #[instrument(skip(cmd))]
 pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
+    utpm_log!(trace, "executing list command with tree format");
     let typ: String = d_packages()?;
     if cmd.all {
         let preview: String = c_packages()?;

@@ -40,6 +40,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 /// Otherwise, it installs dependencies from the `typst.toml` manifest in the current directory.
 #[instrument(skip(cmd))]
 pub async fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
+    utpm_log!(trace, "executing init command for install");
     let _ = Box::pin(async move {
         // Determine the source path for the installation.
         let path = if let Some(url) = &cmd.url {
@@ -161,11 +162,12 @@ pub async fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
             link::run(&lnk, Some(path.clone()), false).await?; //TODO: change here too
             fs::remove_dir_all(&path)?;
             utpm_log!(
-                "{}",
-                format!("+ {}:{}", file.package.name, file.package.version)
+                info,
+                "+ {}:{}", file.package.name, file.package.version
             );
         } else {
             utpm_log!(
+                info,
                 "* Installation complete! If you want to use it as a lib, just do a `utpm link`!"
             )
         }

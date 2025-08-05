@@ -17,6 +17,7 @@ use super::UnlinkArgs;
 /// Unlinks/deletes a package from the local storage.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
+    utpm_log!(trace, "executing unlink command");
     let packages = &cmd.package;
 
     // Use regex to parse the package string, which can be a full package spec,
@@ -51,12 +52,14 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
             .prompt()
         {
             Ok(_) => {
+                utpm_log!(info, "Deleting {}", path);
                 fs::remove_dir_all(path)?;
                 Ok(true)
             }
             Err(_) => Ok(false),
         }
     } else {
+        utpm_log!(info, "Deleting {}", path);
         fs::remove_dir_all(path)?;
         Ok(true)
     }

@@ -41,6 +41,7 @@ use super::InitArgs;
 /// or in non-interactive mode using command-line arguments.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
+    utpm_log!(trace, "executing init command");
     let curr = get_current_dir()?;
     utpm_log!(info, "Current dir: {}", curr);
     let typ = curr.clone() + "/" + MANIFEST_FILE;
@@ -338,6 +339,6 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     // Write the manifest to `typst.toml`.
     write_manifest!(&manif);
 
-    utpm_log!("File created to {typ}");
+    utpm_log!(info, "File created to {typ}");
     Ok(true)
 }

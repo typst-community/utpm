@@ -18,6 +18,7 @@ use super::{install, AddArgs, InstallArgs};
 /// Adds dependencies to the `typst.toml` manifest and installs them.
 #[instrument]
 pub async fn run(cmd: &mut AddArgs) -> Result<bool> {
+    utpm_log!(trace, "executing add command");
     // Load the manifest from the current directory.
     let mut config: Manifest = load_manifest!();
     if cmd.uri.len() == 0 {
@@ -50,7 +51,7 @@ pub async fn run(cmd: &mut AddArgs) -> Result<bool> {
                     match dependencies.iter().position(|x| x == e) {
                         Some(_) => {
                             utpm_log!(
-                                trace,
+                                info,
                                 "{e} dependency already in the load_manifest skipping"
                             );
                         }
