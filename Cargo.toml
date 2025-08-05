@@ -21,7 +21,6 @@ spdx = { version = "0.10.8", features = ["text"], optional = true }
 clap = { version = "4.5.39", features = ["derive"] }
 git2 = { version = "^0.20.2", optional = true }
 typst-project = { git = "https://github.com/tingerrr/typst-project", rev = "8462942ef0c783acf339e715b5e24b2dba423de1" }
-openssl = { version = "0.10", features = ["vendored"] } # ?
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "std", "json"] }
 clap_complete = { version = "4.5.51", optional = true }

@@ -9,7 +9,7 @@ use crate::{
         regex_namespace, regex_package, regex_packagename,
         state::Result,
     },
-    utpm_bail,
+    utpm_bail, utpm_log,
 };
 
 use super::UnlinkArgs;
