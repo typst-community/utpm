@@ -4,3 +4,6 @@
 #nix
 .direnv
 result
+
+/assets/docs/dist/*
+!/assets/docs/dist/theme/
