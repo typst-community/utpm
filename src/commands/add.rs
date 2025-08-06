@@ -29,46 +29,32 @@ pub async fn run(cmd: &mut AddArgs) -> Result<bool> {
     );
 
     // Check if the manifest has a `[tool]` section.
-    let mut tool = config.clone().tool;
-    utpm_log!(trace, "- tool section found");
-    // Check for the `[tool.utpm]` subsection.
-    if let Some(ex) = tool.sections.get("utpm") {
-        utpm_log!(trace, "- utpm section found in tool");
-        // Deserialize the `[tool.utpm]` section into our `Extra` struct.
-        let mut extra: Extra = toml::from_str(toml::to_string(ex)?.as_str())?; //Todo: change this hack
-        utpm_log!(trace, "hacky conversion done");
+    let mut tool = config.tool;
+    let mut extra = Extra::from(tool.clone());
 
-        // Add the new URIs to the dependencies list.
-        if let Some(mut dependencies) = extra.dependencies.clone() {
-            utpm_log!(trace, "- dependencies found, adding uris");
-            for e in &cmd.uri {
-                // Avoid adding duplicate dependencies.
-                match dependencies.iter().position(|x| x == e) {
-                    Some(_) => {
-                        utpm_log!(info, "{e} dependency already in the load_manifest skipping");
-                    }
-                    None => {
-                        utpm_log!(trace, "{e} added");
-                        dependencies.push(e.clone())
-                    }
-                };
-            }
-            extra.dependencies = Some(dependencies);
-        } else {
-            // If no dependencies existed, create a new list.
-            extra.dependencies = Some(cmd.uri.clone());
+    // Add the new URIs to the dependencies list.
+    if let Some(mut dependencies) = extra.dependencies.clone() {
+        utpm_log!(trace, "- dependencies found, adding uris");
+        for e in &cmd.uri {
+            // Avoid adding duplicate dependencies.
+            match dependencies.iter().position(|x| x == e) {
+                Some(_) => {
+                    utpm_log!(info, "{e} dependency already in the load_manifest skipping");
+                }
+                None => {
+                    utpm_log!(trace, "{e} added");
+                    dependencies.push(e.clone())
+                }
+            };
         }
-        // Update the `[tool.utpm]` section in the manifest.
-        tool.sections.insert("utpm".into(), Map::try_from(extra)?);
+        extra.dependencies = Some(dependencies);
     } else {
-        // If `[tool.utpm]` doesn't exist, create it.
-        tool.sections.insert(
-            "utpm".into(),
-            toml::from_str(
-                toml::to_string(&Extra::new(None, Some(cmd.uri.clone()), None))?.as_str(),
-            )?,
-        );
+        // If no dependencies existed, create a new list.
+        extra.dependencies = Some(cmd.uri.clone());
     }
+    // Update the `[tool.utpm]` section in the manifest.
+    tool.sections.insert("utpm".into(), Map::try_from(extra)?);
+
     config.tool = tool;
 
     // Write the updated manifest back to the file.
