@@ -4166,7 +4166,6 @@ dependencies = [
  "clap_complete",
  "dirs",
  "fmt-derive",
- "futures",
  "git2",
  "ignore",
  "inquire",
