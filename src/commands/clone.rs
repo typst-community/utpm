@@ -8,6 +8,7 @@ use crate::{
     commands::get::get_packages_name_version,
     utils::{
         copy_dir_all,
+        dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
         regex_pkg_simple, regex_pkg_simple_name, regex_pkg_simple_pkg, regex_pkg_simple_ver,
         state::{Result, UtpmError},
@@ -154,18 +155,24 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
         .extract();
 
     // Download the package.
-    return match pkg_sto.prepare_package(
-        &PackageSpec {
-            namespace: pkg.namespace.into(),
-            name: package.into(),
-            version: PackageVersion {
-                major: major.parse::<u32>().unwrap(),
-                minor: minor.parse::<u32>().unwrap(),
-                patch: patch.parse::<u32>().unwrap(),
+    let result_download = if !get_dry_run() {
+        pkg_sto.prepare_package(
+            &PackageSpec {
+                namespace: pkg.namespace.into(),
+                name: package.into(),
+                version: PackageVersion {
+                    major: major.parse::<u32>().unwrap(),
+                    minor: minor.parse::<u32>().unwrap(),
+                    patch: patch.parse::<u32>().unwrap(),
+                },
             },
-        },
-        printer,
-    ) {
+            printer,
+        )
+    } else {
+        Ok(PathBuf::new())
+    };
+
+    return match result_download {
         Ok(val) => {
             utpm_log!(info, "package downloaded", "path" => val.to_str().unwrap());
             if cmd.download_only {
@@ -175,10 +182,14 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
             // Copy or symlink the downloaded package to the target path.
             if cmd.symlink {
-                symlink_all(val, path)?;
+                if !get_dry_run() {
+                    symlink_all(val, path)?;
+                }
                 utpm_log!(info, "symlinked!");
             } else {
-                copy_dir_all(val, path)?;
+                if !get_dry_run() {
+                    copy_dir_all(val, path)?;
+                }
                 utpm_log!(info, "copied!");
             }
 

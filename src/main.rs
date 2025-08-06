@@ -37,7 +37,7 @@ use utils::state::UtpmError;
 use tracing::{error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
-use crate::utils::output::{get_output_format, OutputFormat};
+use crate::utils::{dryrun::{get_dry_run, DRYRUN}, output::{get_output_format, OutputFormat}};
 
 /// The main entry point of the UTPM application.
 ///
@@ -65,6 +65,15 @@ async fn main() {
     OUTPUT_FORMAT
         .set(x.output_format.unwrap_or(OutputFormat::Text))
         .unwrap();
+
+    // Set the dry-run boolean
+    DRYRUN
+        .set(x.dry_run)
+        .unwrap();
+
+    if get_dry_run() {
+        utpm_log!(info, "Using dry-run")
+    }
 
     // Initialize the tracing subscriber based on the output format.
     if get_output_format() != OutputFormat::Text {

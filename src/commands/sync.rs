@@ -8,6 +8,7 @@ use std::result::Result as R;
 use crate::{
     commands::get::get_packages_name_version,
     utils::{
+        dryrun::get_dry_run,
         paths::{d_packages, get_current_dir},
         regex_import,
         state::{Result, UtpmError},
@@ -138,7 +139,9 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
     }
 
     if modified {
-        write(path, &string)?;
+        if !get_dry_run() {
+            write(path, &string)?
+        };
         utpm_log!(info, "{} written", path.to_str().unwrap());
     }
     Ok(true)

@@ -26,9 +26,7 @@ use typst_project::{
 
 use crate::{
     utils::{
-        paths::{check_path_file, get_current_dir},
-        specs::Extra,
-        state::Result,
+        dryrun::get_dry_run, paths::{check_path_file, get_current_dir}, specs::Extra, state::Result
     },
     utpm_log, write_manifest,
 };
@@ -297,7 +295,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     }
 
     // Populate the project with default files if requested.
-    if cmd.populate {
+    if cmd.populate && !get_dry_run() {
         let mut file = File::create(curr.clone() + "/README.md")?; // README.md
         file.write_all(("# ".to_string() + &pkg.name.clone()).as_bytes())?;
         if let Some(exp) = spdx::license_id(pkg.license.to_string().as_str()) {

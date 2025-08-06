@@ -5,9 +5,8 @@ use tracing::instrument;
 use crate::{
     format_package,
     utils::{
-        paths::check_path_dir,
-        regex_namespace, regex_package, regex_packagename,
-        state::Result,
+        dryrun::get_dry_run, paths::check_path_dir, regex_namespace, regex_package,
+        regex_packagename, state::Result,
     },
     utpm_bail, utpm_log,
 };
@@ -53,14 +52,18 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
         {
             Ok(_) => {
                 utpm_log!(info, "Deleting {}", path);
-                fs::remove_dir_all(path)?;
+                if !get_dry_run() {
+                    fs::remove_dir_all(path)?;
+                }
                 Ok(true)
             }
             Err(_) => Ok(false),
         }
     } else {
         utpm_log!(info, "Deleting {}", path);
-        fs::remove_dir_all(path)?;
+        if !get_dry_run() {
+            fs::remove_dir_all(path)?;
+        }
         Ok(true)
     }
 }

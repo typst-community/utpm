@@ -536,4 +536,8 @@ pub struct Cli {
     /// The output format for command results.
     #[arg(short = 'o', long, global = true, value_enum)]
     pub output_format: Option<OutputFormat>,
+
+    /// If you don't want to write anything on your disk.
+    #[arg(default_value_t=false, global = true, long, short='D')]
+    pub dry_run: bool,
 }
