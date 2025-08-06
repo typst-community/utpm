@@ -72,7 +72,7 @@ pub enum UtpmError {
     Deserialize(#[from] toml::de::Error),
 
     /// An error from the `ignore` crate.
-    #[cfg(any(feature = "publish"))]
+    #[cfg(any(feature = "publish", feature = "sync"))]
     #[error("Ignore crate error: {0}")]
     Ignore(#[from] ignore::Error),
 
@@ -175,7 +175,7 @@ impl UtpmError {
             GithubHandle(_) => "GithubHandle",
             Serialize(_) => "Serialize",
             Deserialize(_) => "Deserialize",
-            #[cfg(any(feature = "publish"))]
+            #[cfg(any(feature = "publish", feature = "sync"))]
             Ignore(_) => "Ignore",
             #[cfg(any(feature = "publish"))]
             OctoCrab(_) => "OctoCrab",
