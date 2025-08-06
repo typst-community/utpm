@@ -5,6 +5,7 @@ use crate::{
     load_manifest,
     utils::{
         copy_dir_all,
+        dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir},
         specs::Extra,
         state::Result,
@@ -48,16 +49,20 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
         utpm_bail!(AlreadyExist, name.to_string(), version, "Info:".to_string());
     }
 
-    fs::create_dir_all(&path)?;
+    if !get_dry_run() {
+        fs::create_dir_all(&path)?
+    };
 
     // If force is used, remove the existing directory.
-    if cmd.force {
+    if cmd.force && !get_dry_run() {
         fs::remove_dir_all(&path)?
     }
 
     // Create a symlink or copy the directory.
     if cmd.no_copy {
-        symlink_all(&curr, &path)?;
+        if !get_dry_run() {
+            symlink_all(&curr, &path)?
+        };
         if pt {
             utpm_log!(
                 info,
@@ -69,7 +74,9 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
             );
         }
     } else {
-        copy_dir_all(&curr, &path)?;
+        if !get_dry_run() {
+            copy_dir_all(&curr, &path)?
+        };
         if pt {
             utpm_log!(
                 info,

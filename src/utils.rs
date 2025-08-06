@@ -20,6 +20,7 @@ pub mod output;
 pub mod paths;
 pub mod specs;
 pub mod state;
+pub mod dryrun;
 
 use self::state::Result;
 
