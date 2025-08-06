@@ -18,7 +18,6 @@ use crate::{
 
 use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
 use tracing::instrument;
-use typst_project::heuristics::MANIFEST_FILE;
 
 use super::{link, InstallArgs};
 
@@ -111,7 +110,7 @@ pub async fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
     };
 
     // Check for a manifest file in the source directory.
-    let typstfile = path.clone() + "/" + MANIFEST_FILE;
+    let typstfile = path.clone() + "/typst.toml";
     if !check_path_file(&typstfile) {
         let origin = cmd.url.clone().unwrap_or("/".into());
         utpm_log!("{}", format!("x {}", origin));
@@ -120,11 +119,7 @@ pub async fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
 
     // Load the manifest and extract UTPM-specific configurations.
     let file = load_manifest!(&path);
-    let utpm = if let Some(value) = file.tool {
-        value.get_section("utpm")?.unwrap_or(Extra::default())
-    } else {
-        Extra::default()
-    };
+    let utpm = Extra::from(file.tool);
     let namespace = utpm.namespace.unwrap_or("local".into());
 
     // Check if the package is already installed.

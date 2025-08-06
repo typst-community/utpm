@@ -1,16 +1,11 @@
 use serde::Serialize;
 use thiserror::Error as TError;
-use typst_project::manifest::{
-    author::{ParseAuthorError, ParseWebsiteError},
-    ident::ParseIdentError,
-    license::ParseLicenseError,
-    Error as ManifestError,
-};
 
 /// A specialized `Result` type for UTPM operations.
 pub type Result<T> = anyhow::Result<T, UtpmError>;
 
 use serde::ser::{SerializeStruct, Serializer};
+use typst_syntax::package::PackageVersion;
 
 /// The error type for UTPM operations.
 ///
@@ -59,14 +54,6 @@ pub enum UtpmError {
     #[error("Can't parse to yaml: {0}")]
     YamlParse(#[from] serde_yaml::Error),
 
-    /// An error parsing an author string.
-    #[error("Author parse error: {0}")]
-    Author(#[from] ParseAuthorError),
-
-    /// An error parsing a website URL.
-    #[error("Website parse error: {0}")]
-    Website(#[from] ParseWebsiteError),
-
     /// An error parsing an email address.
     #[error("Email parse error: {0}")]
     Email(String),
@@ -75,13 +62,6 @@ pub enum UtpmError {
     #[error("GitHub handle parse error: {0}")]
     GithubHandle(String),
 
-    /// An error parsing a package identifier.
-    #[error("Identifier parse error: {0}")]
-    Ident(#[from] ParseIdentError),
-
-    /// An error parsing a license string.
-    #[error("License parse error: {0}")]
-    License(#[from] ParseLicenseError),
 
     /// An error during TOML serialization.
     #[error("TOML serialization error: {0:?}")]
@@ -101,9 +81,6 @@ pub enum UtpmError {
     #[error("Octocrab error: {0}")]
     OctoCrab(#[from] octocrab::Error),
 
-    /// An error from the `typst-project` crate.
-    #[error("Typst project error: {0}")]
-    Project(#[from] ManifestError),
 
     /// An unknown or unexpected error.
     #[error("Unknown error: {0}")]
@@ -151,7 +128,7 @@ pub enum UtpmError {
 
     /// An error when a package to be linked already exists.
     #[error("{2} Package {0} with version {1} already exist.")]
-    AlreadyExist(String, semver::Version, String),
+    AlreadyExist(String, PackageVersion, String),
 
     /// An error when no URIs are provided for a command that requires them.
     #[error("No URI were found. Please check your typst.toml")]
@@ -194,19 +171,14 @@ impl UtpmError {
             Questions(_) => "Questions",
             IO(_) => "IO",
             General(_) => "General",
-            Author(_) => "Author",
-            Website(_) => "Website",
             Email(_) => "Email",
             GithubHandle(_) => "GithubHandle",
-            Ident(_) => "Ident",
-            License(_) => "License",
             Serialize(_) => "Serialize",
             Deserialize(_) => "Deserialize",
             #[cfg(any(feature = "publish"))]
             Ignore(_) => "Ignore",
             #[cfg(any(feature = "publish"))]
             OctoCrab(_) => "OctoCrab",
-            Project(_) => "Project",
             Unknown(_) => "Unknown",
             Namespace => "Namespace",
             ConfigFile => "ConfigFile",

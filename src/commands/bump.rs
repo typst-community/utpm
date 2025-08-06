@@ -1,7 +1,7 @@
-use std::fs::{read_to_string, write};
+use std::{fs::{read_to_string, write}, str::FromStr};
 
-use semver::Version;
 use tracing::instrument;
+use typst_syntax::package::PackageVersion;
 
 use crate::{
     utils::{dryrun::get_dry_run, state::Result},
@@ -28,7 +28,7 @@ pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
     utpm_log!(trace, "executing bump command");
     let mut config = load_manifest!();
 
-    let ver = Version::parse(&cmd.new_version)?;
+    let ver = PackageVersion::from_str(&cmd.new_version).unwrap();
 
     let strs = &cmd.new_version;
     let files = &cmd.include.clone();

@@ -60,6 +60,12 @@ Requires Cargo and Rust.
 $ cargo install --git https://github.com/typst-community/utpm
 ```
 
+Or 
+
+```bash
+$ cargo install utpm
+```
+
 <details>
 <summary>
   

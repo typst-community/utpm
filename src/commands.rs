@@ -40,9 +40,6 @@ use clap::{Parser, Subcommand};
 use clap_complete::Shell;
 use tracing::level_filters::LevelFilter;
 
-#[cfg(feature = "init")]
-use typst_project::manifest::{categories::Category, disciplines::Discipline};
-
 use crate::build;
 #[cfg(not(feature = "nightly"))]
 use crate::utils::output::OutputFormat;
@@ -118,12 +115,12 @@ pub struct InitArgs {
     /// Categories to add to your typst.toml.
     #[arg(short = 'C', long)]
     #[clap(value_delimiter = ',')]
-    categories: Option<Vec<Category>>,
+    categories: Option<Vec<String>>,
 
     /// Disciplines to add to your typst.toml.
     #[arg(short = 'D', long)]
     #[clap(value_delimiter = ',')]
-    disciplines: Option<Vec<Discipline>>,
+    disciplines: Option<Vec<String>>,
 
     /// Path to a template file to use.
     #[arg(long, requires = "template")]

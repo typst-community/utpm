@@ -1,8 +1,8 @@
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::BTreeMap,
     fs::{create_dir_all, File},
     io::Write,
-    path::PathBuf,
+    path::Path,
     str::FromStr,
 };
 
@@ -10,23 +10,14 @@ use inquire::{required, validator::Validation, Select, Text};
 use semver::Version;
 use toml::Table;
 use tracing::instrument;
-use typst_project::{
-    heuristics::MANIFEST_FILE,
-    manifest::{
-        author::{Author, Website},
-        categories::Category,
-        disciplines::Discipline,
-        ident::Ident,
-        license::License,
-        package::Package,
-        tool::Tool,
-        Manifest,
-    },
-};
+use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
 
 use crate::{
     utils::{
-        dryrun::get_dry_run, paths::{check_path_file, get_current_dir}, specs::Extra, state::Result
+        dryrun::get_dry_run,
+        paths::{check_path_file, get_current_dir},
+        specs::Extra,
+        state::Result,
     },
     utpm_log, write_manifest,
 };
@@ -42,7 +33,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     utpm_log!(trace, "executing init command");
     let curr = get_current_dir()?;
     utpm_log!(info, "Current dir: {}", curr);
-    let typ = curr.clone() + "/" + MANIFEST_FILE;
+    let typ = curr.clone() + "/typst.toml";
     utpm_log!(info, "Current typst file: {}", typ);
 
     // Initialize UTPM-specific configurations.
@@ -58,82 +49,70 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         }
     );
 
-    // Process authors from command-line arguments.
-    let mut authors: HashSet<Author> = HashSet::new();
-    if let Some(auts) = &cmd.authors {
-        utpm_log!(trace, "Authors extracted from cli");
-        for e in auts {
-            authors.insert(Author::from_str(&e)?);
-        }
-    }
-
-    // Process keywords from command-line arguments.
-    let mut keywords: HashSet<String> = HashSet::new();
-    if let Some(auts) = &cmd.keywords {
-        utpm_log!(trace, "Keywords extracted from cli");
-        for e in auts {
-            keywords.insert(e.clone());
-        }
-    }
-
-    // Process exclude patterns from command-line arguments.
-    let mut exclude: HashSet<PathBuf> = HashSet::new();
-    if let Some(auts) = &cmd.exclude {
-        utpm_log!(trace, "Exclude extracted from cli");
-        for e in auts {
-            exclude.insert(e.into());
-        }
-    }
-
-    // Process categories from command-line arguments.
-    let mut categories: HashSet<Category> = HashSet::new();
-    if let Some(auts) = &cmd.categories {
-        utpm_log!(trace, "Catgories extracted from cli");
-        for e in auts {
-            categories.insert(*e);
-        }
-    }
-
-    // Process disciplines from command-line arguments.
-    let mut disciplines: HashSet<Discipline> = HashSet::new();
-    if let Some(auts) = &cmd.disciplines {
-        utpm_log!(trace, "Disciplines extracted from cli");
-        for e in auts {
-            disciplines.insert(*e);
-        }
-    }
-
     // Build the package metadata from command-line arguments.
-    let mut pkg = Package {
-        name: Ident::from_str(if let Some(name) = &cmd.name {
-            name.as_str()
-        } else {
-            "temp"
-        })?,
-        version: cmd.version.to_owned(),
+    let mut pkg = PackageInfo {
+        name: <std::option::Option<std::string::String> as Clone>::clone(&cmd.name).unwrap().into(),
+        version: PackageVersion {
+            major: cmd.version.major as u32,
+            minor: cmd.version.minor as u32,
+            patch: cmd.version.patch as u32,
+        },
         entrypoint: cmd.entrypoint.to_owned().into(),
-        authors,
-        license: License::from_str(if let Some(license) = &cmd.license {
-            license.as_str()
+        authors: if let Some(yes) = &cmd.authors {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
         } else {
-            "MIT"
-        })?,
-        description: cmd.description.to_owned().unwrap_or("".into()),
-        repository: if let Some(repository) = &cmd.repository {
-            Some(Website::from_str(repository.as_str())?)
+            vec![]
+        },
+        license: if let Some(yes) = &cmd.license {
+            Some(yes.into())
         } else {
             None
         },
-        homepage: if let Some(homepage) = &cmd.homepage {
-            Some(Website::from_str(homepage.as_str())?)
+        description: if let Some(yes) = &cmd.description {
+            Some(yes.into())
         } else {
             None
         },
-        keywords,
-        compiler: cmd.compiler.to_owned(),
-        exclude,
-        categories,
-        disciplines,
+        repository: if let Some(yes) = &cmd.repository {
+            Some(yes.into())
+        } else {
+            None
+        },
+        homepage: if let Some(yes) = &cmd.homepage {
+            Some(yes.into())
+        } else {
+            None
+        },
+        keywords: if let Some(yes) = &cmd.keywords {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        compiler: if let Some(yes) = &cmd.compiler {
+            Some(VersionBound {
+                major: yes.major as u32,
+                minor: Some(yes.minor as u32),
+                patch: Some(yes.patch as u32),
+            })
+        } else {
+            None
+        },
+        exclude: if let Some(yes) = &cmd.exclude {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        categories: if let Some(yes) = &cmd.categories {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        disciplines: if let Some(yes) = &cmd.disciplines {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        unknown_fields: BTreeMap::new(),
     };
 
     // TODO: Implement template handling.
@@ -169,48 +148,44 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             cmd.populate = true;
         }
 
-        pkg.name = Ident::from_str(
-            Text::new("Name: ")
-                .with_validator(required!("This field is required"))
-                .with_help_message("e.g. my_example")
-                .prompt()?
-                .as_str(),
-        )?;
+        pkg.name = Text::new("Name: ")
+            .with_validator(required!("This field is required"))
+            .with_help_message("e.g. my_example")
+            .prompt()?
+            .as_str()
+            .into();
 
-        pkg.version = Version::parse(
-            Text::new("Version: ")
+        pkg.version = PackageVersion::from_str(
+            &Text::new("Version: ")
                 .with_validator(required!("This field is required"))
-                .with_validator(&|obj: &str| {
-                    return match Version::parse(&obj) {
-                        Ok(_) => Ok(Validation::Valid),
-                        Err(_) => Ok(Validation::Invalid(
-                            "A correct version must be types (check semVer)".into(),
-                        )),
-                    };
+                .with_validator(|obj: &str| match Version::parse(obj) {
+                    Ok(_) => Ok(Validation::Valid),
+                    Err(_) => Ok(Validation::Invalid(
+                        "A correct version must be types (check semVer)".into(),
+                    )),
                 })
                 .with_help_message("e.g. 1.0.0 (SemVer)")
                 .with_default("1.0.0")
-                .prompt()?
-                .as_str(),
-        )?;
-
-        pkg.entrypoint = PathBuf::from(
-            Text::new("Entrypoint: ")
-                .with_validator(required!("This field is required"))
-                .with_help_message("e.g. main.typ")
-                .with_default("main.typ")
                 .prompt()?,
-        );
+        )
+        .unwrap();
+
+        pkg.entrypoint = Text::new("Entrypoint: ")
+            .with_validator(required!("This field is required"))
+            .with_help_message("e.g. main.typ")
+            .with_default("main.typ")
+            .prompt()?
+            .into();
 
         if public == "yes" {
             pkg.authors = Text::new("Authors: ")
                 .with_help_message("e.g. Thumus,Somebody,Somebody Else")
                 .prompt()?
                 .split(",")
-                .map(|f| Author::from_str(f.to_string().as_str()).unwrap())
-                .collect::<HashSet<Author>>();
+                .map(|f| f.into())
+                .collect::<Vec<_>>();
 
-            pkg.license = License::from_str(
+            pkg.license = Some(
                 Text::new("License: ")
                     .with_help_message("e.g. MIT")
                     .with_default("Unlicense")
@@ -229,54 +204,58 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
                         Err(_) => Ok(Validation::Invalid("Can't parse your expression".into())),
                     })
                     .prompt()?
-                    .as_str(),
-            )?;
+                    .as_str()
+                    .into(),
+            );
 
-            pkg.description = Text::new("description: ")
-                .with_help_message("e.g. A package")
-                .prompt()?
+            pkg.description = Some(
+                Text::new("description: ")
+                    .with_help_message("e.g. A package")
+                    .prompt()?
+                    .into(),
+            )
         }
         if more == "yes" {
-            pkg.repository = Some(Website::from_str(
+            pkg.repository = Some(
                 Text::new("URL of the repository: ")
                     .with_help_message("e.g. https://github.com/Thumuss/utpm")
                     .prompt()?
-                    .as_str(),
-            )?);
-            pkg.homepage = Some(Website::from_str(
+                    .into(),
+            );
+            pkg.homepage = Some(
                 Text::new("Homepage: ")
                     .with_help_message("e.g. anything")
                     .prompt()?
-                    .as_str(),
-            )?);
+                    .into(),
+            );
             pkg.keywords = Text::new("Keywords: ")
                 .with_help_message("e.g. Typst,keyword")
                 .prompt()?
                 .split(",")
-                .map(|f| f.to_string())
-                .collect::<HashSet<String>>();
+                .map(|f| f.into())
+                .collect::<Vec<_>>();
 
-            pkg.compiler = Some(Version::parse(
-                Text::new("Compiler version required: ")
-                    .with_help_message("e.g. 0.7.0")
-                    .with_validator(&|obj: &str| {
-                        return match Version::parse(&obj) {
-                            Ok(_) => Ok(Validation::Valid),
-                            Err(_) => Ok(Validation::Invalid(
-                                "A correct version must be types (check semVer)".into(),
-                            )),
-                        };
+            pkg.compiler = Some(VersionBound::from_str(
+                &Text::new("Version: ")
+                    .with_validator(required!("This field is required"))
+                    .with_validator(|obj: &str| match Version::parse(obj) {
+                        Ok(_) => Ok(Validation::Valid),
+                        Err(_) => Ok(Validation::Invalid(
+                            "A correct version must be types (check semVer)".into(),
+                        )),
                     })
-                    .prompt()?
-                    .as_str(),
-            )?);
+                    .with_help_message("e.g. 1.0.0 (SemVer)")
+                    .with_default("1.0.0")
+                    .prompt()?,
+            ).unwrap());
+
             pkg.exclude = Text::new("Exclude: ")
                 .with_help_message("e.g. backup/mypassword.txt,.env")
                 .prompt()?
                 .split(",")
                 .filter(|f| f.len() > 0)
-                .map(|f| PathBuf::from_str(f).unwrap())
-                .collect::<HashSet<PathBuf>>();
+                .map(|f| f.into())
+                .collect::<Vec<_>>();
         }
 
         if extra_opts == "yes" {
@@ -298,7 +277,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     if cmd.populate && !get_dry_run() {
         let mut file = File::create(curr.clone() + "/README.md")?; // README.md
         file.write_all(("# ".to_string() + &pkg.name.clone()).as_bytes())?;
-        if let Some(exp) = spdx::license_id(pkg.license.to_string().as_str()) {
+        if let Some(exp) = spdx::license_id(pkg.clone().license.unwrap().to_string().as_str()) {
             file = File::create(curr.clone() + "/LICENSE")?; // LICENSE
             file.write_all(exp.text().as_bytes())?;
         }
@@ -313,25 +292,21 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             pkg.version.clone().to_string()
         );
         file.write_all(fm.as_bytes())?;
-        file = File::create(pkg.entrypoint.clone())?; // main.typ
+        file = File::create(Path::new(&pkg.entrypoint.to_string()))?; // main.typ
         file.write_all(b"// This file is generated by UTPM (https://github.com/Thumuss/utpm)")?;
     }
 
     // Create the `[tool.utpm]` table.
-    let mut keys: BTreeMap<String, Table> = BTreeMap::new();
+    let mut keys: BTreeMap<_, Table> = BTreeMap::new();
     keys.insert("utpm".into(), Table::try_from(extra.clone())?);
 
     // Construct the final manifest.
-    let manif = Manifest {
+    let manif = PackageManifest {
         package: pkg,
-        tool: if extra.namespace.is_none()
-            && (extra.dependencies.is_none() || extra.dependencies.unwrap().len() == 0)
-        {
-            None
-        } else {
-            Some(Tool { keys })
-        },
+        tool: ToolInfo { sections: keys },
         template: None,
+        unknown_fields: BTreeMap::new(),
+
     };
 
     // Write the manifest to `typst.toml`.
