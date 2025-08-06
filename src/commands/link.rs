@@ -25,15 +25,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
 
     // Load the manifest and determine the namespace.
     let config = load_manifest!(&curr);
-    let namespace = if let Some(value) = config.tool {
-        value
-            .get_section("utpm")?
-            .unwrap_or(Extra::default())
-            .namespace
-            .unwrap_or("local".into())
-    } else {
-        "local".into()
-    };
+    let namespace = Extra::from(config.tool).namespace.unwrap_or("local".into());
 
     // Construct the destination path for the package.
     let name = config.package.name;

@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 use std::fmt::Debug;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, read_dir, read_to_string};
 use std::{fs, path::Path};
 
 #[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
@@ -10,6 +10,7 @@ use git2::{
 };
 use paths::{check_path_file, get_ssh_dir, has_content};
 use regex::Regex;
+use typst_syntax::package::PackageManifest;
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 use std::{env, io, result::Result as R};
 use tracing::instrument;
@@ -21,6 +22,8 @@ pub mod paths;
 pub mod specs;
 pub mod state;
 pub mod dryrun;
+
+use crate::utpm_bail;
 
 use self::state::Result;
 
@@ -44,6 +47,27 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
         }
     }
     Ok(())
+}
+
+pub fn try_find(s: &String) -> Result<PackageManifest> {
+    let a = read_dir(s)?;
+    let c = a
+        .into_iter()
+        .filter_map(|b| b.ok())
+        .map(|b| b.file_name().clone())
+        .find(|f| *f == "typst.toml");
+
+    if c.is_none() {
+        utpm_bail!(Manifest);
+    }
+
+    let d = c.unwrap();
+
+    let e = read_to_string(d)?;
+
+    let f: PackageManifest = toml::from_str(&e)?;
+    Ok(f)
+
 }
 
 /// Creates a symlink. This function is platform-specific.

@@ -17,8 +17,8 @@ use ignore::overrides::OverrideBuilder;
 use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;
 use tracing::instrument;
+use typst_syntax::package::PackageManifest;
 
-use typst_project::manifest::Manifest;
 
 use super::PublishArgs;
 
@@ -40,7 +40,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     // TODO: Check for dependencies and provide a way to add them.
     // TODO: Ensure there are files in the package before publishing.
 
-    let config: Manifest = load_manifest!();
+    let config: PackageManifest = load_manifest!();
     utpm_log!(info, "Manifest load");
 
     let path_curr: &PathBuf = if let Some(path) = &cmd.path {
@@ -189,11 +189,11 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
     let entry = config.package.entrypoint;
     let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
-    entryfile.push(&entry);
-    let entrystr = entry.to_str().unwrap();
+    entryfile.push(Path::new(&entry.to_string()));
+    let entrystr = entry.to_string();
     utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(entryfile) {
-        utpm_bail!(Unknown, format!("Can't find {entrystr} file in {path_packages_new}. Did you omit it in your ignored files?"));
+        utpm_bail!(Unknown, format!("Can't find {} file in {path_packages_new}. Did you omit it in your ignored files?", entrystr.as_str()));
     }
     utpm_log!(info, "files copied to {path_packages_new}");
 

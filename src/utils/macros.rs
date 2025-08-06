@@ -12,17 +12,10 @@
 #[macro_export]
 macro_rules! load_manifest {
     () => {
-        match typst_project::manifest::Manifest::try_find($crate::utils::paths::get_current_dir()?)?
-        {
-            Some(val) => Ok(val),
-            None => Err($crate::utils::state::UtpmError::Manifest),
-        }?
+        $crate::utils::try_find(&$crate::utils::paths::get_current_dir()?)?
     };
     ($var:expr) => {
-        match typst_project::manifest::Manifest::try_find($var)? {
-            Some(val) => Ok(val),
-            None => Err($crate::utils::state::UtpmError::Manifest),
-        }?
+        $crate::utils::try_find($var)?
     };
 }
 

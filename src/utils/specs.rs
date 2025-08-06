@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use typst_project::manifest::tool::Tool;
+use typst_syntax::package::ToolInfo;
 
 /// Represents the `[tool.utpm]` section in the `typst.toml` manifest.
 ///
@@ -42,17 +42,85 @@ impl Extra {
     }
 }
 
-impl From<Option<Tool>> for Extra {
+impl From<Option<ToolInfo>> for Extra {
     /// Converts an `Option<Tool>` from a `Manifest` into an `Extra` struct.
     ///
     /// This allows for easy extraction of the `[tool.utpm]` section.
-    fn from(op_tool: Option<Tool>) -> Self {
-        match op_tool {
-            Some(tool) => tool
-                .get_section("utpm")
-                .unwrap_or(Some(Extra::default()))
-                .unwrap_or(Extra::default()),
-            None => Extra::default(),
+    fn from(op_tool: Option<ToolInfo>) -> Self {
+        let map = &toml::map::Map::new();
+        if let Some(tool) = op_tool {
+            let a = tool.sections.get("utpm").unwrap_or(map);
+            Self {
+                namespace: if let Some(b) = a.get("namespace") {
+                    Some(b.to_string())
+                } else {
+                    None
+                },
+                dependencies: if let Some(b) = a.get("dependencies") {
+                    Some(
+                        b.as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|f| f.to_string())
+                            .collect(),
+                    )
+                } else {
+                    None
+                },
+                exclude: if let Some(b) = a.get("exclude") {
+                    Some(
+                        b.as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|f| f.to_string())
+                            .collect(),
+                    )
+                } else {
+                    None
+                },
+            }
+        } else {
+            Extra::default()
+        }
+    }
+}
+
+impl From<ToolInfo> for Extra {
+    /// Converts an `Tool` from a `Manifest` into an `Extra` struct.
+    ///
+    /// This allows for easy extraction of the `[tool.utpm]` section.
+    fn from(op_tool: ToolInfo) -> Self {
+        let map = &toml::map::Map::new();
+        let tool = op_tool;
+        let a = tool.sections.get("utpm").unwrap_or(map);
+        Self {
+            namespace: if let Some(b) = a.get("namespace") {
+                Some(b.to_string())
+            } else {
+                None
+            },
+            dependencies: if let Some(b) = a.get("dependencies") {
+                Some(
+                    b.as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|f| f.to_string())
+                        .collect(),
+                )
+            } else {
+                None
+            },
+            exclude: if let Some(b) = a.get("exclude") {
+                Some(
+                    b.as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|f| f.to_string())
+                        .collect(),
+                )
+            } else {
+                None
+            },
         }
     }
 }
