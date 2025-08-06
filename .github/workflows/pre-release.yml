@@ -24,6 +24,12 @@ jobs:
         - target: aarch64-unknown-linux-musl
           os: ubuntu-latest
           cross: true
+        - target: aarch64-unknown-linux-gnu
+          os: ubuntu-latest
+          cross: true
+        - target: i686-unknown-linux-gnu
+          os: ubuntu-latest
+          cross: true
         - target: armv7-unknown-linux-musleabi
           os: ubuntu-latest
           cross: true
@@ -36,6 +42,9 @@ jobs:
         - target: x86_64-pc-windows-msvc
           os: windows-latest
           cross: false
+        - target: aarch64-pc-windows-msvc
+          os: windows-11-arm
+          cross: false
     steps:
       - uses: actions/checkout@main
       - uses: dtolnay/rust-toolchain@master
@@ -46,11 +55,29 @@ jobs:
       - name: Run Cargo | Cross
         if: ${{ matrix.cross }}
         run: |
-          cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
+          cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev e281947
           cross build --bin utpm -p utpm --release --target ${{ matrix.target }}
 
       - name: Run Cargo | ${{ matrix.os }}
         if: ${{ !matrix.cross }}
         run: |
           cargo build --bin utpm -p utpm --release --target ${{ matrix.target }}
+      - name: Create artifact directory
+        shell: bash
+        run: |
+          export directory=utpm-${{ matrix.target }}
+          mkdir $directory
+          cp README.md LICENSE $directory
+          if [ -f target/${{ matrix.target }}/release/utpm.exe ]; then
+            cp target/${{ matrix.target }}/release/utpm.exe $directory
+            7z a -r $directory.zip $directory
+          else
+            cp target/${{ matrix.target }}/release/utpm $directory
+            tar cJf $directory.tar.xz $directory
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: utpm-${{ matrix.target }}
+          compression-level: 5
+          path: utpm-${{ matrix.target }}.*
       

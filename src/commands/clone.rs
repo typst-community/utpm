@@ -1,90 +1,164 @@
 use std::path::PathBuf;
 
-use tracing::{debug, error, info, instrument, warn};
+use tracing::instrument;
 use typst_kit::{download::Downloader, package::PackageStorage};
 
-use crate::utils::regex_package;
-use crate::{build, utils::ProgressPrint};
-
-use crate::utils::{
-    copy_dir_all,
-    paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
-    state::{Error, ErrorKind, Result},
-    symlink_all,
+use crate::{
+    build,
+    commands::get::get_packages_name_version,
+    utils::{
+        copy_dir_all,
+        dryrun::get_dry_run,
+        paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
+        regex_pkg_simple, regex_pkg_simple_name, regex_pkg_simple_pkg, regex_pkg_simple_ver,
+        state::{Result, UtpmError},
+        symlink_all, ProgressPrint,
+    },
+    utpm_bail, utpm_log,
 };
 
 use typst_syntax::package::{PackageSpec, PackageVersion};
 
 use super::CloneArgs;
 
-use regex::Regex;
+struct RawPck<'a> {
+    pub namespace: &'a str,
+    pub package: &'a str,
+    pub version: &'a str,
+}
 
-#[instrument]
-pub fn run(cmd: &CloneArgs) -> Result<bool> {
+impl<'b> RawPck<'b> {
+    pub fn all<'a: 'b>(namespace: &'a str, package: &'a str, version: &'a str) -> Self {
+        Self {
+            namespace,
+            package,
+            version,
+        }
+    }
+    pub fn pkg<'a: 'b>(package: &'a str, version: &'a str) -> Self {
+        Self {
+            namespace: "preview",
+            package,
+            version,
+        }
+    }
+    pub async fn name<'a: 'b>(package: &'a str) -> Result<Self> {
+        let version = match get_packages_name_version().await?.get(package) {
+            Some(e) => e.version.clone(),
+            None => return Err(UtpmError::PackageNotExist),
+        };
+        let version = Box::leak(version.into_boxed_str());
+        Ok(Self {
+            namespace: "preview",
+            package,
+            version,
+        })
+    }
+}
+
+/// Clones a typst package from the official repository or a local path.
+#[instrument(skip(cmd))]
+pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
+    utpm_log!(trace, "executing clone command");
+    // Determine the target path for the clone operation.
     let path: PathBuf = if let Some(path) = &cmd.path {
         path.clone()
     } else {
         get_current_dir()?.into()
     };
+
+    // Check if the target directory already has content.
     if has_content(&path)? {
-        debug!("found content");
+        utpm_log!(debug, "found content");
         if cmd.force {
-            warn!("force used, ignore content");
+            utpm_log!(warn, "force used, ignore content");
         } else {
-            return Err(Error::new(
-                ErrorKind::ContentFound,
-                "Content found, cancelled",
-            ));
+            utpm_bail!(ContentFound);
         }
     }
-    let re: Regex = regex_package();
+
+    // Use regex to parse the package specification string.
     let package: &String = &cmd.package;
-    if let Some(cap) = re.captures(package) {
-        let (_, [namespace, package, major, minor, patch]) = cap.extract();
-        let val = format!(
-            "{}/{namespace}/{package}/{major}.{minor}.{patch}",
-            if namespace == "preview" {
-                info!("preview found, cache dir use");
-                c_packages()?
-            } else {
-                info!("no preview found, data dir use");
-                d_packages()?
-            }
-        );
-        if check_path_dir(&val) {
-            if cmd.download_only {
-                info!("download only, nothing to do.");
-                return Ok(true);
-            }
-            if !cmd.redownload || namespace != "preview" {
-                info!(
-                    namespace = namespace,
-                    redownload = cmd.redownload,
-                    "Skip download..."
-                );
-                if cmd.symlink {
-                    symlink_all(val, path)?;
-                    info!("symlinked!");
-                } else {
-                    copy_dir_all(val, path)?;
-                    info!("copied!");
-                }
-                return Ok(true);
-            }
+    let pkg: RawPck;
+    let re_all = regex_pkg_simple();
+    let re_name = regex_pkg_simple_pkg();
+    let re_namespace = regex_pkg_simple_name();
+
+    if let Some(cap) = re_all.captures(package.as_str()) {
+        let (_, [namespace, packaged, version]) = cap.extract();
+        pkg = RawPck::all(namespace, packaged, version)
+    } else if let Some(cap) = re_name.captures(package.as_str()) {
+        let (_, [packaged, version]) = cap.extract();
+        pkg = RawPck::pkg(packaged, version);
+    } else if let Some(cap) = re_namespace.captures(package.as_str()) {
+        let (_, [packaged]) = cap.extract();
+        pkg = RawPck::name(packaged).await?;
+    } else {
+        utpm_bail!(PackageNotValid);
+    }
+
+    // Determine the local path for the package based on its namespace.
+    let val = format!(
+        "{}/{}/{}/{}",
+        pkg.namespace,
+        pkg.package,
+        pkg.version,
+        if pkg.namespace == "preview" {
+            utpm_log!(info, "preview found, cache dir use");
+            c_packages()?
+        } else {
+            utpm_log!(info, "no preview found, data dir use");
+            d_packages()?
         }
+    );
 
-        if cmd.redownload {}
+    // If the package already exists locally, copy or symlink it.
+    if check_path_dir(&val) {
+        utpm_log!(info, "Package found locally at {}", val);
+        if cmd.download_only {
+            utpm_log!(info, "download only, nothing to do.");
+            return Ok(true);
+        }
+        if !cmd.redownload || pkg.namespace != "preview" {
+            utpm_log!(info,
+                "namespace" => pkg.namespace,
+                "redownload" => cmd.redownload
+            );
+            if cmd.symlink {
+                symlink_all(val, path)?;
+                utpm_log!(info, "symlinked!");
+            } else {
+                copy_dir_all(val, path)?;
+                utpm_log!(info, "copied!");
+            }
+            return Ok(true);
+        }
+    }
 
-        let pkg_sto = PackageStorage::new(
-            Some(c_packages()?.into()),
-            Some(d_packages()?.into()),
-            Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
-        );
-        let printer = &mut ProgressPrint {};
-        //todo: redownload = rm dir;
-        return match pkg_sto.prepare_package(
+    // If the package needs to be downloaded.
+    if cmd.redownload {
+        utpm_log!(warn, "REDOWNLOAD IN WIP");
+        // TODO: Implement removal of the existing directory for redownload.
+    }
+
+    // Prepare to download the package.
+    let pkg_sto = PackageStorage::new(
+        Some(c_packages()?.into()),
+        Some(d_packages()?.into()),
+        Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
+    );
+    let printer = &mut ProgressPrint {};
+
+    let (_, [major, minor, patch]) = regex_pkg_simple_ver()
+        .captures(pkg.version)
+        .unwrap()
+        .extract();
+
+    // Download the package.
+    let result_download = if !get_dry_run() {
+        pkg_sto.prepare_package(
             &PackageSpec {
-                namespace: namespace.into(),
+                namespace: pkg.namespace.into(),
                 name: package.into(),
                 version: PackageVersion {
                     major: major.parse::<u32>().unwrap(),
@@ -93,36 +167,36 @@ pub fn run(cmd: &CloneArgs) -> Result<bool> {
                 },
             },
             printer,
-        ) {
-            Ok(val) => {
-                info!(path = val.to_str().unwrap(), "package downloaded");
-                if cmd.download_only {
-                    debug!("download complete, nothing to do");
-                    return Ok(true);
-                }
-
-                if cmd.symlink {
-                    symlink_all(val, path)?;
-                    info!("symlinked!");
-                } else {
-                    copy_dir_all(val, path)?;
-                    info!("copied!");
-                }
-
-                Ok(true)
-            }
-            Err(_) => {
-                return Err(Error::new(
-                    ErrorKind::PackageNotExist,
-                    "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.",
-                ));
-            }
-        };
+        )
     } else {
-        error!("package not found, input: {}", package);
-        return Err(Error::new(
-            ErrorKind::PackageNotValid,
-            "Can't extract your package. Example of a package: @namespace/package:1.0.0",
-        ));
-    }
+        Ok(PathBuf::new())
+    };
+
+    return match result_download {
+        Ok(val) => {
+            utpm_log!(info, "package downloaded", "path" => val.to_str().unwrap());
+            if cmd.download_only {
+                utpm_log!(debug, "download complete, nothing to do");
+                return Ok(true);
+            }
+
+            // Copy or symlink the downloaded package to the target path.
+            if cmd.symlink {
+                if !get_dry_run() {
+                    symlink_all(val, path)?;
+                }
+                utpm_log!(info, "symlinked!");
+            } else {
+                if !get_dry_run() {
+                    copy_dir_all(val, path)?;
+                }
+                utpm_log!(info, "copied!");
+            }
+
+            Ok(true)
+        }
+        Err(_) => {
+            utpm_bail!(PackageNotExist);
+        }
+    };
 }

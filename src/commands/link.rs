@@ -1,35 +1,33 @@
 use std::fs;
 use tracing::instrument;
-use typst_project::manifest::Manifest;
 
 use crate::{
     load_manifest,
     utils::{
         copy_dir_all,
+        dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir},
         specs::Extra,
-        state::{Error, ErrorKind, Result},
+        state::Result,
         symlink_all,
     },
+    utpm_bail, utpm_log,
 };
 
 use super::LinkArgs;
 
+/// Links the current project to the local package directory, either by copying or symlinking.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
+pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
+    utpm_log!(trace, "executing link command");
+    // Determine the source directory for the link operation.
     let curr = path.unwrap_or(get_current_dir()?);
 
+    // Load the manifest and determine the namespace.
     let config = load_manifest!(&curr);
-    let namespace = if let Some(value) = config.tool {
-        value
-            .get_section("utpm")?
-            .unwrap_or(Extra::default())
-            .namespace
-            .unwrap_or("local".into())
-    } else {
-        "local".into()
-    };
+    let namespace = Extra::from(config.tool).namespace.unwrap_or("local".into());
 
+    // Construct the destination path for the package.
     let name = config.package.name;
     let version = config.package.version;
     let path = if namespace != "preview" {
@@ -37,34 +35,48 @@ pub fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
     } else {
         format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
     };
+
+    // Check if the package already exists at the destination.
     if check_path_dir(&path) && !cmd.force {
-        return Err(Error::empty(ErrorKind::AlreadyExist(
-            name.into(),
-            version,
-            "Info:".into(),
-        )));
+        utpm_bail!(AlreadyExist, name.to_string(), version, "Info:".to_string());
     }
 
-    fs::create_dir_all(&path)?;
+    if !get_dry_run() {
+        fs::create_dir_all(&path)?
+    };
 
-    if cmd.force {
+    // If force is used, remove the existing directory.
+    if cmd.force && !get_dry_run() {
         fs::remove_dir_all(&path)?
     }
 
+    // Create a symlink or copy the directory.
     if cmd.no_copy {
-        symlink_all(&curr, &path)?;
+        if !get_dry_run() {
+            symlink_all(&curr, &path)?
+        };
         if pt {
-            println!(
-                "Project linked to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
-                path, namespace, name, version
+            utpm_log!(
+                info,
+                "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
+                path,
+                namespace,
+                name,
+                version
             );
         }
     } else {
-        copy_dir_all(&curr, &path)?;
+        if !get_dry_run() {
+            copy_dir_all(&curr, &path)?
+        };
         if pt {
-            println!(
-                "Project copied to: {} \nTry importing with:\n #import \"@{}/{}:{}\": *",
-                path, namespace, name, version
+            utpm_log!(
+                info,
+                "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
+                path,
+                namespace,
+                name,
+                version
             );
         }
     }

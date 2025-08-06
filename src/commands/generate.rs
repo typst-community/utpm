@@ -8,12 +8,14 @@ use crate::utils::state::Result;
 
 use super::{Cli, GenerateArgs};
 
-fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
-    generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
+/// Prints the generated completions to stdout.
+fn print_completions<G: Generator>(gens: G, cmd: &mut Command) {
+    generate(gens, cmd, cmd.get_name().to_string(), &mut io::stdout());
 }
 
+/// Generates shell completion scripts.
 #[instrument(skip(cmd))]
-pub fn run(cmd: &GenerateArgs) -> Result<bool> {
+pub async fn run(cmd: &GenerateArgs) -> Result<bool> {
     let generator = cmd.generator;
     let mut cmd: Command = Cli::command();
     eprintln!("Generating completion file for {generator:?}...");
