@@ -186,3 +186,6 @@ fn check_errors(err: UtpmError) -> Result<()> {
     utpm_log!(@f error, "{err}");
     return Ok(());
 }
+
+
+// Nothing to see except a commit
