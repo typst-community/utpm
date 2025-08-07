@@ -34,14 +34,14 @@ pub mod unlink;
 
 #[cfg(any(feature = "clone", feature = "publish"))]
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 #[cfg(feature = "generate")]
 use clap_complete::Shell;
-use tracing::level_filters::LevelFilter;
+use tracing::Level;
 
 use crate::build;
-#[cfg(not(feature = "nightly"))]
 use crate::utils::output::OutputFormat;
 
 /// Arguments for the `init` command.
@@ -509,13 +509,18 @@ pub struct Cli {
     pub command: Commands,
 
     /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long, global = true)]
-    pub verbose: Option<LevelFilter>,
+    #[arg(short = 'v', long, global = true, value_enum)]
+    pub verbose: Option<Level>,
 
     /// The output format for command results.
     #[arg(short = 'o', long, global = true, value_enum)]
     pub output_format: Option<OutputFormat>,
+
+    /// If you don't want to write anything on your disk.
+    #[arg(default_value_t=false, global = true, long, short='D')]
+    pub dry_run: bool,
 }
+
 
 /// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
@@ -527,8 +532,8 @@ pub struct Cli {
     pub command: Commands,
 
     /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long, global = true)]
-    pub verbose: Option<LevelFilter>,
+    #[arg(short = 'v', long, global = true, value_enum)]
+    pub verbose: Option<Level>,
 
     /// The output format for command results.
     #[arg(short = 'o', long, global = true, value_enum)]
