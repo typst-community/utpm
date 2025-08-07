@@ -77,23 +77,6 @@ jobs:
             cp target/${{ matrix.target }}/release/utpm $directory
             tar cJf $directory.tar.xz $directory
           fi
-          
-      - name: Get Next Version
-        id: semver
-        uses: ietf-tools/semver-action@v1
-        with:
-          token: ${{ github.token }}
-          branch: main
-
-      - name: Create a Release [${{ steps.semver.outputs.next }}]
-        uses: softprops/action-gh-release@v2
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          tag_name: ${{ steps.semver.outputs.next }}
-          generate_release_notes: true
-          files: |
-            utpm-${{ matrix.target }}.*  
 
       - name: Create a Release [Latest]
         uses: softprops/action-gh-release@v2
