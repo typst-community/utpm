@@ -34,10 +34,13 @@ use commands::{Cli, Commands};
 
 use utils::state::UtpmError;
 
-use tracing::{error, instrument, level_filters::LevelFilter};
-use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing::{Level, error, instrument, level_filters::LevelFilter};
+use tracing_subscriber::{self, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::utils::{dryrun::{get_dry_run, DRYRUN}, output::{get_output_format, OutputFormat}};
+use crate::utils::{
+    dryrun::{DRYRUN, get_dry_run},
+    output::{OutputFormat, get_output_format},
+};
 
 /// The main entry point of the UTPM application.
 ///
@@ -56,9 +59,9 @@ async fn main() {
     };
 
     // Convert the log level string to a `LevelFilter`.
-    let level_filter: LevelFilter = match LevelFilter::from_str(debug_str.as_str()) {
+    let level_filter = match Level::from_str(debug_str.as_str()) {
         Ok(val) => val,
-        Err(_) => LevelFilter::INFO,
+        Err(_) => Level::INFO,
     };
 
     // Set the global output format.
@@ -67,9 +70,7 @@ async fn main() {
         .unwrap();
 
     // Set the dry-run boolean
-    DRYRUN
-        .set(x.dry_run)
-        .unwrap();
+    DRYRUN.set(x.dry_run).unwrap();
 
     if get_dry_run() {
         utpm_log!(info, "Using dry-run")
@@ -79,23 +80,27 @@ async fn main() {
     if get_output_format() != OutputFormat::Text {
         // Use JSON format for logs if output is not plain text.
         tracing_subscriber::registry()
-            .with(tracing_subscriber::fmt::layer().json().with_filter(
-                if let Some(debug) = x.verbose {
-                    debug
-                } else {
-                    level_filter
-                },
-            ))
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .json()
+                    .with_filter(LevelFilter::from_level(if let Some(debug) = x.verbose {
+                        debug
+                    } else {
+                        level_filter
+                    })),
+            )
             .init();
     } else {
         // Use standard format for text output.
         tracing_subscriber::registry()
             .with(
-                tracing_subscriber::fmt::layer().with_filter(if let Some(debug) = x.verbose {
-                    debug
-                } else {
-                    level_filter
-                }),
+                tracing_subscriber::fmt::layer().with_filter(LevelFilter::from_level(
+                    if let Some(debug) = x.verbose {
+                        debug
+                    } else {
+                        level_filter
+                    },
+                )),
             )
             .init();
     }
@@ -161,7 +166,8 @@ async fn main() {
             #[cfg(feature = "generate")]
             Commands::Generate(cmd) => commands::generate::run(cmd).await,
         }
-    }.await;
+    }
+    .await;
 
     // Handle any errors that occurred during command execution.
     if let Err(err) = res {
