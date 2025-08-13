@@ -82,8 +82,8 @@ jobs:
             }
           - { target: x86_64-apple-darwin, os: macos-13 }
           - { target: aarch64-apple-darwin, os: macos-14 }
-          - { target: x86_64-pc-windows-gnu, os: windows-2022 }
-          - { target: x86_64-pc-windows-msvc, os: windows-2022 }
+          - { target: x86_64-pc-windows-gnu, os: windows-latest }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest }
           - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
           - {
               target: x86_64-unknown-linux-gnu,
@@ -138,6 +138,34 @@ jobs:
           cargo -V
           rustc -V
 
+      - name: Setup OpenSSL for x86_64-pc-windows-gnu
+        if: matrix.job.target == 'x86_64-pc-windows-gnu'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-pkgconf
+
+      - name: Export OpenSSL env for MinGW
+        if: matrix.job.target == 'x86_64-pc-windows-gnu'
+        shell: bash
+        run: |
+          echo "OPENSSL_DIR=C:\msys64\mingw64" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=C:\msys64\mingw64\lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=C:\msys64\mingw64\include" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig" >> $GITHUB_ENV
+          echo "PATH=C:\msys64\mingw64\bin;$PATH" >> $GITHUB_ENV
+
+      - name: Sanity check OpenSSL (pkg-config)
+        if: matrix.job.target == 'x86_64-pc-windows-gnu'
+        shell: bash
+        run: |
+          pkg-config --modversion openssl
+          pkg-config --libs --cflags openssl
+
+
       - name: Build
         shell: bash
         run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
@@ -174,7 +202,7 @@ jobs:
           PKG_NAME=${PKG_BASENAME}${PKG_suffix}
           echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
 
-          PKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/package"
+          PKG_STAGING="target/package"
           ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
           mkdir -p "${ARCHIVE_DIR}"
 
@@ -183,6 +211,12 @@ jobs:
 
           # README, LICENSE and CHANGELOG files
           cp "README.md" "LICENSE" "$ARCHIVE_DIR"
+
+          if [ "${{ matrix.job.target }}" = "x86_64-pc-windows-gnu" ]; then
+            cp "C:/msys64/mingw64/bin/libssl-3-x64.dll" "$ARCHIVE_DIR" || true
+            cp "C:/msys64/mingw64/bin/libcrypto-3-x64.dll" "$ARCHIVE_DIR" || true
+          fi
+
 
           # base compressed package
           pushd "${PKG_STAGING}/" >/dev/null
