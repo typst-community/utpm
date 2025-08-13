@@ -19,7 +19,7 @@ jobs:
       - name: Extract crate information
         id: crate_metadata
         run: |
-          echo "name=fd" | tee -a $GITHUB_OUTPUT
+          echo "name=utpm" | tee -a $GITHUB_OUTPUT
           cargo metadata --no-deps --format-version 1 | jq -r '"version=" + .packages[0].version' | tee -a $GITHUB_OUTPUT
           cargo metadata --no-deps --format-version 1 | jq -r '"maintainer=" + .packages[0].authors[0]' | tee -a $GITHUB_OUTPUT
           cargo metadata --no-deps --format-version 1 | jq -r '"homepage=" + .packages[0].homepage' | tee -a $GITHUB_OUTPUT
@@ -157,6 +157,13 @@ jobs:
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig" >> $GITHUB_ENV
           echo "PATH=C:\msys64\mingw64\bin;$PATH" >> $GITHUB_ENV
+
+      - name: Set up GCC
+        if: matrix.job.target == 'x86_64-pc-windows-gnu'
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
 
       - name: Build
         shell: bash
