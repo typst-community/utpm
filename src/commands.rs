@@ -34,7 +34,6 @@ pub mod unlink;
 
 #[cfg(any(feature = "clone", feature = "publish"))]
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 #[cfg(feature = "generate")]
