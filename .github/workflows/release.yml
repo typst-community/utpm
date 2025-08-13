@@ -138,17 +138,60 @@ jobs:
           cargo -V
           rustc -V
 
-      - name: Install NASM for vendored OpenSSL
-        if: matrix.job.target == '*-pc-windows-*'
+      - name: Install NASM on Windows
+        if: startsWith(matrix.job.target, 'x86_64-pc-windows') || startsWith(matrix.job.target, 'i686-pc-windows')
         run: choco install -y nasm
 
-      - name: Check Perl and NASM
-        if: matrix.job.target == '*-pc-windows-*'
+      - name: Check toolchain bits
+        if: startsWith(matrix.job.target, 'x86_64-pc-windows') || startsWith(matrix.job.target, 'i686-pc-windows')
         shell: bash
         run: |
-          where perl
-          where nasm
+          where rustc
+          rustc -V
+          where perl || true
+          where nasm || true
+      
+      - name: Setup MSYS2 and OpenSSL (Windows-gnu)
+        if: endsWith(matrix.job.target, '-pc-windows-gnu')
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-openssl
+            mingw-w64-i686-pkgconf
+            mingw-w64-i686-openssl
 
+      - name: Configure OpenSSL env (Windows-gnu)
+        if: endsWith(matrix.job.target, '-pc-windows-gnu')
+        shell: bash
+        run: |
+          case "${{ matrix.job.target }}" in
+            x86_64-pc-windows-gnu)
+              MSYS_PREFIX="C:/msys64/mingw64"
+              ;;
+            i686-pc-windows-gnu)
+              MSYS_PREFIX="C:/msys64/mingw32"
+              ;;
+            *)
+              echo "Not a MinGW target"; exit 1;;
+          esac
+          echo "OPENSSL_DIR=${MSYS_PREFIX}" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=${MSYS_PREFIX}/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=${MSYS_PREFIX}/include" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=${MSYS_PREFIX}/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PATH=${MSYS_PREFIX}/bin;$PATH" >> $GITHUB_ENV
+          # Désactiver le mode vendored si tu veux forcer pkg-config (recommandé côté -gnu)
+          echo "OPENSSL_NO_VENDOR=1" >> $GITHUB_ENV
+
+      - name: Sanity check OpenSSL (Windows-gnu)
+        if: endsWith(matrix.job.target, '-pc-windows-gnu')
+        shell: bash
+        run: |
+          which pkg-config
+          pkg-config --modversion openssl
+          pkg-config --cflags --libs openssl
 
       - name: Build
         shell: bash
