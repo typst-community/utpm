@@ -82,8 +82,8 @@ jobs:
             }
           - { target: x86_64-apple-darwin, os: macos-13 }
           - { target: aarch64-apple-darwin, os: macos-14 }
-          - { target: x86_64-pc-windows-gnu, os: windows-latest }
-          - { target: x86_64-pc-windows-msvc, os: windows-latest }
+          - { target: x86_64-pc-windows-gnu, os: windows-2025 }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025 }
           - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
           - {
               target: x86_64-unknown-linux-gnu,
@@ -138,32 +138,17 @@ jobs:
           cargo -V
           rustc -V
 
-      - name: Setup OpenSSL for x86_64-pc-windows-gnu
-        if: matrix.job.target == 'x86_64-pc-windows-gnu'
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: >-
-            mingw-w64-x86_64-openssl
-            mingw-w64-x86_64-pkgconf
+      - name: Install NASM for vendored OpenSSL
+        if: matrix.job.target == '*-pc-windows-*'
+        run: choco install -y nasm
 
-      - name: Export OpenSSL env for MinGW
-        if: matrix.job.target == 'x86_64-pc-windows-gnu'
+      - name: Check Perl and NASM
+        if: matrix.job.target == '*-pc-windows-*'
         shell: bash
         run: |
-          echo "OPENSSL_DIR=C:\msys64\mingw64" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=C:\msys64\mingw64\lib" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=C:\msys64\mingw64\include" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig" >> $GITHUB_ENV
-          echo "PATH=C:\msys64\mingw64\bin;$PATH" >> $GITHUB_ENV
+          where perl
+          where nasm
 
-      - name: Set up GCC
-        if: matrix.job.target == 'x86_64-pc-windows-gnu'
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: latest
-          platform: x64
 
       - name: Build
         shell: bash
