@@ -7,7 +7,6 @@ use crate::{
         copy_dir_all,
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir},
-        specs::Extra,
         state::Result,
         symlink_all,
     },
@@ -25,7 +24,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
 
     // Load the manifest and determine the namespace.
     let config = load_manifest!(&curr);
-    let namespace = Extra::from(config.tool).namespace.unwrap_or("local".into());
+    let namespace = cmd.namespace.clone().unwrap_or("local".into());
 
     // Construct the destination path for the package.
     let name = config.package.name;
