@@ -18,13 +18,10 @@ use clap::Parser;
     feature = "bulk_delete"
 ))]
 use commands::Packages;
-//todo: workspace
 #[cfg(any(
     feature = "link",
     feature = "init",
     feature = "install",
-    feature = "add",
-    feature = "delete",
     feature = "init",
     feature = "publish",
     feature = "clone"
@@ -112,8 +109,6 @@ async fn main() {
                 feature = "link",
                 feature = "init",
                 feature = "install",
-                feature = "add",
-                feature = "delete",
                 feature = "init",
                 feature = "publish",
                 feature = "sync",
@@ -125,10 +120,6 @@ async fn main() {
                 Workspace::Link(cmd) => commands::link::run(cmd, None, true).await,
                 #[cfg(feature = "install")]
                 Workspace::Install(cmd) => commands::install::run(cmd).await,
-                #[cfg(feature = "add")]
-                Workspace::Add(cmd) => commands::add::run(&mut cmd.clone()).await,
-                #[cfg(feature = "delete")]
-                Workspace::Delete(cmd) => commands::delete::run(&mut cmd.clone()).await,
                 #[cfg(feature = "init")]
                 Workspace::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
                 #[cfg(feature = "clone")]
@@ -148,9 +139,6 @@ async fn main() {
             ))]
             Commands::Packages(p) => {
                 match p {
-                    // TODO: Consider a `move` command to change namespace, name, or version.
-                    #[cfg(feature = "tree")]
-                    Packages::Tree(cmd) => commands::tree::run(cmd).await,
                     #[cfg(feature = "list")]
                     Packages::List(cmd) => commands::list::run(cmd).await,
                     #[cfg(feature = "path")]

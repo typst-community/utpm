@@ -1,15 +1,12 @@
 /// Linker: This module dynamically links all the command modules.
 /// Each command is a separate module, conditionally compiled based on feature flags.
-#[cfg(feature = "add")]
-pub mod add;
+
 #[cfg(feature = "bulk_delete")]
 pub mod bulk_delete;
 #[cfg(feature = "bump")]
 pub mod bump;
 #[cfg(feature = "clone")]
 pub mod clone;
-#[cfg(feature = "delete")]
-pub mod delete;
 #[cfg(feature = "generate")]
 pub mod generate;
 pub mod get;
@@ -27,8 +24,6 @@ pub mod package_path;
 pub mod publish;
 #[cfg(feature = "sync")]
 pub mod sync;
-#[cfg(feature = "tree")]
-pub mod tree;
 #[cfg(feature = "unlink")]
 pub mod unlink;
 
@@ -146,6 +141,9 @@ pub struct LinkArgs {
     /// Create a symlink instead of copying the project files.
     #[arg(short, long)]
     pub no_copy: bool,
+
+    /// Namespace
+    pub namespace: Option<String>
 }
 
 /// Arguments for the `list` and `tree` commands.
@@ -301,13 +299,12 @@ pub struct BulkDeleteArgs {
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "install")]
 pub struct InstallArgs {
-    /// URL or path to a specific package to install. If not provided, installs dependencies from the manifest.
+    /// URL or path to a specific package to install.
     #[arg(num_args = 1..)]
-    pub url: Option<String>,
+    pub url: String,
 
-    /// Force link commands for all dependencies.
-    #[arg(short, long, default_value_t = false)]
-    pub force: bool,
+    #[arg(short, long)]
+    pub namespace: Option<String>,
 }
 
 /// Arguments for the `delete` command.
@@ -357,7 +354,6 @@ pub struct AddArgs {
 /// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
 #[cfg(any(
-    feature = "tree",
     feature = "list",
     feature = "path",
     feature = "unlink",
@@ -365,12 +361,6 @@ pub struct AddArgs {
     feature = "get"
 ))]
 pub enum Packages {
-    /// [DEPRECATED] Display packages as a tree. Use `list --tree` instead.
-    #[command(visible_alias = "t")]
-    #[cfg(feature = "tree")]
-    #[command(about = "[DEPRECIATED] Use list with --tree.")]
-    Tree(ListTreeArgs),
-
     /// List all packages in your local storage.
     #[command(visible_alias = "l")]
     #[cfg(feature = "list")]
@@ -422,16 +412,6 @@ pub enum Workspace {
     #[cfg(feature = "install")]
     Install(InstallArgs),
 
-    /// Add dependencies to the manifest and then install them.
-    #[command(visible_alias = "a")]
-    #[cfg(feature = "add")]
-    Add(AddArgs),
-
-    /// Delete dependencies from the manifest.
-    #[command(visible_alias = "d")]
-    #[cfg(feature = "delete")]
-    Delete(DeleteArgs),
-
     /// Create a new `typst.toml` manifest for a project.
     #[command(visible_alias = "n")]
     #[cfg(feature = "init")]
@@ -482,7 +462,6 @@ pub enum Commands {
     #[command(subcommand)]
     #[command(visible_alias = "pkg")]
     #[cfg(any(
-        feature = "tree",
         feature = "list",
         feature = "path",
         feature = "unlink",
