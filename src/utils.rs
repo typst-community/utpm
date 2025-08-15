@@ -49,14 +49,17 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
     Ok(())
 }
 
-pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
+pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
     let manifest_path = PathBuf::from_iter([s.as_ref(), "typst.toml".as_ref()]);
 
     if !manifest_path.try_exists()? {
         utpm_bail!(Manifest);
     }
+    Ok(manifest_path)
+}
 
-    let e = read_to_string(manifest_path)?;
+pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
+    let e = read_to_string(try_find_path(s)?)?;
 
     let f: PackageManifest = toml::from_str(&e)?;
     Ok(f)
