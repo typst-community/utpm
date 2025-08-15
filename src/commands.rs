@@ -61,7 +61,7 @@ pub struct InitArgs {
     name: Option<String>,
 
     /// Version of the project.
-    #[arg(short, long, default_value_t=semver::Version::parse("1.0.0").unwrap())]
+    #[arg(short = 'V', long, default_value_t=semver::Version::parse("1.0.0").unwrap())]
     version: semver::Version,
 
     /// Path to the main file of the project.
@@ -117,16 +117,16 @@ pub struct InitArgs {
     categories: Option<Vec<String>>,
 
     /// Disciplines to add to your typst.toml.
-    #[arg(short = 'D', long)]
+    #[arg(long)]
     #[clap(value_delimiter = ',')]
     disciplines: Option<Vec<String>>,
 
     /// Path to a template file to use.
-    #[arg(long, requires = "template")]
+    #[arg(long)]
     template_path: Option<String>,
 
     /// Entrypoint for the template.
-    #[arg(long, requires = "template")]
+    #[arg(long)]
     template_entrypoint: Option<String>,
 
     /// Thumbnail for the template.
@@ -444,7 +444,6 @@ pub enum Workspace {
 
     /// Clone a package from the typst universe or a local directory.
     #[command()]
-    #[command(visible_alias = "d")]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
 

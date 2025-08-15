@@ -133,7 +133,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         let public = Select::new("Do you want to make your package public? Questions are on authors, license, description", choice.clone()).prompt()?;
         let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", choice.clone()).prompt()?;
         let extra_opts = Select::new(
-            "Do you want to specify informations of utpm? Questions are on the namespace",
+            "Do you want to specify information of utpm? Questions are on the namespace",
             choice.clone(),
         )
         .prompt()?;

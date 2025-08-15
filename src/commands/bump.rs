@@ -50,7 +50,7 @@ pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
         utpm_log!(info, "Modified {}", file);
     }
 
-    // Borrow is very anoying sometimes, this hack is necessary
+    // Borrow is very annoying sometimes, this hack is necessary
     let files = ["typst.toml"].into_iter()
             .chain(files.iter().map(AsRef::<str>::as_ref))
             .join(", ");
