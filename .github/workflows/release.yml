@@ -1,308 +1,96 @@
-# Based on https://raw.githubusercontent.com/sharkdp/fd/refs/heads/master/.github/workflows/CICD.yml
-name: Release
+# SPDX-License-Identifier: Apache-2.0
+# Credits: The Typst Authors
 
+# Based on ripgrep's release action:
+# https://github.com/BurntSushi/ripgrep/blob/master/.github/workflows/release.yml
+
+name: Build Release Binaries
 on:
   workflow_dispatch:
-  pull_request:
   push:
-    branches:
-      - main
     tags:
-      - "*"
+      - "v*"
+  release:
+    types: [published]
 
 jobs:
-  crate_metadata:
-    name: Extract crate metadata
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: Extract crate information
-        id: crate_metadata
-        run: |
-          echo "name=utpm" | tee -a $GITHUB_OUTPUT
-          cargo metadata --no-deps --format-version 1 | jq -r '"version=" + .packages[0].version' | tee -a $GITHUB_OUTPUT
-          cargo metadata --no-deps --format-version 1 | jq -r '"maintainer=" + .packages[0].authors[0]' | tee -a $GITHUB_OUTPUT
-          cargo metadata --no-deps --format-version 1 | jq -r '"homepage=" + .packages[0].homepage' | tee -a $GITHUB_OUTPUT
-          cargo metadata --no-deps --format-version 1 | jq -r '"msrv=" + .packages[0].rust_version' | tee -a $GITHUB_OUTPUT
-    outputs:
-      name: ${{ steps.crate_metadata.outputs.name }}
-      version: ${{ steps.crate_metadata.outputs.version }}
-      maintainer: ${{ steps.crate_metadata.outputs.maintainer }}
-      homepage: ${{ steps.crate_metadata.outputs.homepage }}
-      msrv: ${{ steps.crate_metadata.outputs.msrv }}
-
-  # ensure_cargo_fmt:
-  #   name: Ensure 'cargo fmt' has been run
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         components: rustfmt
-  #     - uses: actions/checkout@v5
-  #     - run: cargo fmt -- --check
-
-  build:
-    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
-    runs-on: ${{ matrix.job.os }}
-    needs: crate_metadata
+  build-release:
+    name: release ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
-        job:
-          - {
-              target: aarch64-unknown-linux-gnu,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - {
-              target: aarch64-unknown-linux-musl,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - {
-              target: arm-unknown-linux-gnueabihf,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - {
-              target: arm-unknown-linux-musleabihf,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - { target: i686-pc-windows-msvc, os: windows-2022 }
-          - {
-              target: i686-unknown-linux-gnu,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - {
-              target: i686-unknown-linux-musl,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - { target: x86_64-apple-darwin, os: macos-13 }
-          - { target: aarch64-apple-darwin, os: macos-14 }
-          - { target: x86_64-pc-windows-gnu, os: windows-2025 }
-          - { target: x86_64-pc-windows-msvc, os: windows-2025 }
-          - { target: aarch64-pc-windows-msvc, os: windows-11-arm }
-          - {
-              target: x86_64-unknown-linux-gnu,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-          - {
-              target: x86_64-unknown-linux-musl,
-              os: ubuntu-22.04,
-              use-cross: true,
-            }
-    env:
-      BUILD_CMD: cargo
+        include:
+        - target: x86_64-unknown-linux-musl
+          os: ubuntu-latest
+          cross: true
+        - target: aarch64-unknown-linux-musl
+          os: ubuntu-latest
+          cross: true
+        - target: armv7-unknown-linux-musleabi
+          os: ubuntu-latest
+          cross: true
+        - target: riscv64gc-unknown-linux-gnu
+          os: ubuntu-latest
+          cross: true
+        - target: x86_64-apple-darwin
+          os: macos-latest
+          cross: false
+        - target: aarch64-apple-darwin
+          os: macos-latest
+          cross: false
+        - target: x86_64-pc-windows-msvc
+          os: windows-latest
+          cross: false
+        - target: aarch64-pc-windows-msvc
+          os: windows-latest
+          cross: false
+
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v5
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@1.85
+      with:
+        target: ${{ matrix.target }}
 
-      - name: Install prerequisites
-        shell: bash
-        run: |
-          case ${{ matrix.job.target }} in
-            arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
-            aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
-          esac
+    - name: Run Cross
+      if: ${{ matrix.cross }}
+      run: |
+        cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
+        cross build --release --target ${{ matrix.target }}
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.job.target }}
-          # On windows, for now build with 1.77.2, so that it works on windows 7.
-          # When we update the MSRV again, we'll need to revisit this, and probably drop support for Win7
-          toolchain: 'stable'
+    - name: Run Cargo
+      if: ${{ !matrix.cross }}
+      run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Install cross
-        if: matrix.job.use-cross
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cross
+    - name: Create artifact directory
+      shell: bash
+      run: |
+        directory=utpm-${{ matrix.target }}
+        mkdir $directory
+        cp README.md LICENSE $directory
+        if [ -f target/${{ matrix.target }}/release/utpm.exe ]; then
+          cp target/${{ matrix.target }}/release/utpm.exe $directory
+          7z a -r $directory.zip $directory
+        else
+          cp target/${{ matrix.target }}/release/utpm $directory
+          tar cJf $directory.tar.xz $directory
+        fi
 
-      - name: Overwrite build command env variable
-        if: matrix.job.use-cross
-        shell: bash
-        run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'workflow_dispatch'
+      with:
+        name: utpm-${{ matrix.target }}
+        path: "utpm-${{ matrix.target }}.*"
+        retention-days: 3
 
-      - name: Show version information (Rust, cargo, GCC)
-        shell: bash
-        run: |
-          gcc --version || true
-          rustup -V
-          rustup toolchain list
-          rustup default
-          cargo -V
-          rustc -V
-
-      - name: Install NASM on Windows
-        if: startsWith(matrix.job.target, 'x86_64-pc-windows') || startsWith(matrix.job.target, 'i686-pc-windows')
-        run: choco install -y nasm
-
-      - name: Check toolchain bits
-        if: startsWith(matrix.job.target, 'x86_64-pc-windows') || startsWith(matrix.job.target, 'i686-pc-windows')
-        shell: bash
-        run: |
-          where rustc
-          rustc -V
-          where perl || true
-          where nasm || true
-      
-      - name: Setup MSYS2 and OpenSSL (Windows-gnu)
-        if: endsWith(matrix.job.target, '-pc-windows-gnu')
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: >-
-            mingw-w64-x86_64-pkgconf
-            mingw-w64-x86_64-openssl
-            mingw-w64-i686-pkgconf
-            mingw-w64-i686-openssl
-
-      - name: Configure OpenSSL env (Windows-gnu)
-        if: endsWith(matrix.job.target, '-pc-windows-gnu')
-        shell: bash
-        run: |
-          case "${{ matrix.job.target }}" in
-            x86_64-pc-windows-gnu)
-              MSYS_PREFIX="C:/msys64/mingw64"
-              ;;
-            i686-pc-windows-gnu)
-              MSYS_PREFIX="C:/msys64/mingw32"
-              ;;
-            *)
-              echo "Not a MinGW target"; exit 1;;
-          esac
-          echo "OPENSSL_DIR=${MSYS_PREFIX}" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=${MSYS_PREFIX}/lib" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=${MSYS_PREFIX}/include" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=${MSYS_PREFIX}/lib/pkgconfig" >> $GITHUB_ENV
-          echo "PATH=${MSYS_PREFIX}/bin;$PATH" >> $GITHUB_ENV
-          # Désactiver le mode vendored si tu veux forcer pkg-config (recommandé côté -gnu)
-          echo "OPENSSL_NO_VENDOR=1" >> $GITHUB_ENV
-
-      - name: Sanity check OpenSSL (Windows-gnu)
-        if: endsWith(matrix.job.target, '-pc-windows-gnu')
-        shell: bash
-        run: |
-          which pkg-config
-          pkg-config --modversion openssl
-          pkg-config --cflags --libs openssl
-
-      - name: Build
-        shell: bash
-        run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
-
-      - name: Set binary name & path
-        id: bin
-        shell: bash
-        run: |
-          # Figure out suffix of binary
-          EXE_suffix=""
-          case ${{ matrix.job.target }} in
-            *-pc-windows-*) EXE_suffix=".exe" ;;
-          esac;
-
-          # Setup paths
-          BIN_NAME="${{ needs.crate_metadata.outputs.name }}${EXE_suffix}"
-          BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
-
-          # Let subsequent steps know where to find the binary
-          echo "BIN_PATH=${BIN_PATH}" >> $GITHUB_OUTPUT
-          echo "BIN_NAME=${BIN_NAME}" >> $GITHUB_OUTPUT
-
-
-      - name: Run tests
-        shell: bash
-        run: $BUILD_CMD test --locked --target=${{ matrix.job.target }}
-
-      - name: Create tarball
-        id: package
-        shell: bash
-        run: |
-          PKG_suffix=".tar.gz" ; case ${{ matrix.job.target }} in *-pc-windows-*) PKG_suffix=".zip" ;; esac;
-          PKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-v${{ needs.crate_metadata.outputs.version }}-${{ matrix.job.target }}
-          PKG_NAME=${PKG_BASENAME}${PKG_suffix}
-          echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
-
-          PKG_STAGING="target/package"
-          ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
-          mkdir -p "${ARCHIVE_DIR}"
-
-          # Binary
-          cp "${{ steps.bin.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
-
-          # README, LICENSE and CHANGELOG files
-          cp "README.md" "LICENSE" "$ARCHIVE_DIR"
-
-          if [ "${{ matrix.job.target }}" = "x86_64-pc-windows-gnu" ]; then
-            cp "C:/msys64/mingw64/bin/libssl-3-x64.dll" "$ARCHIVE_DIR" || true
-            cp "C:/msys64/mingw64/bin/libcrypto-3-x64.dll" "$ARCHIVE_DIR" || true
-          fi
-
-
-          # base compressed package
-          pushd "${PKG_STAGING}/" >/dev/null
-          case ${{ matrix.job.target }} in
-            *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
-            *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
-          esac;
-          popd >/dev/null
-
-          # Let subsequent steps know where to find the compressed package
-          echo "PKG_PATH=${PKG_STAGING}/${PKG_NAME}" >> $GITHUB_OUTPUT
-
-      # - name: Create Debian package
-      #   id: debian-package
-      #   shell: bash
-      #   if: startsWith(matrix.job.os, 'ubuntu')
-      #   run: bash scripts/create-deb.sh
-      #   env:
-      #     TARGET: ${{ matrix.job.target }}
-      #     DPKG_VERSION: ${{ needs.crate_metadata.version }}
-      #     BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
-
-      - name: "Artifact upload: tarball"
-        uses: actions/upload-artifact@master
-        with:
-          name: ${{ steps.package.outputs.PKG_NAME }}
-          path: ${{ steps.package.outputs.PKG_PATH }}
-
-      # - name: "Artifact upload: Debian package"
-      #   uses: actions/upload-artifact@master
-      #   if: steps.debian-package.outputs.DPKG_NAME
-      #   with:
-      #     name: ${{ steps.debian-package.outputs.DPKG_NAME }}
-      #     path: ${{ steps.debian-package.outputs.DPKG_PATH }}
-
-      - name: Check for release
-        id: is-release
-        shell: bash
-        run: |
-          unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
-          echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
-
-      - name: Publish archives and packages
-        uses: softprops/action-gh-release@v2
-        if: steps.is-release.outputs.IS_RELEASE
-        with:
-          files: |
-            ${{ steps.package.outputs.PKG_PATH }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # winget:
-  #   name: Publish to Winget
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   if: startsWith(github.ref, 'refs/tags/v')
-  #   steps:
-  #     - uses: vedantmgoyal2009/winget-releaser@v2
-  #       with:
-  #         identifier: sharkdp.fd
-  #         installers-regex: '-pc-windows-msvc\.zip$'
-  #         token: ${{ secrets.WINGET_TOKEN }}
+    - name: Add artifacts to release
+      uses: ncipollo/release-action@v1
+      if: github.event_name == 'release' || github.event_name == 'push'
+      with:
+        artifacts: "utpm-${{ matrix.target }}.*"
+        allowUpdates: true
+        omitNameDuringUpdate: true
+        omitBodyDuringUpdate: true
