@@ -43,7 +43,7 @@ impl TreeItem for Data {
         write!(w, "{}", self.path)
     }
 
-    fn children(&self) -> Cow<[Namespace]> {
+    fn children(&self) -> Cow<'_, [Namespace]> {
         Cow::Borrowed(&self.list_namespace)
     }
 }
@@ -77,7 +77,7 @@ impl TreeItem for Namespace {
         write!(w, "{}", self.name)
     }
 
-    fn children(&self) -> Cow<[Package]> {
+    fn children(&self) -> Cow<'_, [Package]> {
         Cow::Borrowed(&self.list_packages)
     }
 }
@@ -111,7 +111,7 @@ impl TreeItem for Package {
         write!(w, "{}: {}", self.name, self.list_version.join(", "))
     }
 
-    fn children(&self) -> Cow<[Self::Child]> {
+    fn children(&self) -> Cow<'_, [Self::Child]> {
         Cow::Borrowed(&[]) // No children
     }
 }
