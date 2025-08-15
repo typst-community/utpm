@@ -43,6 +43,7 @@ fmt-derive = "0.1.2"
 ptree = "0.5.2"
 reqwest = { version = "0.12.22", optional = false, features = ["json"] }
 itertools = "0.14.0"
+toml_edit = "0.23.3"
 
 [build-dependencies]
 shadow-rs = "1.1.1"
