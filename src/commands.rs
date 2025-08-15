@@ -444,7 +444,6 @@ pub enum Workspace {
 
     /// Clone a package from the typst universe or a local directory.
     #[command()]
-    #[command(visible_alias = "d")]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
 
