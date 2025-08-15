@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::PathBuf;
 use tracing::instrument;
 
 use crate::{
@@ -35,6 +36,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
     } else {
         format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
     };
+    let path = PathBuf::from(path);
 
     // Check if the package already exists at the destination.
     if check_path_dir(&path) && !cmd.force {
@@ -42,7 +44,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
     }
 
     if !get_dry_run() {
-        fs::create_dir_all(&path)?
+        fs::create_dir_all(path.parent().unwrap())?
     };
 
     // If force is used, remove the existing directory.
@@ -59,7 +61,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
             utpm_log!(
                 info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                path,
+                path.to_string_lossy(),
                 namespace,
                 name,
                 version
@@ -73,7 +75,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
             utpm_log!(
                 info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                path,
+                path.to_string_lossy(),
                 namespace,
                 name,
                 version
