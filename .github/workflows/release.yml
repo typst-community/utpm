@@ -7,6 +7,9 @@
 name: Build Release Binaries
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "v*"
   release:
     types: [published]
 
@@ -85,7 +88,7 @@ jobs:
 
     - name: Add artifacts to release
       uses: ncipollo/release-action@v1
-      if: github.event_name == 'release'
+      if: github.event_name == 'release' || github.event_name == 'push'
       with:
         artifacts: "utpm-${{ matrix.target }}.*"
         allowUpdates: true
