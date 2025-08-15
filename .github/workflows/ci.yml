@@ -39,7 +39,7 @@ jobs:
       - run: cargo test --no-fail-fast
 
   check-msrv:
-    name: Check mininum supported Rust version
+    name: Check minimum supported Rust version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

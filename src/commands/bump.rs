@@ -45,7 +45,7 @@ pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
         utpm_log!(info, "Modified {}", file.clone());
     }
 
-    // Borrow is very anoying sometimes, this hack is necessary
+    // Borrow is very annoying sometimes, this hack is necessary
     let mut real_files = vec!["typst.toml".to_string()];
     real_files.extend(files.iter().cloned());
 
