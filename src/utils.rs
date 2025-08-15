@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::fmt::Debug;
-use std::fs::{create_dir_all, read_dir, read_to_string};
-use std::{fs, path::Path};
+use std::fs::{self, create_dir_all, read_to_string};
+use std::path::{Path, PathBuf};
 
 #[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
 use git2::{
@@ -49,21 +49,17 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
     Ok(())
 }
 
-pub fn try_find(s: &String) -> Result<PackageManifest> {
-    let a = read_dir(s)?;
-    let c = a
-        .into_iter()
-        .filter_map(|b| b.ok())
-        .map(|b| b.file_name().clone())
-        .find(|f| *f == "typst.toml");
+pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
+    let manifest_path = PathBuf::from_iter([s.as_ref(), "typst.toml".as_ref()]);
 
-    if c.is_none() {
+    if !manifest_path.try_exists()? {
         utpm_bail!(Manifest);
     }
+    Ok(manifest_path)
+}
 
-    let d = c.unwrap();
-
-    let e = read_to_string(d)?;
+pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
+    let e = read_to_string(try_find_path(s)?)?;
 
     let f: PackageManifest = toml::from_str(&e)?;
     Ok(f)

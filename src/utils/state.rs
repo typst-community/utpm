@@ -71,6 +71,10 @@ pub enum UtpmError {
     #[error("TOML deserialization error: {0}")]
     Deserialize(#[from] toml::de::Error),
 
+        /// An error during TOML deserialization.
+    #[error("TOML deserialization error: {0}")]
+    DeserializeMut(#[from] toml_edit::TomlError),
+
     /// An error from the `ignore` crate.
     #[cfg(any(feature = "publish", feature = "sync"))]
     #[error("Ignore crate error: {0}")]
@@ -175,6 +179,7 @@ impl UtpmError {
             GithubHandle(_) => "GithubHandle",
             Serialize(_) => "Serialize",
             Deserialize(_) => "Deserialize",
+            DeserializeMut(_) => "DeserializeMut",
             #[cfg(any(feature = "publish", feature = "sync"))]
             Ignore(_) => "Ignore",
             #[cfg(any(feature = "publish"))]
