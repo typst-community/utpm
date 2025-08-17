@@ -29,7 +29,7 @@ macro_rules! load_manifest {
 /// write_manifest!(&manifest);
 ///
 /// // Write to a specific path
-/// write_manifest!(&manifest => "/path/to/projectMANIFEST_PATH");
+/// write_manifest!(&manifest => "/path/to/project/typst.toml");
 /// ```
 #[macro_export]
 macro_rules! write_manifest {

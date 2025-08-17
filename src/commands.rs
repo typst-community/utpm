@@ -438,7 +438,6 @@ pub enum Commands {
 
 /// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
-#[cfg(not(feature = "nightly"))]
 #[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
 pub struct Cli {
     /// The subcommand to execute.

@@ -15,7 +15,7 @@ use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolIn
 use crate::{
     utils::{
         dryrun::get_dry_run,
-        paths::{MANIFEST_PATH, check_path_file, get_current_dir},
+        paths::{check_path_file, get_current_dir, MANIFEST_PATH},
         specs::Extra,
         state::Result,
     },
@@ -45,40 +45,20 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             patch: cmd.version.patch as u32,
         },
         entrypoint: cmd.entrypoint.to_owned().into(),
-        authors: if let Some(yes) = &cmd.authors {
-            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
-        } else {
-            vec![]
-        },
-        license: cmd.license.as_ref().map(|yes| yes.into()),
-        description: cmd.description.as_ref().map(|yes| yes.into()),
-        repository: cmd.repository.as_ref().map(|yes| yes.into()),
-        homepage: cmd.homepage.as_ref().map(|yes| yes.into()),
-        keywords: if let Some(yes) = &cmd.keywords {
-            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
-        } else {
-            vec![]
-        },
-        compiler: cmd.compiler.as_ref().map(|yes| VersionBound {
-            major: yes.major as u32,
-            minor: Some(yes.minor as u32),
-            patch: Some(yes.patch as u32),
+        authors: cmd.authors.iter().flatten().map(Into::into).collect(),
+        license: cmd.license.as_ref().map(Into::into),
+        description: cmd.description.as_ref().map(Into::into),
+        repository: cmd.repository.as_ref().map(Into::into),
+        homepage: cmd.homepage.as_ref().map(Into::into),
+        keywords: cmd.keywords.iter().flatten().map(Into::into).collect(),
+        compiler: cmd.compiler.as_ref().map(|version| VersionBound {
+            major: version.major as u32,
+            minor: Some(version.minor as u32),
+            patch: Some(version.patch as u32),
         }),
-        exclude: if let Some(yes) = &cmd.exclude {
-            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
-        } else {
-            vec![]
-        },
-        categories: if let Some(yes) = &cmd.categories {
-            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
-        } else {
-            vec![]
-        },
-        disciplines: if let Some(yes) = &cmd.disciplines {
-            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
-        } else {
-            vec![]
-        },
+        exclude: cmd.exclude.iter().flatten().map(Into::into).collect(),
+        categories: cmd.categories.iter().flatten().map(Into::into).collect(),
+        disciplines:  cmd.disciplines.iter().flatten().map(Into::into).collect(),
         unknown_fields: BTreeMap::new(),
     };
 
