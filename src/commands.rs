@@ -279,7 +279,8 @@ pub struct UnlinkArgs {
 }
 
 /// Arguments for the `install` command.
-/// This command installs dependencies from the manifest or a given URL.
+/// This command installs a package from a git repository, not from Typst Universe.
+/// You will require to have git install on your machine.
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "install")]
 pub struct InstallArgs {
@@ -287,6 +288,7 @@ pub struct InstallArgs {
     #[arg(num_args = 1..)]
     pub url: String,
 
+    /// The namespace you want to put your installed package. Default to local
     #[arg(short, long)]
     pub namespace: Option<String>,
 }
@@ -312,7 +314,7 @@ pub struct SyncArgs {
 /// This command gets from the remote the package you research.
 /// By default: Give you all packages available
 pub struct GetArgs {
-    /// Files to sync packages. Default to all files
+    /// Packages you want to have a look.
     pub packages: Vec<String>,
 }
 
@@ -322,9 +324,10 @@ pub struct GetArgs {
     feature = "list",
     feature = "path",
     feature = "unlink",
+    feature = "install",
     feature = "get"
 ))]
-pub enum Packages {
+pub enum PackagesArgs {
     /// List all packages in your local storage.
     #[command(visible_alias = "l")]
     #[cfg(feature = "list")]
@@ -344,6 +347,12 @@ pub enum Packages {
     #[command(visible_alias = "g")]
     #[cfg(feature = "get")]
     Get(GetArgs),
+
+
+    /// Install a package from a git repository into a namespace
+    #[command(visible_alias = "i")]
+    #[cfg(feature = "install")]
+    Install(InstallArgs),
 }
 
 /// An enumeration of subcommands for managing the project project.
@@ -351,7 +360,6 @@ pub enum Packages {
 #[cfg(any(
     feature = "link",
     feature = "init",
-    feature = "install",
     feature = "init",
     feature = "publish",
     feature = "bump",
@@ -364,11 +372,6 @@ pub enum ProjectArgs {
     #[command(visible_alias = "l")]
     #[cfg(feature = "link")]
     Link(LinkArgs),
-
-    /// Install all dependencies from the `typst.toml` manifest.
-    #[command(visible_alias = "i")]
-    #[cfg(feature = "install")]
-    Install(InstallArgs),
 
     /// Create a new `typst.toml` manifest for a project.
     #[command(visible_alias = "n")]
@@ -409,7 +412,6 @@ pub enum Commands {
     #[cfg(any(
         feature = "link",
         feature = "init",
-        feature = "install",
         feature = "publish",
         feature = "bump",
         feature = "sync",
@@ -424,9 +426,10 @@ pub enum Commands {
         feature = "list",
         feature = "path",
         feature = "unlink",
+        feature = "install",
         feature = "get"
     ))]
-    Packages(Packages),
+    Packages(PackagesArgs),
 
     /// Generate shell completion scripts.
     #[command(visible_alias = "g")]

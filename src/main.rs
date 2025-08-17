@@ -11,7 +11,7 @@ use utils::output::OUTPUT_FORMAT;
 
 use clap::Parser;
 #[cfg(any(feature = "list", feature = "path", feature = "unlink",))]
-use commands::Packages;
+use commands::PackagesArgs;
 #[cfg(any(
     feature = "link",
     feature = "init",
@@ -112,8 +112,6 @@ async fn main() {
             Commands::Project(w) => match w {
                 #[cfg(feature = "link")]
                 ProjectArgs::Link(cmd) => commands::link::run(cmd, None, true).await,
-                #[cfg(feature = "install")]
-                ProjectArgs::Install(cmd) => commands::install::run(cmd).await,
                 #[cfg(feature = "init")]
                 ProjectArgs::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
                 #[cfg(feature = "clone")]
@@ -132,13 +130,15 @@ async fn main() {
             ))]
             Commands::Packages(p) => match p {
                 #[cfg(feature = "list")]
-                Packages::List(cmd) => commands::list::run(cmd).await,
+                PackagesArgs::List(cmd) => commands::list::run(cmd).await,
                 #[cfg(feature = "path")]
-                Packages::Path => commands::package_path::run().await,
+                PackagesArgs::Path => commands::package_path::run().await,
                 #[cfg(feature = "unlink")]
-                Packages::Unlink(cmd) => commands::unlink::run(cmd).await,
+                PackagesArgs::Unlink(cmd) => commands::unlink::run(cmd).await,
                 #[cfg(feature = "get")]
-                Packages::Get(cmd) => commands::get::run(cmd).await,
+                PackagesArgs::Get(cmd) => commands::get::run(cmd).await,
+                #[cfg(feature = "install")]
+                PackagesArgs::Install(cmd) => commands::install::run(cmd).await,
             },
             #[cfg(feature = "generate")]
             Commands::Generate(cmd) => commands::generate::run(cmd).await,
@@ -150,7 +150,7 @@ async fn main() {
     if let Err(err) = res {
         match check_errors(err) {
             Ok(_) => (),
-            Err(err2) => error!("{err2}"),
+            Err(err2) => error!("{err2}"), // If utpm_log errors, it will fallback to that
         };
     }
 }

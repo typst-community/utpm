@@ -155,7 +155,6 @@ Options:
 | Command | Alias | Description |
 | :--- | :---: | :--- |
 | `link` | `l` | Link the current project to the local package directory. |
-| `install` | `i` | Install a package from a github URL into your local directory |
 | `init` | `n` | Create a new `typst.toml` manifest for a project. |
 | `clone` | `c` | Clone a package from the typst universe or a local directory. |
 | `bump` | `b` | Bump the version of your package. |
@@ -169,6 +168,7 @@ Options:
 | `path` | `p` | Display the path to the typst packages folder. |
 | `unlink` | `u` | Delete a package from your local storage. |
 | `get` | `g` | Get specific/all package from the remote. |
+| `install` | `i` | Install a package from a git repository into a namespace |
 
 ### **generate (`gen`)**: Generate Shell Completions
 

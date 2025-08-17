@@ -57,7 +57,7 @@ pub async fn run<'a>(cmd: &'a GetArgs) -> Result<bool> {
         let packages: HashMap<String, RawPackage> = get_packages_name_version().await?;
         for e in &cmd.packages {
             if !packages.contains_key(e) {
-                utpm_log!(warn, "Package not found, input: {}", e);
+                utpm_log!(warn, "Package not found", "input" => e);
                 continue;
             }
             let package = packages.get(e).unwrap();
