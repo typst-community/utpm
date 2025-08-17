@@ -35,13 +35,13 @@ macro_rules! load_manifest {
 macro_rules! write_manifest {
     ($var:expr => $path:expr) => {
         let tomlfy: String = toml::to_string_pretty($var)?;
-        if !crate::utils::dryrun::get_dry_run() {
+        if !$crate::utils::dryrun::get_dry_run() {
             std::fs::write($path, tomlfy)?
         }
     };
     ($var:expr) => {
         let tomlfy: String = toml::to_string_pretty($var)?;
-        if !crate::utils::dryrun::get_dry_run() {
+        if !$crate::utils::dryrun::get_dry_run() {
             std::fs::write("./typst.toml", tomlfy)?
         }
     };

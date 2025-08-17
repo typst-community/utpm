@@ -80,33 +80,33 @@ pub fn regex_package() -> Regex {
 }
 
 /// Returns a regex for matching a typst package namespace (`@namespace`).
-#[cfg(any(feature = "unlink"))]
+#[cfg(feature = "unlink")]
 pub fn regex_namespace() -> Regex {
     Regex::new(r"^@([a-z]+)$").unwrap()
 }
 
-#[cfg(any(feature = "clone"))]
+#[cfg(feature = "clone")]
 pub fn regex_pkg_simple() -> Regex {
     Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap()
 }
 
-#[cfg(any(feature = "clone"))]
+#[cfg(feature = "clone")]
 pub fn regex_pkg_simple_pkg() -> Regex {
     Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap()
 }
 
-#[cfg(any(feature = "clone"))]
+#[cfg(feature = "clone")]
 pub fn regex_pkg_simple_ver() -> Regex {
     Regex::new(r"^(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
-#[cfg(any(feature = "clone"))]
+#[cfg(feature = "clone")]
 pub fn regex_pkg_simple_name() -> Regex {
     Regex::new(r"^(\w+)$").unwrap()
 }
 
 /// Returns a regex for matching a typst package name (`@namespace/name`).
-#[cfg(any(feature = "unlink"))]
+#[cfg(feature = "unlink")]
 pub fn regex_packagename() -> Regex {
     Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)$").unwrap()
 }

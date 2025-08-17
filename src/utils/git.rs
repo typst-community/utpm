@@ -15,13 +15,17 @@ use std::{
 /// Currently holds only the current working directory (String).
 pub struct State(pub String);
 
+impl Default for State {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl State {
     /// Build a new state using the process current directory.
     /// Panics if `get_current_dir()` fails.
     pub fn new() -> Self {
-        Self {
-            0: get_current_dir().unwrap(),
-        }
+        Self(get_current_dir().unwrap())
     }
 }
 

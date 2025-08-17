@@ -53,7 +53,7 @@ pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> 
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a GetArgs) -> Result<bool> {
     utpm_log!(trace, "executing get command");
-    if cmd.packages.len() != 0 {
+    if !cmd.packages.is_empty() {
         let packages: HashMap<String, RawPackage> = get_packages_name_version().await?;
         for e in &cmd.packages {
             if !packages.contains_key(e) {

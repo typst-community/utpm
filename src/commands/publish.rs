@@ -90,7 +90,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     } == TYPST_PACKAGE_URL );
 
     let fork: String;
-    let name_package = format!("{}-{}", name.clone(), config.package.version.to_string());
+    let name_package = format!("{}-{}", name.clone(), config.package.version);
 
     if let Some(rep) = repo {
         fork = rep.url.clone().into();

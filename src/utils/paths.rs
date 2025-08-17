@@ -128,7 +128,7 @@ pub fn get_current_dir() -> Result<String> {
 
 /// Checks if a directory at the given path is not empty.
 pub fn has_content(path: impl AsRef<Path>) -> Result<bool> {
-    Ok(fs::read_dir(path)?.collect::<R<Vec<_>, _>>()?.len() > 0)
+    Ok(!fs::read_dir(path)?.collect::<R<Vec<_>, _>>()?.is_empty())
 }
 
 /// Gets the full path to the manifest file in the current directory.

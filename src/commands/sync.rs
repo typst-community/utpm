@@ -20,7 +20,7 @@ use super::SyncArgs;
 
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
-    if cmd.files.len() == 0 {
+    if cmd.files.is_empty() {
         utpm_log!(trace, "Running default check...");
         default_run(cmd.check_only).await?;
         Ok(true)
@@ -38,12 +38,11 @@ async fn default_run(cmd: bool) -> Result<bool> {
     let mut overr: OverrideBuilder = OverrideBuilder::new(path);
     overr.add("*.typ")?;
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
-        if let Some(file_type) = result.file_type() {
-            if !file_type.is_dir() {
+        if let Some(file_type) = result.file_type()
+            && !file_type.is_dir() {
                 utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
                 file_run(result.path(), cmd).await?;
             }
-        }
     }
     Ok(true)
 }

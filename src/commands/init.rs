@@ -50,40 +50,20 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         } else {
             vec![]
         },
-        license: if let Some(yes) = &cmd.license {
-            Some(yes.into())
-        } else {
-            None
-        },
-        description: if let Some(yes) = &cmd.description {
-            Some(yes.into())
-        } else {
-            None
-        },
-        repository: if let Some(yes) = &cmd.repository {
-            Some(yes.into())
-        } else {
-            None
-        },
-        homepage: if let Some(yes) = &cmd.homepage {
-            Some(yes.into())
-        } else {
-            None
-        },
+        license: cmd.license.as_ref().map(|yes| yes.into()),
+        description: cmd.description.as_ref().map(|yes| yes.into()),
+        repository: cmd.repository.as_ref().map(|yes| yes.into()),
+        homepage: cmd.homepage.as_ref().map(|yes| yes.into()),
         keywords: if let Some(yes) = &cmd.keywords {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
         } else {
             vec![]
         },
-        compiler: if let Some(yes) = &cmd.compiler {
-            Some(VersionBound {
+        compiler: cmd.compiler.as_ref().map(|yes| VersionBound {
                 major: yes.major as u32,
                 minor: Some(yes.minor as u32),
                 patch: Some(yes.patch as u32),
-            })
-        } else {
-            None
-        },
+            }),
         exclude: if let Some(yes) = &cmd.exclude {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
         } else {
@@ -171,7 +151,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
                 Text::new("License: ")
                     .with_help_message("e.g. MIT")
                     .with_default("Unlicense")
-                    .with_validator(&|obj: &str| match spdx::Expression::parse(obj) {
+                    .with_validator(|obj: &str| match spdx::Expression::parse(obj) {
                         Ok(val) => {
                             for x in val.requirements() {
                                 let id = x.req.license.id().unwrap();
@@ -238,7 +218,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
                 .with_help_message("e.g. backup/mypassword.txt,.env")
                 .prompt()?
                 .split(",")
-                .filter(|f| f.len() > 0)
+                .filter(|f| !f.is_empty())
                 .map(|f| f.into())
                 .collect::<Vec<_>>();
         }
@@ -263,7 +243,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         let fm = format!(
             "#import \"@local/{}:{}\": *\nDo...",
             pkg.name.clone(),
-            pkg.version.clone().to_string()
+            pkg.version.clone()
         );
         file.write_all(fm.as_bytes())?;
         file = File::create(Path::new(&pkg.entrypoint.to_string()))?; // main.typ

@@ -161,7 +161,7 @@ async fn main() {
 /// to log the error to the console.
 fn check_errors(err: UtpmError) -> Result<()> {
     utpm_log!(@f error, "{err}");
-    return Ok(());
+    Ok(())
 }
 
 // Nothing to see except a commit

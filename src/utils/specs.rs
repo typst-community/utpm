@@ -46,17 +46,11 @@ impl From<ToolInfo> for Extra {
         let tool = op_tool;
         let a = tool.sections.get("utpm").unwrap_or(map);
         Self {
-            exclude: if let Some(b) = a.get("exclude") {
-                Some(
-                    b.as_array()
+            exclude: a.get("exclude").map(|b| b.as_array()
                         .unwrap()
                         .iter()
                         .map(|f| f.to_string())
-                        .collect(),
-                )
-            } else {
-                None
-            },
+                        .collect()),
         }
     }
 }

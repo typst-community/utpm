@@ -1,5 +1,5 @@
-/// Linker: This module dynamically links all the command modules.
-/// Each command is a separate module, conditionally compiled based on feature flags.
+//! Linker: This module dynamically links all the command modules.
+//! Each command is a separate module, conditionally compiled based on feature flags.
 
 #[cfg(feature = "bump")]
 pub mod bump;
@@ -147,7 +147,7 @@ pub struct LinkArgs {
 /// Arguments for the `list` and `tree` commands.
 /// These commands display the packages in the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(any(feature = "list"))]
+#[cfg(feature = "list")]
 pub struct ListTreeArgs {
     /// List all packages, including those in the `@preview` namespace.
     #[arg(short, long)]
@@ -358,6 +358,7 @@ pub enum Packages {
     feature = "sync",
     feature = "clone"
 ))]
+#[allow(clippy::large_enum_variant)]
 pub enum ProjectArgs {
     /// Link the current project to the local package directory.
     #[command(visible_alias = "l")]
@@ -399,6 +400,7 @@ pub enum ProjectArgs {
 }
 
 /// The main command-line interface for UTPM.
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
     /// Subcommands for managing the project project.

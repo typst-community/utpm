@@ -69,7 +69,7 @@ pub enum UtpmError {
     Ignore(#[from] ignore::Error),
 
     /// An error from the `octocrab` crate for GitHub API interactions.
-    #[cfg(any(feature = "publish"))]
+    #[cfg(feature = "publish")]
     #[error("Octocrab error: {0}")]
     OctoCrab(#[from] octocrab::Error),
 
@@ -141,7 +141,7 @@ impl Serialize for UtpmError {
         let mut st = serializer.serialize_struct("UtpmError", 2)?;
         st.serialize_field("type", self.variant_name())?;
         st.serialize_field("message", &self.to_string())?;
-        return st.end();
+        st.end()
     }
 }
 
@@ -161,7 +161,7 @@ impl UtpmError {
             DeserializeMut(_) => "DeserializeMut",
             #[cfg(any(feature = "publish", feature = "sync"))]
             Ignore(_) => "Ignore",
-            #[cfg(any(feature = "publish"))]
+            #[cfg(feature = "publish")]
             OctoCrab(_) => "OctoCrab",
             Unknown(_) => "Unknown",
             CurrentDir => "CurrentDir",

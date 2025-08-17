@@ -62,7 +62,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     let namespace = cmd.namespace.clone().unwrap_or("local".into());
     utpm_log!(trace, "After loading manifest...");
     // Check if the package is already installed.
-    if check_path_dir(&format!(
+    if check_path_dir(format!(
         "{}/{}/{}/{}",
         d_packages()?,
         namespace,

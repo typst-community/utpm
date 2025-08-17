@@ -187,7 +187,7 @@ pub fn read(typ: String) -> Result<Data> {
 /// Reads all versions of a specific package.
 pub fn package_read(typ: &String, name: String) -> Result<Package> {
     let mut pkg = Package::new(name);
-    for dir_res in fs::read_dir(&typ)? {
+    for dir_res in fs::read_dir(typ)? {
         let dir: fs::DirEntry = dir_res?;
         pkg.list_version
             .push(dir.file_name().to_str().unwrap().into());
@@ -199,7 +199,7 @@ pub fn package_read(typ: &String, name: String) -> Result<Package> {
 /// Reads all packages within a specific namespace.
 pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
     let mut nms = Namespace::new(name);
-    for dir_res in fs::read_dir(&typ)? {
+    for dir_res in fs::read_dir(typ)? {
         let dir = dir_res?;
         let pkg = package_read(
             &dir.path().to_str().unwrap().into(),
