@@ -76,13 +76,13 @@ pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<()
 /// Returns a regex for matching typst package specifications (`@namespace/name:version`).
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 pub fn regex_package() -> Regex {
-    Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
+    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
 /// Returns a regex for matching a typst package namespace (`@namespace`).
 #[cfg(feature = "unlink")]
 pub fn regex_namespace() -> Regex {
-    Regex::new(r"^@([a-z]+)$").unwrap()
+    Regex::new(r"^@([a-zA-Z]+)$").unwrap()
 }
 
 #[cfg(feature = "clone")]
@@ -108,12 +108,12 @@ pub fn regex_pkg_simple_name() -> Regex {
 /// Returns a regex for matching a typst package name (`@namespace/name`).
 #[cfg(feature = "unlink")]
 pub fn regex_packagename() -> Regex {
-    Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)$").unwrap()
+    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap()
 }
 
 /// Returns a regex for matching a import of a package (`#import "@namespace/name:1.0.0"`).
 pub fn regex_import() -> Regex {
-    Regex::new("\\#import \"@([a-z]+)\\/([a-z]+(?:\\-[a-z]+)?)\\:(\\d+)\\.(\\d+)\\.(\\d+)\"")
+    Regex::new("\\#import \"@([a-zA-Z]+)\\/([a-zA-Z]+(?:\\-[a-zA-Z]+)?)\\:(\\d+)\\.(\\d+)\\.(\\d+)\"")
         .unwrap()
 }
 
@@ -140,10 +140,12 @@ mod tests {
         let re = regex_package();
         assert!(re.is_match("@preview/package:2.0.1"));
         assert!(!re.is_match("@preview/package-:2.0.1"));
-        assert!(!re.is_match("@local/package-A:2.0.1"));
+        assert!(re.is_match("@local/package-A:2.0.1"));
         assert!(re.is_match("@local/package-a:2.0.1"));
+        assert!(re.is_match("@local/AAAAAAAAAAAAAA:2.0.1"));
         assert!(!re.is_match("@local/p:1..1"));
         assert!(re.is_match("@a/p:1.0.1"));
+        assert!(!re.is_match("@a/p:v1.0.1"));
         assert!(!re.is_match("@/p:1.0.1"));
         assert!(!re.is_match("p:1.0.1"));
         assert!(!re.is_match("@a/p"));
