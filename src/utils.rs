@@ -23,7 +23,7 @@ use self::state::Result;
 /// Recursively copies a directory from a source to a destination.
 ///
 /// This function is based on the solution from:
-/// https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
+/// <https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust>
 /// It has been edited to fit the needs of the CI environment.
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
