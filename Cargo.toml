@@ -19,9 +19,7 @@ inquire = { version = "0.7.5", optional = true }
 semver = { version = "1.0.26", features = ["serde"] }
 spdx = { version = "0.10.8", features = ["text"], optional = true }
 clap = { version = "4.5.39", features = ["derive"] }
-git2 = { version = "^0.20.2", optional = true }
 tracing = { version = "0.1.41", features = ["attributes"] }
-openssl = { version = "0.10", features = ["vendored"] } # Won't compiled everywhere without it
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "std", "json"] }
 clap_complete = { version = "4.5.51", optional = true }
 shadow-rs = "1.1.1"
@@ -54,27 +52,24 @@ path = "src/main.rs"
 build = "build.rs"
 
 [features]
-default_commands = ["workspace", "packages", "generate"]
-full_commands = ["workspace", "packages", "generate"]
 nightly = []
-add = ["install"]
 bulk_delete = ["unlink"]
-clone = ["dep:regex", "dep:git2", "dep:typst-syntax"]
+clone = ["dep:regex", "dep:typst-syntax"]
 init = ["dep:spdx", "dep:inquire"]
-delete = []
 generate = ["dep:clap_complete"]
-install = ["link", "dep:git2"]
+install = ["link"]
 link = []
 list = []
 path = []
-publish = ["dep:git2", "dep:octocrab", "dep:ignore", "dep:regex"]
-tree = []
+publish = ["dep:octocrab", "dep:ignore", "dep:regex"]
 bump = []
 sync = ["dep:ignore", "dep:regex"]
 get = []
 unlink = ["dep:inquire", "dep:regex"]
-workspace = ["link", "init", "install", "add", "delete", "clone", "bump", "sync"]
-packages = ["tree", "list", "path", "unlink", "bulk_delete", "get"]
+workspace = ["link", "init", "install", "clone", "bump", "sync", "publish"]
+packages = ["list", "path", "unlink", "bulk_delete", "get"]
+default_commands = ["workspace", "packages", "generate"]
+full_commands = ["workspace", "packages", "generate"]
 
 
 #### Output format

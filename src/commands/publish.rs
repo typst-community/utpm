@@ -1,6 +1,7 @@
+use crate::utils::git::{add_git, clone_git, commit_git, pull_git, push_git, workspace};
 use crate::utils::specs::Extra;
 use crate::utils::state::Result;
-use crate::utils::{push_git_packages, regex_package, update_git_packages};
+use crate::utils::regex_package;
 use crate::utpm_log;
 use std::env;
 use std::fs::{copy, create_dir_all};
@@ -32,7 +33,6 @@ use ignore::WalkBuilder;
 /// - Copying the package files to the repository.
 /// - Committing and pushing the changes.
 /// - Creating a pull request to the `typst/packages` repository.
-#[tokio::main]
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     utpm_log!(trace, "executing publish command");
@@ -118,9 +118,15 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         };
     }
 
+    workspace().lock().unwrap().0 = path_packages.clone();
+
     // --- File Preparation ---
     // Download or update the typst/packages repository.
-    let repos = update_git_packages(path_packages, fork.as_str())?;
+    
+    match pull_git() {
+        Ok(_) => Ok(true),
+        Err(_) => clone_git(&path_packages, fork.as_str()),
+    }?;
     utpm_log!(info, "Path to the new package {}", path_packages_new);
 
     // Use WalkBuilder to respect ignore files.
@@ -195,7 +201,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     if !check_path_file(entryfile) {
         utpm_bail!(Unknown, format!("Can't find {} file in {path_packages_new}. Did you omit it in your ignored files?", entrystr.as_str()));
     }
-    utpm_log!(info, "files copied to {path_packages_new}");
+    utpm_log!(info, "files copied to {}", path_packages_new);
 
     // --- Git Push ---
     utpm_log!(info, "Getting information from github");
@@ -214,14 +220,17 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .clone()
         .unwrap_or(format!("{} using utpm", &name_replaced));
 
-    push_git_packages(repos, user.clone(), msg.as_str())?;
+    workspace().lock().unwrap().0 = path_packages_new;
+
+    add_git(".")?;
+    commit_git(&msg)?;
+    push_git()?;
     utpm_log!(info, "Ended push");
 
     // --- Pull Request ---
     crab.pulls("typst", "packages")
         .create(name_replaced.as_str(), format!("{}:main", us.name.clone().unwrap()), "base")
-        .body("
-I am submitting
+        .body(r#"I am submitting
 - [ ] a new package
 - [ ] an update for a package
 
@@ -237,7 +246,7 @@ I have read and followed the submission guidelines and, in particular, I
 - [ ] `exclude`d PDFs or README images, if any, but not the LICENSE
 
 - [ ] ensured that my package is licensed such that users can use and distribute the contents of its template directory without restriction, after modifying them through normal use.
-") // TODO: Improve PR body.
+"#) // TODO: Improve PR body.
         .send()
         .await?;
 

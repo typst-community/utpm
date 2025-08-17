@@ -11,7 +11,6 @@ use utils::output::OUTPUT_FORMAT;
 
 use clap::Parser;
 #[cfg(any(
-    feature = "tree",
     feature = "list",
     feature = "path",
     feature = "unlink",
@@ -128,29 +127,27 @@ async fn main() {
                 Workspace::Bump(cmd) => commands::bump::run(cmd).await,
                 #[cfg(feature = "sync")]
                 Workspace::Sync(cmd) => commands::sync::run(cmd).await,
+                Workspace::Publish(cmd) => commands::publish::run(cmd).await,
             },
             #[cfg(any(
-                feature = "tree",
                 feature = "list",
                 feature = "path",
                 feature = "unlink",
                 feature = "bulk_delete",
                 feature = "get"
             ))]
-            Commands::Packages(p) => {
-                match p {
-                    #[cfg(feature = "list")]
-                    Packages::List(cmd) => commands::list::run(cmd).await,
-                    #[cfg(feature = "path")]
-                    Packages::Path => commands::package_path::run().await,
-                    #[cfg(feature = "unlink")]
-                    Packages::Unlink(cmd) => commands::unlink::run(cmd).await,
-                    #[cfg(feature = "bulk_delete")]
-                    Packages::BulkDelete(cmd) => commands::bulk_delete::run(cmd).await,
-                    #[cfg(feature = "get")]
-                    Packages::Get(cmd) => commands::get::run(cmd).await,
-                }
-            }
+            Commands::Packages(p) => match p {
+                #[cfg(feature = "list")]
+                Packages::List(cmd) => commands::list::run(cmd).await,
+                #[cfg(feature = "path")]
+                Packages::Path => commands::package_path::run().await,
+                #[cfg(feature = "unlink")]
+                Packages::Unlink(cmd) => commands::unlink::run(cmd).await,
+                #[cfg(feature = "bulk_delete")]
+                Packages::BulkDelete(cmd) => commands::bulk_delete::run(cmd).await,
+                #[cfg(feature = "get")]
+                Packages::Get(cmd) => commands::get::run(cmd).await,
+            },
             #[cfg(feature = "generate")]
             Commands::Generate(cmd) => commands::generate::run(cmd).await,
         }
@@ -174,6 +171,5 @@ fn check_errors(err: UtpmError) -> Result<()> {
     utpm_log!(@f error, "{err}");
     return Ok(());
 }
-
 
 // Nothing to see except a commit

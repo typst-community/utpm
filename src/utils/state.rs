@@ -20,7 +20,12 @@ pub enum UtpmError {
     /// A git-related error.
     #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
     #[error("Git error: {0}")]
-    Git(#[from] git2::Error),
+    Git(String),
+
+    /// A git-related error.
+    #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
+    #[error("We didn't find git on your path. Try to add it.")]
+    GitNotFound,
 
     /// An error from the `inquire` crate, used for interactive prompts.
     #[cfg(any(feature = "init", feature = "unlink"))]
@@ -170,9 +175,9 @@ impl UtpmError {
         match self {
             SemVer(_) => "SemVer",
             #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
-            Git(_) => "Git",
+                    Git(_) => "Git",
             #[cfg(any(feature = "init", feature = "unlink"))]
-            Questions(_) => "Questions",
+                    Questions(_) => "Questions",
             IO(_) => "IO",
             General(_) => "General",
             Email(_) => "Email",
@@ -181,9 +186,9 @@ impl UtpmError {
             Deserialize(_) => "Deserialize",
             DeserializeMut(_) => "DeserializeMut",
             #[cfg(any(feature = "publish", feature = "sync"))]
-            Ignore(_) => "Ignore",
+                    Ignore(_) => "Ignore",
             #[cfg(any(feature = "publish"))]
-            OctoCrab(_) => "OctoCrab",
+                    OctoCrab(_) => "OctoCrab",
             Unknown(_) => "Unknown",
             Namespace => "Namespace",
             ConfigFile => "ConfigFile",
@@ -200,12 +205,13 @@ impl UtpmError {
             Rebase => "Rebase",
             JsonParse(_) => "JSONParse",
             #[cfg(feature = "output_hjson")]
-            HJsonParse(_) => "HJSONParse",
+                    HJsonParse(_) => "HJSONParse",
             #[cfg(feature = "output_yaml")]
-            YamlParse(_) => "YamlParse",
+                    YamlParse(_) => "YamlParse",
             NoURIFound => "NoURIFound",
             ReqwestError(_) => "ReqwestError",
             FromUTF8Error(_) => "FromUTF8Error",
+            GitNotFound => "GitNotFound",
         }
     }
 }

@@ -68,6 +68,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
         }
     } else {
         if !get_dry_run() {
+            fs::create_dir_all(&path)?;
             copy_dir_all(&curr, &path)?
         };
         if pt {

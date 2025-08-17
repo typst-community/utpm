@@ -149,7 +149,7 @@ pub struct LinkArgs {
 /// Arguments for the `list` and `tree` commands.
 /// These commands display the packages in the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(any(feature = "list", feature = "tree"))]
+#[cfg(any(feature = "list"))]
 pub struct ListTreeArgs {
     /// List all packages, including those in the `@preview` namespace.
     #[arg(short, long)]
@@ -307,15 +307,6 @@ pub struct InstallArgs {
     pub namespace: Option<String>,
 }
 
-/// Arguments for the `delete` command.
-/// This command removes dependencies from the manifest.
-#[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "delete")]
-pub struct DeleteArgs {
-    /// URIs of dependencies to remove from the manifest.
-    #[clap(short, long, num_args = 1..)]
-    pub uri: Vec<String>,
-}
 
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "sync")]
@@ -342,14 +333,6 @@ pub struct GetArgs {
     pub packages: Vec<String>,
 }
 
-/// Arguments for the `add` command.
-/// This command adds dependencies to the manifest.
-#[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "add")]
-pub struct AddArgs {
-    /// The URL or path of the repository to add as a dependency.
-    pub uri: Vec<String>,
-}
 
 /// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
@@ -393,8 +376,6 @@ pub enum Packages {
     feature = "link",
     feature = "init",
     feature = "install",
-    feature = "add",
-    feature = "delete",
     feature = "init",
     feature = "publish",
     feature = "bump",
@@ -417,10 +398,10 @@ pub enum Workspace {
     #[cfg(feature = "init")]
     Init(InitArgs),
 
-    // Publish your package to the typst universe. (WIP)
-    // #[command(visible_alias = "p")]
-    // #[cfg(feature = "publish")]
-    // Publish(PublishArgs),
+    /// Publish your package to the typst universe.
+    #[command(visible_alias = "p")]
+    #[cfg(feature = "publish")]
+    Publish(PublishArgs),
 
     /// Clone a package from the typst universe or a local directory.
     #[command()]
@@ -448,8 +429,6 @@ pub enum Commands {
         feature = "link",
         feature = "init",
         feature = "install",
-        feature = "add",
-        feature = "delete",
         feature = "init",
         feature = "publish",
         feature = "bump",
@@ -474,28 +453,6 @@ pub enum Commands {
     #[command(visible_alias = "g")]
     #[cfg(feature = "generate")]
     Generate(GenerateArgs),
-}
-
-/// An unofficial typst package manager for your projects.
-#[derive(Parser, Debug, PartialEq)]
-#[cfg(feature = "nightly")]
-#[command(author = "Thumuss & typst-community", version = build::COMMIT_HASH)]
-pub struct Cli {
-    /// The subcommand to execute.
-    #[command(subcommand)]
-    pub command: Commands,
-
-    /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long, global = true, value_enum)]
-    pub verbose: Option<Level>,
-
-    /// The output format for command results.
-    #[arg(short = 'o', long, global = true, value_enum)]
-    pub output_format: Option<OutputFormat>,
-
-    /// If you don't want to write anything on your disk.
-    #[arg(default_value_t=false, global = true, long, short='D')]
-    pub dry_run: bool,
 }
 
 

@@ -82,34 +82,6 @@ macro_rules! format_package {
     }};
 }
 
-/// A macro to configure SSH credentials for git operations.
-///
-/// It attempts to use an SSH agent first, then falls back to a private key file.
-/// The key path can be specified via the `UTPM_KEYPATH` environment variable.
-/// A passphrase can be provided via the `UTPM_PASSPHRASE` environment variable.
-#[macro_export]
-macro_rules! load_creds {
-    ($callbacks:expr, $val:expr) => {{
-        $callbacks.credentials(|_, username_from_url, _| {
-            let binding: String =
-                env::var("UTPM_USERNAME").unwrap_or(username_from_url.unwrap_or("git").to_string());
-            let username: &str = binding.as_str();
-            match git2::Cred::ssh_key_from_agent(username) {
-                Ok(cred) => Ok(cred),
-                Err(_) => Ok(match env::var("UTPM_PASSPHRASE") {
-                    Ok(s) => {
-                        $crate::utpm_log!(info, "passphrase" => false);
-                        git2::Cred::ssh_key(username, None, Path::new(&$val), Some(s.as_str()))?
-                    }
-                    Err(_) => {
-                        $crate::utpm_log!(info, "passphrase" => false);
-                        git2::Cred::ssh_key(username, None, Path::new(&$val), None)?
-                    }
-                }),
-            }
-        });
-    }};
-}
 
 /// A macro to exit a function early with a `UtpmError`.
 ///
