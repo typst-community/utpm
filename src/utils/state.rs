@@ -67,7 +67,6 @@ pub enum UtpmError {
     #[error("GitHub handle parse error: {0}")]
     GithubHandle(String),
 
-
     /// An error during TOML serialization.
     #[error("TOML serialization error: {0:?}")]
     Serialize(#[from] toml::ser::Error),
@@ -89,7 +88,6 @@ pub enum UtpmError {
     #[cfg(any(feature = "publish"))]
     #[error("Octocrab error: {0}")]
     OctoCrab(#[from] octocrab::Error),
-
 
     /// An unknown or unexpected error.
     #[error("Unknown error: {0}")]
@@ -128,7 +126,9 @@ pub enum UtpmError {
     PackageNotValid,
 
     /// An error when a specified package does not exist.
-    #[error("This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct.")]
+    #[error(
+        "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct."
+    )]
     PackageNotExist,
 
     /// An error when content is found in a directory that should be empty.
@@ -175,9 +175,9 @@ impl UtpmError {
         match self {
             SemVer(_) => "SemVer",
             #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
-                    Git(_) => "Git",
+            Git(_) => "Git",
             #[cfg(any(feature = "init", feature = "unlink"))]
-                    Questions(_) => "Questions",
+            Questions(_) => "Questions",
             IO(_) => "IO",
             General(_) => "General",
             Email(_) => "Email",
@@ -186,9 +186,9 @@ impl UtpmError {
             Deserialize(_) => "Deserialize",
             DeserializeMut(_) => "DeserializeMut",
             #[cfg(any(feature = "publish", feature = "sync"))]
-                    Ignore(_) => "Ignore",
+            Ignore(_) => "Ignore",
             #[cfg(any(feature = "publish"))]
-                    OctoCrab(_) => "OctoCrab",
+            OctoCrab(_) => "OctoCrab",
             Unknown(_) => "Unknown",
             Namespace => "Namespace",
             ConfigFile => "ConfigFile",
@@ -205,9 +205,9 @@ impl UtpmError {
             Rebase => "Rebase",
             JsonParse(_) => "JSONParse",
             #[cfg(feature = "output_hjson")]
-                    HJsonParse(_) => "HJSONParse",
+            HJsonParse(_) => "HJSONParse",
             #[cfg(feature = "output_yaml")]
-                    YamlParse(_) => "YamlParse",
+            YamlParse(_) => "YamlParse",
             NoURIFound => "NoURIFound",
             ReqwestError(_) => "ReqwestError",
             FromUTF8Error(_) => "FromUTF8Error",

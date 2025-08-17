@@ -143,7 +143,7 @@ pub struct LinkArgs {
     pub no_copy: bool,
 
     /// Namespace
-    pub namespace: Option<String>
+    pub namespace: Option<String>,
 }
 
 /// Arguments for the `list` and `tree` commands.
@@ -307,7 +307,6 @@ pub struct InstallArgs {
     pub namespace: Option<String>,
 }
 
-
 #[derive(Parser, Clone, Debug, PartialEq)]
 #[cfg(feature = "sync")]
 /// Arguments for the `sync` command.
@@ -332,7 +331,6 @@ pub struct GetArgs {
     /// Files to sync packages. Default to all files
     pub packages: Vec<String>,
 }
-
 
 /// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
@@ -455,7 +453,6 @@ pub enum Commands {
     Generate(GenerateArgs),
 }
 
-
 /// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
 #[cfg(not(feature = "nightly"))]
@@ -474,6 +471,6 @@ pub struct Cli {
     pub output_format: Option<OutputFormat>,
 
     /// If you don't want to write anything on your disk.
-    #[arg(default_value_t=false, global = true, long, short='D')]
+    #[arg(default_value_t = false, global = true, long, short = 'D')]
     pub dry_run: bool,
 }

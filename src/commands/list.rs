@@ -1,5 +1,5 @@
 use fmt_derive::{Debug, Display};
-use ptree::{print_tree, TreeItem};
+use ptree::{TreeItem, print_tree};
 use serde::Serialize;
 use std::borrow::Cow;
 use std::fs;
@@ -7,7 +7,7 @@ use tracing::instrument;
 
 use crate::{
     utils::{
-        output::{get_output_format, OutputFormat},
+        output::{OutputFormat, get_output_format},
         paths::{c_packages, d_packages},
         state::Result,
     },

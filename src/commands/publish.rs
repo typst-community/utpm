@@ -1,7 +1,7 @@
 use crate::utils::git::{add_git, clone_git, commit_git, pull_git, push_git, workspace};
+use crate::utils::regex_package;
 use crate::utils::specs::Extra;
 use crate::utils::state::Result;
-use crate::utils::regex_package;
 use crate::utpm_log;
 use std::env;
 use std::fs::{copy, create_dir_all};
@@ -11,15 +11,14 @@ use std::str::FromStr;
 
 use crate::utils::paths::get_current_dir;
 use crate::utils::paths::{
-    check_path_file, default_typst_packages, has_content, TYPST_PACKAGE_URL,
+    TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
 };
 use crate::{load_manifest, utpm_bail};
 use ignore::overrides::OverrideBuilder;
-use octocrab::models::{Author, UserProfile};
 use octocrab::Octocrab;
+use octocrab::models::{Author, UserProfile};
 use tracing::instrument;
 use typst_syntax::package::PackageManifest;
-
 
 use super::PublishArgs;
 
@@ -122,7 +121,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     // --- File Preparation ---
     // Download or update the typst/packages repository.
-    
+
     match pull_git() {
         Ok(_) => Ok(true),
         Err(_) => clone_git(&path_packages, fork.as_str()),
@@ -191,7 +190,12 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         );
     }
     if !check_path_file(format!("{path_packages_new}/typst.toml")) {
-        utpm_bail!(Unknown, format!("Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?"));
+        utpm_bail!(
+            Unknown,
+            format!(
+                "Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?"
+            )
+        );
     }
     let entry = config.package.entrypoint;
     let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
@@ -199,7 +203,13 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let entrystr = entry.to_string();
     utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(entryfile) {
-        utpm_bail!(Unknown, format!("Can't find {} file in {path_packages_new}. Did you omit it in your ignored files?", entrystr.as_str()));
+        utpm_bail!(
+            Unknown,
+            format!(
+                "Can't find {} file in {path_packages_new}. Did you omit it in your ignored files?",
+                entrystr.as_str()
+            )
+        );
     }
     utpm_log!(info, "files copied to {}", path_packages_new);
 

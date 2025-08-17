@@ -3,23 +3,22 @@ use std::path::PathBuf;
 use std::{fs, path::Path};
 
 use regex::Regex;
-use typst_syntax::package::PackageManifest;
 #[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 use std::{io, result::Result as R};
 use typst_kit::download::{DownloadState, Progress};
+use typst_syntax::package::PackageManifest;
 
+pub mod dryrun;
+pub mod git;
 pub mod macros;
 pub mod output;
 pub mod paths;
 pub mod specs;
 pub mod state;
-pub mod dryrun;
-pub mod git;
 
 use crate::utpm_bail;
 
 use self::state::Result;
-
 
 /// Recursively copies a directory from a source to a destination.
 ///
@@ -54,7 +53,6 @@ pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
 
     let f: PackageManifest = toml::from_str(&e)?;
     Ok(f)
-
 }
 
 /// Creates a symlink. This function is platform-specific.
@@ -102,12 +100,10 @@ pub fn regex_pkg_simple_ver() -> Regex {
     Regex::new(r"^(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
-
 #[cfg(any(feature = "clone"))]
 pub fn regex_pkg_simple_name() -> Regex {
     Regex::new(r"^(\w+)$").unwrap()
 }
-
 
 /// Returns a regex for matching a typst package name (`@namespace/name`).
 #[cfg(any(feature = "unlink"))]
@@ -117,7 +113,8 @@ pub fn regex_packagename() -> Regex {
 
 /// Returns a regex for matching a import of a package (`#import "@namespace/name:1.0.0"`).
 pub fn regex_import() -> Regex {
-    Regex::new("\\#import \"@([a-z]+)\\/([a-z]+(?:\\-[a-z]+)?)\\:(\\d+)\\.(\\d+)\\.(\\d+)\"").unwrap()
+    Regex::new("\\#import \"@([a-z]+)\\/([a-z]+(?:\\-[a-z]+)?)\\:(\\d+)\\.(\\d+)\\.(\\d+)\"")
+        .unwrap()
 }
 
 //todo: impl
@@ -134,7 +131,6 @@ impl Progress for ProgressPrint {
 
     fn print_finish(&mut self, _state: &DownloadState) {}
 }
-
 
 #[cfg(test)]
 mod tests {

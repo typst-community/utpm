@@ -4,14 +4,17 @@ use crate::{
     commands::LinkArgs,
     load_manifest,
     utils::{
-        copy_dir_all, dryrun::get_dry_run, git::{clone_git, workspace}, paths::{check_path_dir, check_path_file, d_packages, datalocalutpm}, state::Result
+        copy_dir_all,
+        dryrun::get_dry_run,
+        git::{clone_git, workspace},
+        paths::{check_path_dir, check_path_file, d_packages, datalocalutpm},
+        state::Result,
     },
     utpm_log,
 };
 
-use tracing::instrument;
 use super::{InstallArgs, link};
-
+use tracing::instrument;
 
 #[instrument]
 pub async fn run(cmd: &InstallArgs) -> Result<bool> {
@@ -77,7 +80,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     let lnk = LinkArgs {
         force: false,
         no_copy: false,
-        namespace: cmd.namespace.clone()
+        namespace: cmd.namespace.clone(),
     };
 
     link::run(&lnk, Some(path.clone()), false).await?; //TODO: change here too

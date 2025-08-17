@@ -7,12 +7,12 @@ use crate::{
     build,
     commands::get::get_packages_name_version,
     utils::{
-        copy_dir_all,
+        ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
         regex_pkg_simple, regex_pkg_simple_name, regex_pkg_simple_pkg, regex_pkg_simple_ver,
         state::{Result, UtpmError},
-        symlink_all, ProgressPrint,
+        symlink_all,
     },
     utpm_bail, utpm_log,
 };

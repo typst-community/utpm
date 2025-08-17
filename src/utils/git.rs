@@ -18,8 +18,6 @@ impl State {
     }
 }
 
-
-
 pub fn workspace() -> &'static Mutex<State> {
     static STRING: OnceLock<Mutex<State>> = OnceLock::new();
     STRING.get_or_init(|| (Mutex::new(State::new())))

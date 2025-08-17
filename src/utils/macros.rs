@@ -67,9 +67,7 @@ macro_rules! format_package {
         ))
     }};
 
-    ($namespace:expr, $package:expr) => {{
-        (format!("{}/{}", $crate::format_package!($namespace), $package))
-    }};
+    ($namespace:expr, $package:expr) => {{ (format!("{}/{}", $crate::format_package!($namespace), $package)) }};
 
     ($namespace:ident, $package:ident, $major:ident, $minor:ident, $patch:ident) => {{
         (format!(
@@ -81,7 +79,6 @@ macro_rules! format_package {
         ))
     }};
 }
-
 
 /// A macro to exit a function early with a `UtpmError`.
 ///

@@ -13,20 +13,14 @@ pub struct Extra {
 impl Default for Extra {
     /// Creates a default `Extra` instance.
     fn default() -> Self {
-        Self {
-            exclude: None,
-        }
+        Self { exclude: None }
     }
 }
 
 impl Extra {
     /// Creates a new `Extra` instance with the given configuration.
-    pub fn new(
-        exclude: Option<Vec<String>>,
-    ) -> Self {
-        Self {
-            exclude,
-        }
+    pub fn new(exclude: Option<Vec<String>>) -> Self {
+        Self { exclude }
     }
 }
 

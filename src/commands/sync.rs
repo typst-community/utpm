@@ -1,6 +1,6 @@
 use std::{fs::write, path::Path};
 
-use ignore::{overrides::OverrideBuilder, WalkBuilder};
+use ignore::{WalkBuilder, overrides::OverrideBuilder};
 use tracing::instrument;
 
 use std::result::Result as R;

@@ -5,7 +5,7 @@ use crate::{
     utpm_log,
 };
 
-use super::{unlink, BulkDeleteArgs, UnlinkArgs};
+use super::{BulkDeleteArgs, UnlinkArgs, unlink};
 
 /// Deletes multiple packages from the local storage.
 #[instrument]
@@ -19,7 +19,9 @@ pub async fn run(cmd: &BulkDeleteArgs) -> Result<bool> {
         match unlink::run(&UnlinkArgs {
             package: name.into(),
             yes: true,
-        }).await {
+        })
+        .await
+        {
             Ok(_) => {
                 utpm_log!(info, "- {} deleted", name);
             }

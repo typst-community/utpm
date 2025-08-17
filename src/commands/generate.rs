@@ -1,7 +1,7 @@
 use std::io;
 
 use clap::{Command, CommandFactory};
-use clap_complete::{generate, Generator};
+use clap_complete::{Generator, generate};
 use tracing::instrument;
 
 use crate::utils::state::Result;
