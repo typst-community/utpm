@@ -1,4 +1,4 @@
-use crate::utils::git::{add_git, clone_git, commit_git, project, pull_git, push_git};
+use crate::utils::git::{add_git, clone_git, commit_git, exist_git, project, pull_git, push_git};
 use crate::utils::regex_package;
 use crate::utils::specs::Extra;
 use crate::utils::state::Result;
@@ -34,9 +34,10 @@ use ignore::WalkBuilder;
 /// - Creating a pull request to the `typst/packages` repository.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
+    // TODO: Dry run
     utpm_log!(trace, "executing publish command");
     // TODO: Ensure there are files in the package before publishing.
-
+    exist_git()?;
     let config: PackageManifest = load_manifest!();
     utpm_log!(info, "Manifest load");
 

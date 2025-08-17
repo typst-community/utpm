@@ -6,7 +6,7 @@ use crate::{
     utils::{
         copy_dir_all,
         dryrun::get_dry_run,
-        git::{clone_git, project},
+        git::{clone_git, exist_git, project},
         paths::{check_path_dir, check_path_file, d_packages, datalocalutpm},
         state::Result,
     },
@@ -22,6 +22,9 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         utpm_log!(warn, "Dry-run, can't do anything");
         return Ok(true);
     }
+
+    exist_git()?;
+
     utpm_log!(trace, "executing init command for install");
 
     let path = format!("{}/tmp", datalocalutpm()?);
