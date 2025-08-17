@@ -15,7 +15,7 @@ use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolIn
 use crate::{
     utils::{
         dryrun::get_dry_run,
-        paths::{check_path_file, get_current_dir},
+        paths::{check_path_file, get_current_dir, MANIFEST_PATH},
         specs::Extra,
         state::Result,
     },
@@ -33,7 +33,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     utpm_log!(trace, "executing init command");
     let curr = get_current_dir()?;
     utpm_log!(info, "Current dir: {}", curr);
-    let typ = curr.clone() + "/typst.toml";
+    let typ = curr.clone() + MANIFEST_PATH;
     utpm_log!(info, "Current typst file: {}", typ);
 
     // Build the package metadata from command-line arguments.

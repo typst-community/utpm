@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::result::Result as R;
 use std::str::FromStr;
 
-use crate::utils::paths::get_current_dir;
+use crate::utils::paths::{get_current_dir, MANIFEST_PATH};
 use crate::utils::paths::{
     TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
 };
@@ -181,7 +181,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     if !has_content(&path_packages_new)? {
         utpm_bail!(NoFiles);
     }
-    if !check_path_file(format!("{path_packages_new}/typst.toml")) {
+    if !check_path_file(format!("{path_packages_new}{}", MANIFEST_PATH)) {
         utpm_bail!(OmitedTypstFile, path_packages_new);
     }
     let entry = config.package.entrypoint;

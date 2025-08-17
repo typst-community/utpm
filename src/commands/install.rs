@@ -7,7 +7,7 @@ use crate::{
         copy_dir_all,
         dryrun::get_dry_run,
         git::{clone_git, exist_git, project},
-        paths::{check_path_dir, check_path_file, d_packages, datalocalutpm},
+        paths::{check_path_dir, check_path_file, d_packages, datalocalutpm, MANIFEST_PATH},
         state::Result,
     },
     utpm_log,
@@ -50,7 +50,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         copy_dir_all(&url, &path)?;
     }
     // Check for a manifest file in the source directory.
-    let typstfile = path.clone() + "/typst.toml";
+    let typstfile = path.clone() + MANIFEST_PATH;
     if !check_path_file(&typstfile) {
         utpm_log!("{}", format!("x {}", url));
         return Ok(false);

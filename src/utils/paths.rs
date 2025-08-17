@@ -1,6 +1,6 @@
 use std::{
     env::{self, current_dir},
-    fs::{self, read, read_dir, symlink_metadata},
+    fs::{self, read, read_dir},
     path::{self, Path},
     result::Result as R,
 };
@@ -16,8 +16,6 @@ pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
 pub const DATA_HOME_SHARE: &str = "/.local/share";
 /// The default cache directory.
 pub const CACHE_HOME: &str = "~/.cache";
-/// The default directory for SSH keys.
-pub const SSH_HOME: &str = "/.ssh";
 /// The subdirectory within data and cache directories for typst packages.
 pub const TYPST_PACKAGE_PATH: &str = "/typst/packages";
 /// The subdirectory for UTPM's own data files.
@@ -44,22 +42,6 @@ pub fn get_data_dir() -> Result<String> {
     }
 }
 
-/// Gets the path to the user's home directory.
-///
-/// This path can be overridden by setting the `UTPM_HOME_DIR` environment variable.
-/// It is used for locating SSH keys for the `publish` command.
-pub fn get_home_dir() -> Result<String> {
-    match env::var("UTPM_HOME_DIR") {
-        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
-        _ => match dirs::home_dir() {
-            Some(val) => match val.to_str() {
-                Some(v) => Ok(String::from(v)),
-                None => utpm_bail!(HomeDir),
-            },
-            None => utpm_bail!(HomeDir),
-        },
-    }
-}
 
 /// Gets the path to the user's cache directory.
 ///
@@ -73,17 +55,6 @@ pub fn get_cache_dir() -> Result<String> {
             .to_str()
             .unwrap_or(CACHE_HOME)
             .into()),
-    }
-}
-
-/// Gets the path to the user's SSH directory.
-///
-/// This path can be overridden by setting the `UTPM_SSH_DIR` environment variable.
-/// It is used for locating SSH keys for the `publish` command.
-pub fn get_ssh_dir() -> Result<String> {
-    match env::var("UTPM_SSH_DIR") {
-        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
-        _ => Ok(get_home_dir()? + SSH_HOME),
     }
 }
 
@@ -131,11 +102,6 @@ pub fn has_content(path: impl AsRef<Path>) -> Result<bool> {
     Ok(!fs::read_dir(path)?.collect::<R<Vec<_>, _>>()?.is_empty())
 }
 
-/// Gets the full path to the manifest file in the current directory.
-pub fn current_package() -> Result<String> {
-    Ok(get_current_dir()? + MANIFEST_PATH)
-}
-
 /// Checks if a directory exists at the given path.
 pub fn check_path_dir(path: impl AsRef<Path>) -> bool {
     read_dir(path).is_ok()
@@ -144,13 +110,4 @@ pub fn check_path_dir(path: impl AsRef<Path>) -> bool {
 /// Checks if a file exists at the given path.
 pub fn check_path_file(path: impl AsRef<Path>) -> bool {
     read(path).is_ok()
-}
-
-/// Checks if a symlink exists at the given path.
-pub fn check_existing_symlink(path: impl AsRef<Path>) -> bool {
-    let x = match symlink_metadata(path) {
-        Ok(val) => val,
-        _ => return false,
-    };
-    x.file_type().is_symlink()
 }

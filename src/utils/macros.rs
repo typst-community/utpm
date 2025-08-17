@@ -29,7 +29,7 @@ macro_rules! load_manifest {
 /// write_manifest!(&manifest);
 ///
 /// // Write to a specific path
-/// write_manifest!(&manifest => "/path/to/project/typst.toml");
+/// write_manifest!(&manifest => "/path/to/projectMANIFEST_PATH");
 /// ```
 #[macro_export]
 macro_rules! write_manifest {
@@ -42,7 +42,7 @@ macro_rules! write_manifest {
     ($var:expr) => {
         let tomlfy: String = toml::to_string_pretty($var)?;
         if !$crate::utils::dryrun::get_dry_run() {
-            std::fs::write("./typst.toml", tomlfy)?
+            std::fs::write(".MANIFEST_PATH", tomlfy)?
         }
     };
 }
@@ -51,6 +51,28 @@ macro_rules! write_manifest {
 ///
 /// This macro constructs the path to a package based on its namespace, name, and version.
 /// It correctly resolves the base directory for `@preview` and other namespaces.
+/// 
+/// # Example
+/// 
+/// ```rust,ignore
+/// // This is a example from the unlink command.
+/// // We are checking every possible output but at the end
+/// // it will be formated to a path
+/// ...
+///  if let Some(cap) = re_all.captures(packages.as_str()) {
+///     let (_, [namespace, package, major, minor, patch]) = cap.extract();
+///     path = format_package!(namespace, package, major, minor, patch);
+/// } else if let Some(cap) = re_name.captures(packages.as_str()) {
+///     let (_, [namespace, package]) = cap.extract();
+///     path = format_package!(namespace, package);
+/// } else if let Some(cap) = re_namespace.captures(packages.as_str()) {
+///     let (_, [namespace]) = cap.extract();
+///     path = format_package!(namespace);
+/// } else {
+///     utpm_bail!(PackageNotValid);
+/// }
+/// ...
+/// ```
 #[macro_export]
 macro_rules! format_package {
     ($namespace:expr) => {{
@@ -105,6 +127,23 @@ macro_rules! utpm_bail {
 ///
 /// This macro supports different log levels and can handle various data types,
 /// serializing them to JSON, YAML, etc., if the corresponding output format is selected.
+/// 
+/// Works like (more or less) the `info!`, `trace!`, etc... macros
+/// 
+/// # Examples
+/// Print a simple text: 
+/// ```rust,ignore
+/// utpm_log!(info, "Hello! I'm secretly alive...");
+/// utpm_log!("Don't listen to him! He is not!");
+/// utpm_log!(error, "It's urgent.");
+/// ``` 
+/// Print values directly accessible from a JSON processor:
+/// ```rust,ignore
+/// let path = "/your/heart/";
+/// utpm_log!(trace, "Accessing your heart...", "path" => path);
+/// ``` 
+/// 
+/// TODO: Finish examples
 #[macro_export]
 macro_rules! utpm_log {
     ($(@g)? $lvl:ident, $data:expr $(, $($args:expr => $val:expr),*)?) => {{
