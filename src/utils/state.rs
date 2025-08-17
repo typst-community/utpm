@@ -120,7 +120,6 @@ pub enum UtpmError {
     #[error("{2} Package {0} with version {1} already exist.")]
     AlreadyExist(String, PackageVersion, String),
 
-
     #[error("Reqwest Error: {0}")]
     ReqwestError(#[from] reqwest::Error),
 
