@@ -1,6 +1,6 @@
 use std::borrow::Cow;
-use std::io::Write;
 use std::fs::{File, read_to_string, write};
+use std::io::Write;
 use std::str::FromStr;
 
 use itertools::Itertools;
@@ -50,9 +50,10 @@ pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
         utpm_log!(info, "Modified {}", file);
     }
 
-    let files = ["typst.toml"].into_iter()
-            .chain(files.iter().map(AsRef::<str>::as_ref))
-            .join(", ");
+    let files = ["typst.toml"]
+        .into_iter()
+        .chain(files.iter().map(AsRef::<str>::as_ref))
+        .join(", ");
 
     config["package"]["version"] = value(new_version);
     let mut file = File::create(manifest_path)?;

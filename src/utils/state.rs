@@ -75,7 +75,7 @@ pub enum UtpmError {
     #[error("TOML deserialization error: {0}")]
     Deserialize(#[from] toml::de::Error),
 
-        /// An error during TOML deserialization.
+    /// An error during TOML deserialization.
     #[error("TOML deserialization error: {0}")]
     DeserializeMut(#[from] toml_edit::TomlError),
 
