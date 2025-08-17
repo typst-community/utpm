@@ -138,7 +138,7 @@ An unofficial typst package manager for your projects
 Usage: utpm [OPTIONS] <COMMAND>
 
 Commands:
-  project  Subcommands for managing the project project [aliases: prj]
+  project    Subcommands for managing the project project [aliases: prj]
   packages   Subcommands for managing local packages [aliases: pkg]
   generate   Generate shell completion scripts [aliases: g]
   help       Print this message or the help of the given subcommand(s)
