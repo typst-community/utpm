@@ -53,7 +53,6 @@ build = "build.rs"
 
 [features]
 nightly = []
-bulk_delete = ["unlink"]
 clone = ["dep:regex", "dep:typst-syntax"]
 init = ["dep:spdx", "dep:inquire"]
 generate = ["dep:clap_complete"]
@@ -67,7 +66,7 @@ sync = ["dep:ignore", "dep:regex"]
 get = []
 unlink = ["dep:inquire", "dep:regex"]
 workspace = ["link", "init", "install", "clone", "bump", "sync", "publish"]
-packages = ["list", "path", "unlink", "bulk_delete", "get"]
+packages = ["list", "path", "unlink", "get"]
 default_commands = ["workspace", "packages", "generate"]
 full_commands = ["workspace", "packages", "generate"]
 

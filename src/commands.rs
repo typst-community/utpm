@@ -1,8 +1,6 @@
 /// Linker: This module dynamically links all the command modules.
 /// Each command is a separate module, conditionally compiled based on feature flags.
 
-#[cfg(feature = "bulk_delete")]
-pub mod bulk_delete;
 #[cfg(feature = "bump")]
 pub mod bump;
 #[cfg(feature = "clone")]
@@ -280,19 +278,6 @@ pub struct UnlinkArgs {
     yes: bool,
 }
 
-/// Arguments for the `bulk-delete` command.
-/// This command removes multiple packages at once.
-#[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "bulk_delete")]
-pub struct BulkDeleteArgs {
-    /// A comma-separated list of package names to delete (e.g., `mypackage:1.0.0,another:2.1.0`).
-    #[clap(value_delimiter = ',')]
-    names: Vec<String>,
-
-    /// The namespace to bulk-delete packages from.
-    #[arg(short, long)]
-    namespace: Option<String>,
-}
 
 /// Arguments for the `install` command.
 /// This command installs dependencies from the manifest or a given URL.
@@ -338,7 +323,6 @@ pub struct GetArgs {
     feature = "list",
     feature = "path",
     feature = "unlink",
-    feature = "bulk_delete",
     feature = "get"
 ))]
 pub enum Packages {
@@ -356,11 +340,6 @@ pub enum Packages {
     #[command(visible_alias = "u")]
     #[cfg(feature = "unlink")]
     Unlink(UnlinkArgs),
-
-    /// Delete multiple packages or a whole namespace at once.
-    #[command(visible_alias = "bd")]
-    #[cfg(feature = "bulk_delete")]
-    BulkDelete(BulkDeleteArgs),
 
     /// Get specific/all package from the remote
     #[command(visible_alias = "g")]
@@ -442,7 +421,6 @@ pub enum Commands {
         feature = "list",
         feature = "path",
         feature = "unlink",
-        feature = "bulk_delete",
         feature = "get"
     ))]
     Packages(Packages),

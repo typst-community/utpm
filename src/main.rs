@@ -14,7 +14,6 @@ use clap::Parser;
     feature = "list",
     feature = "path",
     feature = "unlink",
-    feature = "bulk_delete"
 ))]
 use commands::Packages;
 #[cfg(any(
@@ -133,7 +132,6 @@ async fn main() {
                 feature = "list",
                 feature = "path",
                 feature = "unlink",
-                feature = "bulk_delete",
                 feature = "get"
             ))]
             Commands::Packages(p) => match p {
@@ -143,8 +141,6 @@ async fn main() {
                 Packages::Path => commands::package_path::run().await,
                 #[cfg(feature = "unlink")]
                 Packages::Unlink(cmd) => commands::unlink::run(cmd).await,
-                #[cfg(feature = "bulk_delete")]
-                Packages::BulkDelete(cmd) => commands::bulk_delete::run(cmd).await,
                 #[cfg(feature = "get")]
                 Packages::Get(cmd) => commands::get::run(cmd).await,
             },

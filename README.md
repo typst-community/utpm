@@ -35,7 +35,7 @@
 - [x] 📦 Manage local and remote packages
   - [x] 📥 Clone packages from the Typst Universe (`utpm ws clone`)
   - [x] 🔗 Link local packages for development (`utpm ws link`)
-  - [x] 🗑️ Unlink and bulk-delete packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
+  - [x] 🗑️ Unlink packages (`utpm pkg unlink`)
   - [x] ⬆️ Bump package version (`utpm ws bump`)
 - [x] 🔎 Discover and inspect packages
   - [x] 🗃️ List local packages (`utpm pkg list`)
@@ -143,8 +143,6 @@ Options:
 | :--- | :---: | :--- |
 | `link` | `l` | Link the current project to the local package directory. |
 | `install` | `i` | Install all dependencies from the `typst.toml` manifest. |
-| `add` | `a` | Add dependencies to the manifest and then install them. |
-| `delete` | `d` | Delete dependencies from the manifest. |
 | `init` | `n` | Create a new `typst.toml` manifest for a project. |
 | `clone` | | Clone a package from the typst universe or a local directory. |
 | `bump` | | Bump the version of your package. |
@@ -157,9 +155,7 @@ Options:
 | `list` | `l` | List all packages in your local storage. |
 | `path` | `p` | Display the path to the typst packages folder. |
 | `unlink` | `u` | Delete a package from your local storage. |
-| `bulk-delete` | `bd` | Delete multiple packages or a whole namespace at once. |
 | `get` | `g` | Get specific/all package from the remote. |
-| `tree` | `t` | **[DEPRECATED]** Display packages as a tree. Use `list --tree` instead. |
 
 ### **generate (`gen`)**: Generate Shell Completions
 
