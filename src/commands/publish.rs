@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::result::Result as R;
 use std::str::FromStr;
 
-use crate::utils::paths::{get_current_dir, MANIFEST_PATH};
+use crate::utils::paths::{MANIFEST_PATH, get_current_dir};
 use crate::utils::paths::{
     TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
 };

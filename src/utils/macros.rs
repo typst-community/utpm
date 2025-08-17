@@ -51,9 +51,9 @@ macro_rules! write_manifest {
 ///
 /// This macro constructs the path to a package based on its namespace, name, and version.
 /// It correctly resolves the base directory for `@preview` and other namespaces.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust,ignore
 /// // This is a example from the unlink command.
 /// // We are checking every possible output but at the end
@@ -127,22 +127,22 @@ macro_rules! utpm_bail {
 ///
 /// This macro supports different log levels and can handle various data types,
 /// serializing them to JSON, YAML, etc., if the corresponding output format is selected.
-/// 
+///
 /// Works like (more or less) the `info!`, `trace!`, etc... macros
-/// 
+///
 /// # Examples
-/// Print a simple text: 
+/// Print a simple text:
 /// ```rust,ignore
 /// utpm_log!(info, "Hello! I'm secretly alive...");
 /// utpm_log!("Don't listen to him! He is not!");
 /// utpm_log!(error, "It's urgent.");
-/// ``` 
+/// ```
 /// Print values directly accessible from a JSON processor:
 /// ```rust,ignore
 /// let path = "/your/heart/";
 /// utpm_log!(trace, "Accessing your heart...", "path" => path);
-/// ``` 
-/// 
+/// ```
+///
 /// TODO: Finish examples
 #[macro_export]
 macro_rules! utpm_log {

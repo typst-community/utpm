@@ -7,7 +7,7 @@ use crate::{
         copy_dir_all,
         dryrun::get_dry_run,
         git::{clone_git, exist_git, project},
-        paths::{check_path_dir, check_path_file, d_packages, datalocalutpm, MANIFEST_PATH},
+        paths::{MANIFEST_PATH, check_path_dir, check_path_file, d_packages, datalocalutpm},
         state::Result,
     },
     utpm_log,

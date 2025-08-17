@@ -42,7 +42,6 @@ pub fn get_data_dir() -> Result<String> {
     }
 }
 
-
 /// Gets the path to the user's cache directory.
 ///
 /// This path can be overridden by setting the `UTPM_CACHE_DIR` environment variable.

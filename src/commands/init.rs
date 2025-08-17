@@ -15,7 +15,7 @@ use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolIn
 use crate::{
     utils::{
         dryrun::get_dry_run,
-        paths::{check_path_file, get_current_dir, MANIFEST_PATH},
+        paths::{MANIFEST_PATH, check_path_file, get_current_dir},
         specs::Extra,
         state::Result,
     },

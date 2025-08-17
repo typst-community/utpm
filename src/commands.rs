@@ -348,7 +348,6 @@ pub enum PackagesArgs {
     #[cfg(feature = "get")]
     Get(GetArgs),
 
-
     /// Install a package from a git repository into a namespace
     #[command(visible_alias = "i")]
     #[cfg(feature = "install")]
