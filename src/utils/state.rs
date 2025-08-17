@@ -125,6 +125,19 @@ pub enum UtpmError {
     #[error("Can't extract your package. Example of a package: @namespace/package:1.0.0")]
     PackageNotValid,
 
+    /// An error for an invalid package string.
+    #[error("Package didn't match, the name or the version is incorrect.")]
+    PackageFormatError,
+
+    #[error("There is no files in the new package. You should change your ignored files.")]
+    NoFiles,
+
+    #[error("Can't find `typst.toml` file in {0}. Did you omit it in your ignored files?")]
+    OmitedTypstFile(String),
+
+    #[error("Can't find {0} file in {1}. Did you omit it in your ignored files?")]
+    OmitedEntryfile(String, String),
+
     /// An error when a specified package does not exist.
     #[error(
         "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct."
@@ -212,6 +225,10 @@ impl UtpmError {
             ReqwestError(_) => "ReqwestError",
             FromUTF8Error(_) => "FromUTF8Error",
             GitNotFound => "GitNotFound",
+            PackageFormatError => "PackageFormatError",
+            NoFiles => "NoFiles",
+            OmitedTypstFile(_) => "OmitedTypstFile",
+            OmitedEntryfile(_, _) => "OmitedEntryfile",
         }
     }
 }

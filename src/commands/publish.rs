@@ -1,4 +1,4 @@
-use crate::utils::git::{add_git, clone_git, commit_git, pull_git, push_git, workspace};
+use crate::utils::git::{add_git, clone_git, commit_git, project, pull_git, push_git};
 use crate::utils::regex_package;
 use crate::utils::specs::Extra;
 use crate::utils::state::Result;
@@ -35,8 +35,6 @@ use ignore::WalkBuilder;
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     utpm_log!(trace, "executing publish command");
-    // TODO: Implement GitHub fork creation, linking to local packages, PR creation, and git push.
-    // TODO: Check for dependencies and provide a way to add them.
     // TODO: Ensure there are files in the package before publishing.
 
     let config: PackageManifest = load_manifest!();
@@ -54,14 +52,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let re: regex::Regex = regex_package();
 
     let package_format = format!("@preview/{name}:{version}");
-    utpm_log!(info, "Package: {package_format}");
+    utpm_log!(info, "Package: {}", package_format);
 
     if !re.is_match(package_format.as_str()) {
-        utpm_log!(
-            error,
-            "Package didn't match, the name or the version is incorrect."
-        );
-        utpm_bail!(Unknown, "todo".into()); // TODO: Improve error handling.
+        utpm_bail!(PackageFormatError); // TODO: Improve error handling.
     }
 
     let path_curr_str: &str = path_curr.to_str().unwrap();
@@ -117,7 +111,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         };
     }
 
-    workspace().lock().unwrap().0 = path_packages.clone();
+    project().lock().unwrap().0 = path_packages.clone();
 
     // --- File Preparation ---
     // Download or update the typst/packages repository.
@@ -184,18 +178,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     // --- Validation ---
     if !has_content(&path_packages_new)? {
-        utpm_bail!(
-            Unknown,
-            "There is no files in the new package. Consider to change your ignored files.".into()
-        );
+        utpm_bail!(NoFiles);
     }
     if !check_path_file(format!("{path_packages_new}/typst.toml")) {
-        utpm_bail!(
-            Unknown,
-            format!(
-                "Can't find `typst.toml` file in {path_packages_new}. Did you omit it in your ignored files?"
-            )
-        );
+        utpm_bail!(OmitedTypstFile, path_packages_new);
     }
     let entry = config.package.entrypoint;
     let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
@@ -203,13 +189,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let entrystr = entry.to_string();
     utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(entryfile) {
-        utpm_bail!(
-            Unknown,
-            format!(
-                "Can't find {} file in {path_packages_new}. Did you omit it in your ignored files?",
-                entrystr.as_str()
-            )
-        );
+        utpm_bail!(OmitedEntryfile, entrystr, path_packages_new);
     }
     utpm_log!(info, "files copied to {}", path_packages_new);
 
@@ -230,7 +210,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .clone()
         .unwrap_or(format!("{} using utpm", &name_replaced));
 
-    workspace().lock().unwrap().0 = path_packages_new;
+    project().lock().unwrap().0 = path_packages_new;
 
     add_git(".")?;
     commit_git(&msg)?;

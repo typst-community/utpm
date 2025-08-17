@@ -6,7 +6,7 @@ use crate::{
     utils::{
         copy_dir_all,
         dryrun::get_dry_run,
-        git::{clone_git, workspace},
+        git::{clone_git, project},
         paths::{check_path_dir, check_path_file, d_packages, datalocalutpm},
         state::Result,
     },
@@ -33,10 +33,9 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     utpm_log!(debug, "url is set to {}, creating {}", &cmd.url, path);
 
     // If a URL is provided, clone or copy the repository.
-    // TODO: Too bloated here, everything needs to be passed on git directly
     fs::create_dir_all(&path)?;
 
-    workspace().lock().unwrap().0 = path.clone();
+    project().lock().unwrap().0 = path.clone();
 
     let url = cmd.url.clone();
 
@@ -83,7 +82,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         namespace: cmd.namespace.clone(),
     };
 
-    link::run(&lnk, Some(path.clone()), false).await?; //TODO: change here too
+    link::run(&lnk, Some(path.clone()), false).await?;
     fs::remove_dir_all(&path)?;
 
     utpm_log!(info, "+ {}:{}", file.package.name, file.package.version);

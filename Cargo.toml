@@ -65,10 +65,10 @@ bump = []
 sync = ["dep:ignore", "dep:regex"]
 get = []
 unlink = ["dep:inquire", "dep:regex"]
-workspace = ["link", "init", "install", "clone", "bump", "sync", "publish"]
+project = ["link", "init", "install", "clone", "bump", "sync", "publish"]
 packages = ["list", "path", "unlink", "get"]
-default_commands = ["workspace", "packages", "generate"]
-full_commands = ["workspace", "packages", "generate"]
+default_commands = ["project", "packages", "generate"]
+full_commands = ["project", "packages", "generate"]
 
 
 #### Output format

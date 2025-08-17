@@ -10,11 +10,7 @@ use std::{env, str::FromStr};
 use utils::output::OUTPUT_FORMAT;
 
 use clap::Parser;
-#[cfg(any(
-    feature = "list",
-    feature = "path",
-    feature = "unlink",
-))]
+#[cfg(any(feature = "list", feature = "path", feature = "unlink",))]
 use commands::Packages;
 #[cfg(any(
     feature = "link",
@@ -24,7 +20,7 @@ use commands::Packages;
     feature = "publish",
     feature = "clone"
 ))]
-use commands::Workspace;
+use commands::ProjectArgs;
 use commands::{Cli, Commands};
 
 use utils::state::UtpmError;
@@ -113,20 +109,20 @@ async fn main() {
                 feature = "bump",
                 feature = "clone"
             ))]
-            Commands::Workspace(w) => match w {
+            Commands::Project(w) => match w {
                 #[cfg(feature = "link")]
-                Workspace::Link(cmd) => commands::link::run(cmd, None, true).await,
+                ProjectArgs::Link(cmd) => commands::link::run(cmd, None, true).await,
                 #[cfg(feature = "install")]
-                Workspace::Install(cmd) => commands::install::run(cmd).await,
+                ProjectArgs::Install(cmd) => commands::install::run(cmd).await,
                 #[cfg(feature = "init")]
-                Workspace::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
+                ProjectArgs::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
                 #[cfg(feature = "clone")]
-                Workspace::Clone(cmd) => commands::clone::run(cmd).await,
+                ProjectArgs::Clone(cmd) => commands::clone::run(cmd).await,
                 #[cfg(feature = "bump")]
-                Workspace::Bump(cmd) => commands::bump::run(cmd).await,
+                ProjectArgs::Bump(cmd) => commands::bump::run(cmd).await,
                 #[cfg(feature = "sync")]
-                Workspace::Sync(cmd) => commands::sync::run(cmd).await,
-                Workspace::Publish(cmd) => commands::publish::run(cmd).await,
+                ProjectArgs::Sync(cmd) => commands::sync::run(cmd).await,
+                ProjectArgs::Publish(cmd) => commands::publish::run(cmd).await,
             },
             #[cfg(any(
                 feature = "list",

@@ -278,7 +278,6 @@ pub struct UnlinkArgs {
     yes: bool,
 }
 
-
 /// Arguments for the `install` command.
 /// This command installs dependencies from the manifest or a given URL.
 #[derive(Parser, Clone, Debug, PartialEq)]
@@ -347,7 +346,7 @@ pub enum Packages {
     Get(GetArgs),
 }
 
-/// An enumeration of subcommands for managing the project workspace.
+/// An enumeration of subcommands for managing the project project.
 #[derive(Subcommand, Debug, PartialEq)]
 #[cfg(any(
     feature = "link",
@@ -359,7 +358,7 @@ pub enum Packages {
     feature = "sync",
     feature = "clone"
 ))]
-pub enum Workspace {
+pub enum ProjectArgs {
     /// Link the current project to the local package directory.
     #[command(visible_alias = "l")]
     #[cfg(feature = "link")]
@@ -382,16 +381,19 @@ pub enum Workspace {
 
     /// Clone a package from the typst universe or a local directory.
     #[command()]
+    #[command(visible_alias = "c")]
     #[cfg(feature = "clone")]
     Clone(CloneArgs),
 
     /// Bump all version of your package into an other.
     #[command()]
+    #[command(visible_alias = "b")]
     #[cfg(feature = "bump")]
     Bump(BumpArgs),
 
     /// Synchronise all your dependencies into their last version.
     #[command()]
+    #[command(visible_alias = "s")]
     #[cfg(feature = "sync")]
     Sync(SyncArgs),
 }
@@ -399,20 +401,19 @@ pub enum Workspace {
 /// The main command-line interface for UTPM.
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
-    /// Subcommands for managing the project workspace.
+    /// Subcommands for managing the project project.
     #[command(subcommand)]
-    #[command(visible_alias = "ws")]
+    #[command(visible_alias = "prj")]
     #[cfg(any(
         feature = "link",
         feature = "init",
         feature = "install",
-        feature = "init",
         feature = "publish",
         feature = "bump",
         feature = "sync",
         feature = "clone"
     ))]
-    Workspace(Workspace),
+    Project(ProjectArgs),
 
     /// Subcommands for managing local packages.
     #[command(subcommand)]
