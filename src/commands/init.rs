@@ -60,10 +60,10 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             vec![]
         },
         compiler: cmd.compiler.as_ref().map(|yes| VersionBound {
-                major: yes.major as u32,
-                minor: Some(yes.minor as u32),
-                patch: Some(yes.patch as u32),
-            }),
+            major: yes.major as u32,
+            minor: Some(yes.minor as u32),
+            patch: Some(yes.patch as u32),
+        }),
         exclude: if let Some(yes) = &cmd.exclude {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
         } else {

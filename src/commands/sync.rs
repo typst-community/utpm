@@ -39,10 +39,11 @@ async fn default_run(cmd: bool) -> Result<bool> {
     overr.add("*.typ")?;
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type()
-            && !file_type.is_dir() {
-                utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
-                file_run(result.path(), cmd).await?;
-            }
+            && !file_type.is_dir()
+        {
+            utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
+            file_run(result.path(), cmd).await?;
+        }
     }
     Ok(true)
 }
