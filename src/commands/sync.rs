@@ -1,6 +1,7 @@
 use std::{fs::write, path::Path};
 
-use ignore::{overrides::OverrideBuilder, WalkBuilder};
+use ignore::{WalkBuilder, overrides::OverrideBuilder};
+use regex::Regex;
 use tracing::instrument;
 
 use std::result::Result as R;
@@ -10,7 +11,6 @@ use crate::{
     utils::{
         dryrun::get_dry_run,
         paths::{d_packages, get_current_dir},
-        regex_import,
         state::{Result, UtpmError},
     },
     utpm_bail, utpm_log,
@@ -20,7 +20,7 @@ use super::SyncArgs;
 
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
-    if cmd.files.len() == 0 {
+    if cmd.files.is_empty() {
         utpm_log!(trace, "Running default check...");
         default_run(cmd.check_only).await?;
         Ok(true)
@@ -38,11 +38,11 @@ async fn default_run(cmd: bool) -> Result<bool> {
     let mut overr: OverrideBuilder = OverrideBuilder::new(path);
     overr.add("*.typ")?;
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
-        if let Some(file_type) = result.file_type() {
-            if !file_type.is_dir() {
-                utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
-                file_run(result.path(), cmd).await?;
-            }
+        if let Some(file_type) = result.file_type()
+            && !file_type.is_dir()
+        {
+            utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
+            file_run(result.path(), cmd).await?;
         }
     }
     Ok(true)
@@ -50,7 +50,10 @@ async fn default_run(cmd: bool) -> Result<bool> {
 
 // TODO: Comments using utpm_log
 async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
-    let re = regex_import();
+    let re = Regex::new(
+        r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#,
+    )
+    .unwrap();
     let content_bytes = match std::fs::read(path) {
         Ok(bytes) => Ok(bytes),
         Err(e) => {

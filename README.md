@@ -24,24 +24,24 @@
 
 ## 🔥 Features
 
-- [x] ✨ Create and initialize packages rapidly (`utpm workspace init`)
-  - [x] ⏯️ Alias shorthands (e.g., `workspace` -> `ws`, `packages` -> `pkg`)
+- [x] ✨ Create and initialize packages rapidly (`utpm project init`)
+  - [x] ⏯️ Alias shorthands (e.g., `project` -> `prj`, `packages` -> `pkg`)
   - [x] ⌨️ Intuitive Clap CLI
 - [x] 🛠️ Manage project dependencies
-  - [x] ➕ Add dependencies (`utpm ws add`)
-  - [x] ➖ Remove dependencies (`utpm ws delete`)
-  - [x] 🔄 Sync dependencies to the latest versions (`utpm ws sync`)
-  - [x] 📦 Install dependencies from `typst.toml` (`utpm ws install`)
+  - [x] ➕ Add dependencies (`utpm prj add`)
+  - [x] ➖ Remove dependencies (`utpm prj delete`)
+  - [x] 🔄 Sync dependencies to the latest versions (`utpm prj sync`)
+  - [x] 📦 Install dependencies from `typst.toml` (`utpm prj install`)
 - [x] 📦 Manage local and remote packages
-  - [x] 📥 Clone packages from the Typst Universe (`utpm ws clone`)
-  - [x] 🔗 Link local packages for development (`utpm ws link`)
-  - [x] 🗑️ Unlink and bulk-delete packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
-  - [x] ⬆️ Bump package version (`utpm ws bump`)
+  - [x] 📥 Clone packages from the Typst Universe (`utpm prj clone`)
+  - [x] 🔗 Link local packages for development (`utpm prj link`)
+  - [x] 🗑️ Unlink packages (`utpm pkg unlink`)
+  - [x] ⬆️ Bump package version (`utpm prj bump`)
 - [x] 🔎 Discover and inspect packages
   - [x] 🗃️ List local packages (`utpm pkg list`)
   - [x] 🌲 Tree view for packages (`utpm pkg list --tree`)
   - [x] ℹ️ Get package information from the remote (`utpm pkg get`)
-  - [x] ✅ Check for new package versions without updating (`utpm ws sync -c`)
+  - [x] ✅ Check for new package versions without updating (`utpm prj sync -c`)
 - [x] 📤 Flexible output formats
   - [x] 📝 Classic text and JSON output (fully supported)
   - [x] ⚠️ YAML, HJSON, and TOML output (experimental, under active development, and not included in official utpm builds — requires manual build for access)
@@ -56,11 +56,20 @@
 ### With cargo
 Requires Cargo and Rust. 
 
+#### Main branch
 ```bash
 $ cargo install --git https://github.com/typst-community/utpm
 ```
 
-Or 
+#### Latest version
+
+> Best choice
+
+```bash
+$ cargo binstall utpm
+```
+
+Or
 
 ```bash
 $ cargo install utpm
@@ -124,31 +133,32 @@ Utpm will be at `./result/bin/utpm`
 Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
 
 ```
+An unofficial typst package manager for your projects
+
 Usage: utpm [OPTIONS] <COMMAND>
 
 Commands:
-  workspace  Create, edit, delete your workspace for your package [aliases: ws]
-  packages   use packages related to Typst [aliases: pkg]
-  generate   Generate shell completions [aliases: gen]
+  project    Subcommands for managing the project project [aliases: prj]
+  packages   Subcommands for managing local packages [aliases: pkg]
+  generate   Generate shell completion scripts [aliases: g]
   help       Print this message or the help of the given subcommand(s)
 
 Options:
-  -v, --verbose <VERBOSE>  Gives you more information, permet debug
-  -h, --help               Print help
-  -V, --version            Print version
+  -v, --verbose <VERBOSE>              Enable verbose logging for debugging purposes
+  -o, --output-format <OUTPUT_FORMAT>  The output format for command results [possible values: json, yaml, toml, text, hjson]
+  -D, --dry-run                        If you don't want to write anything on your disk
+  -h, --help                           Print help (see more with '--help')
+  -V, --version                        Print version
 ```
 
-### **Workspace (`ws`)**: Manage Your Project Workspace
+### **Project (`prj`)**: Manage Your Project Project
 | Command | Alias | Description |
 | :--- | :---: | :--- |
 | `link` | `l` | Link the current project to the local package directory. |
-| `install` | `i` | Install all dependencies from the `typst.toml` manifest. |
-| `add` | `a` | Add dependencies to the manifest and then install them. |
-| `delete` | `d` | Delete dependencies from the manifest. |
 | `init` | `n` | Create a new `typst.toml` manifest for a project. |
-| `clone` | | Clone a package from the typst universe or a local directory. |
-| `bump` | | Bump the version of your package. |
-| `sync` | | Synchronise all your dependencies to their last version. |
+| `clone` | `c` | Clone a package from the typst universe or a local directory. |
+| `bump` | `b` | Bump the version of your package. |
+| `sync` | `s` | Synchronise all your dependencies to their last version. |
 | `publish` | `p` | **(WIP)** Intended for publishing packages. |
 
 ### **Packages (`pkg`)**: Manage Typst Packages
@@ -157,9 +167,8 @@ Options:
 | `list` | `l` | List all packages in your local storage. |
 | `path` | `p` | Display the path to the typst packages folder. |
 | `unlink` | `u` | Delete a package from your local storage. |
-| `bulk-delete` | `bd` | Delete multiple packages or a whole namespace at once. |
 | `get` | `g` | Get specific/all package from the remote. |
-| `tree` | `t` | **[DEPRECATED]** Display packages as a tree. Use `list --tree` instead. |
+| `install` | `i` | Install a package from a git repository into a namespace |
 
 ### **generate (`gen`)**: Generate Shell Completions
 
