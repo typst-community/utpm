@@ -77,8 +77,6 @@ pub fn regex_package() -> Regex {
     Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
-
-
 pub fn write_manifest(data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;
     if !crate::utils::dryrun::get_dry_run() {
