@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use regex::Regex;
 use tracing::instrument;
 use typst_kit::{download::Downloader, package::PackageStorage};
 
@@ -10,7 +11,6 @@ use crate::{
         ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
-        regex_pkg_simple, regex_pkg_simple_name, regex_pkg_simple_pkg, regex_pkg_simple_ver,
         state::{Result, UtpmError},
         symlink_all,
     },
@@ -80,9 +80,9 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     // Use regex to parse the package specification string.
     let package: &String = &cmd.package;
     let pkg: RawPck;
-    let re_all = regex_pkg_simple();
-    let re_name = regex_pkg_simple_pkg();
-    let re_namespace = regex_pkg_simple_name();
+    let re_all = Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap();
+    let re_name = Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap();
+    let re_namespace = Regex::new(r"^(\w+)$").unwrap();
 
     if let Some(cap) = re_all.captures(package.as_str()) {
         let (_, [namespace, packaged, version]) = cap.extract();
@@ -149,7 +149,8 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     );
     let printer = &mut ProgressPrint {};
 
-    let (_, [major, minor, patch]) = regex_pkg_simple_ver()
+    let (_, [major, minor, patch]) = Regex::new(r"^(\d+)\.(\d+)\.(\d+)$")
+        .unwrap()
         .captures(pkg.version)
         .unwrap()
         .extract();

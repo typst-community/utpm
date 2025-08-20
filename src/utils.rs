@@ -77,37 +77,7 @@ pub fn regex_package() -> Regex {
     Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
-/// Returns a regex for matching a typst package namespace (`@namespace`).
-pub fn regex_namespace() -> Regex {
-    Regex::new(r"^@([a-zA-Z]+)$").unwrap()
-}
 
-pub fn regex_pkg_simple() -> Regex {
-    Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap()
-}
-
-pub fn regex_pkg_simple_pkg() -> Regex {
-    Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap()
-}
-
-pub fn regex_pkg_simple_ver() -> Regex {
-    Regex::new(r"^(\d+)\.(\d+)\.(\d+)$").unwrap()
-}
-
-pub fn regex_pkg_simple_name() -> Regex {
-    Regex::new(r"^(\w+)$").unwrap()
-}
-
-/// Returns a regex for matching a typst package name (`@namespace/name`).
-pub fn regex_packagename() -> Regex {
-    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap()
-}
-
-/// Returns a regex for matching a import of a package (`#import "@namespace/name:1.0.0"`).
-pub fn regex_import() -> Regex {
-    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#)
-        .unwrap()
-}
 
 pub fn write_manifest(data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;

@@ -1,6 +1,7 @@
 use std::{fs::write, path::Path};
 
 use ignore::{WalkBuilder, overrides::OverrideBuilder};
+use regex::Regex;
 use tracing::instrument;
 
 use std::result::Result as R;
@@ -10,7 +11,6 @@ use crate::{
     utils::{
         dryrun::get_dry_run,
         paths::{d_packages, get_current_dir},
-        regex_import,
         state::{Result, UtpmError},
     },
     utpm_bail, utpm_log,
@@ -50,7 +50,10 @@ async fn default_run(cmd: bool) -> Result<bool> {
 
 // TODO: Comments using utpm_log
 async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
-    let re = regex_import();
+    let re = Regex::new(
+        r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#,
+    )
+    .unwrap();
     let content_bytes = match std::fs::read(path) {
         Ok(bytes) => Ok(bytes),
         Err(e) => {

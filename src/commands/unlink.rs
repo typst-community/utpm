@@ -1,4 +1,5 @@
 use inquire::Confirm;
+use regex::Regex;
 use std::fs;
 use tracing::instrument;
 
@@ -6,7 +7,7 @@ use crate::{
     utils::{
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages},
-        regex_namespace, regex_package, regex_packagename,
+        regex_package,
         state::Result,
     },
     utpm_bail, utpm_log,
@@ -31,8 +32,8 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     // Use regex to parse the package string, which can be a full package spec,
     // a package name, or just a namespace.
     let re_all = regex_package();
-    let re_name = regex_packagename();
-    let re_namespace = regex_namespace();
+    let re_name = Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap();
+    let re_namespace = Regex::new(r"^@([a-zA-Z]+)$").unwrap();
     let path: String;
 
     if let Some(cap) = re_all.captures(packages.as_str()) {
