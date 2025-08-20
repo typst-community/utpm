@@ -15,11 +15,12 @@ use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolIn
 use crate::{
     utils::{
         dryrun::get_dry_run,
-        paths::{check_path_file, get_current_dir, MANIFEST_PATH},
+        paths::{MANIFEST_PATH, check_path_file, get_current_dir},
         specs::Extra,
         state::Result,
+        write_manifest,
     },
-    utpm_log, write_manifest,
+    utpm_log,
 };
 
 use super::InitArgs;
@@ -58,7 +59,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         }),
         exclude: cmd.exclude.iter().flatten().map(Into::into).collect(),
         categories: cmd.categories.iter().flatten().map(Into::into).collect(),
-        disciplines:  cmd.disciplines.iter().flatten().map(Into::into).collect(),
+        disciplines: cmd.disciplines.iter().flatten().map(Into::into).collect(),
         unknown_fields: BTreeMap::new(),
     };
 
@@ -245,7 +246,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     };
 
     // Write the manifest to `typst.toml`.
-    write_manifest!(&manif);
+    write_manifest(&manif)?;
 
     utpm_log!(info, "File created to {typ}");
     Ok(true)

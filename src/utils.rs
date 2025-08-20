@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::{fs, path::Path};
 
 use regex::Regex;
-#[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
+
 use std::{io, result::Result as R};
 use typst_kit::download::{DownloadState, Progress};
 use typst_syntax::package::PackageManifest;
@@ -50,7 +50,6 @@ pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
 
 pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
     let e = read_to_string(try_find_path(s)?)?;
-
     let f: PackageManifest = toml::from_str(&e)?;
     Ok(f)
 }
@@ -58,7 +57,7 @@ pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
 /// Creates a symlink. This function is platform-specific.
 ///
 /// On Unix systems, it creates a standard symbolic link.
-#[cfg(unix)]
+#[cfg(not(windows))]
 pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
     use std::os::unix::fs::symlink;
     symlink(origin, new_path)
@@ -74,49 +73,48 @@ pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<()
 }
 
 /// Returns a regex for matching typst package specifications (`@namespace/name:version`).
-#[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 pub fn regex_package() -> Regex {
     Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
 /// Returns a regex for matching a typst package namespace (`@namespace`).
-#[cfg(feature = "unlink")]
 pub fn regex_namespace() -> Regex {
     Regex::new(r"^@([a-zA-Z]+)$").unwrap()
 }
 
-#[cfg(feature = "clone")]
 pub fn regex_pkg_simple() -> Regex {
     Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap()
 }
 
-#[cfg(feature = "clone")]
 pub fn regex_pkg_simple_pkg() -> Regex {
     Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap()
 }
 
-#[cfg(feature = "clone")]
 pub fn regex_pkg_simple_ver() -> Regex {
     Regex::new(r"^(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
-#[cfg(feature = "clone")]
 pub fn regex_pkg_simple_name() -> Regex {
     Regex::new(r"^(\w+)$").unwrap()
 }
 
 /// Returns a regex for matching a typst package name (`@namespace/name`).
-#[cfg(feature = "unlink")]
 pub fn regex_packagename() -> Regex {
     Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap()
 }
 
 /// Returns a regex for matching a import of a package (`#import "@namespace/name:1.0.0"`).
 pub fn regex_import() -> Regex {
-    Regex::new(
-        r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#,
-    )
-    .unwrap()
+    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#)
+        .unwrap()
+}
+
+pub fn write_manifest(data: &PackageManifest) -> Result<()> {
+    let tomlfy: String = toml::to_string_pretty(data)?;
+    if !crate::utils::dryrun::get_dry_run() {
+        std::fs::write("./typst.toml", tomlfy)?;
+    }
+    Ok(())
 }
 
 //todo: impl
@@ -134,12 +132,10 @@ impl Progress for ProgressPrint {
     fn print_finish(&mut self, _state: &DownloadState) {}
 }
 
-#[cfg(test)]
 mod tests {
-    use super::*;
     #[test]
     fn regex() {
-        let re = regex_package();
+        let re = super::regex_package();
         assert!(re.is_match("@preview/package:2.0.1"));
         assert!(!re.is_match("@preview/package-:2.0.1"));
         assert!(re.is_match("@local/package-A:2.0.1"));

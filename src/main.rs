@@ -10,16 +10,8 @@ use std::{env, str::FromStr};
 use utils::output::OUTPUT_FORMAT;
 
 use clap::Parser;
-#[cfg(any(feature = "list", feature = "path", feature = "unlink",))]
+
 use commands::PackagesArgs;
-#[cfg(any(
-    feature = "link",
-    feature = "init",
-    feature = "install",
-    feature = "init",
-    feature = "publish",
-    feature = "clone"
-))]
 use commands::ProjectArgs;
 use commands::{Cli, Commands};
 
@@ -99,48 +91,30 @@ async fn main() {
     // Dispatch the command to its handler.
     let res = async move {
         match &x.command {
-            #[cfg(any(
-                feature = "link",
-                feature = "init",
-                feature = "install",
-                feature = "init",
-                feature = "publish",
-                feature = "sync",
-                feature = "bump",
-                feature = "clone"
-            ))]
             Commands::Project(w) => match w {
-                #[cfg(feature = "link")]
                 ProjectArgs::Link(cmd) => commands::link::run(cmd, None, true).await,
-                #[cfg(feature = "init")]
+
                 ProjectArgs::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
-                #[cfg(feature = "clone")]
+
                 ProjectArgs::Clone(cmd) => commands::clone::run(cmd).await,
-                #[cfg(feature = "bump")]
+
                 ProjectArgs::Bump(cmd) => commands::bump::run(cmd).await,
-                #[cfg(feature = "sync")]
+
                 ProjectArgs::Sync(cmd) => commands::sync::run(cmd).await,
                 ProjectArgs::Publish(cmd) => commands::publish::run(cmd).await,
             },
-            #[cfg(any(
-                feature = "list",
-                feature = "path",
-                feature = "unlink",
-                feature = "get"
-            ))]
             Commands::Packages(p) => match p {
-                #[cfg(feature = "list")]
                 PackagesArgs::List(cmd) => commands::list::run(cmd).await,
-                #[cfg(feature = "path")]
+
                 PackagesArgs::Path => commands::package_path::run().await,
-                #[cfg(feature = "unlink")]
+
                 PackagesArgs::Unlink(cmd) => commands::unlink::run(cmd).await,
-                #[cfg(feature = "get")]
+
                 PackagesArgs::Get(cmd) => commands::get::run(cmd).await,
-                #[cfg(feature = "install")]
+
                 PackagesArgs::Install(cmd) => commands::install::run(cmd).await,
             },
-            #[cfg(feature = "generate")]
+
             Commands::Generate(cmd) => commands::generate::run(cmd).await,
         }
     }

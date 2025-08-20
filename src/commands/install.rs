@@ -2,13 +2,13 @@ use std::fs;
 
 use crate::{
     commands::LinkArgs,
-    load_manifest,
     utils::{
         copy_dir_all,
         dryrun::get_dry_run,
         git::{clone_git, exist_git, project},
         paths::{MANIFEST_PATH, check_path_dir, check_path_file, d_packages, datalocalutpm},
         state::Result,
+        try_find,
     },
     utpm_log,
 };
@@ -58,7 +58,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 
     utpm_log!(trace, "Before loading manifest...", "path" => path);
     // Load the manifest and extract UTPM-specific configurations.
-    let file = load_manifest!(&path);
+    let file = try_find(&path)?;
     let namespace = cmd.namespace.clone().unwrap_or("local".into());
     utpm_log!(trace, "After loading manifest...");
     // Check if the package is already installed.

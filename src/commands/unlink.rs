@@ -3,15 +3,24 @@ use std::fs;
 use tracing::instrument;
 
 use crate::{
-    format_package,
     utils::{
-        dryrun::get_dry_run, paths::check_path_dir, regex_namespace, regex_package,
-        regex_packagename, state::Result,
+        dryrun::get_dry_run,
+        paths::{c_packages, check_path_dir, d_packages},
+        regex_namespace, regex_package, regex_packagename,
+        state::Result,
     },
     utpm_bail, utpm_log,
 };
 
 use super::UnlinkArgs;
+
+fn package_path(namespace: &str) -> Result<String> {
+    if namespace == "preview" {
+        c_packages()
+    } else {
+        d_packages()
+    }
+}
 
 /// Unlinks/deletes a package from the local storage.
 #[instrument(skip(cmd))]
@@ -28,13 +37,21 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
 
     if let Some(cap) = re_all.captures(packages.as_str()) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
-        path = format_package!(namespace, package, major, minor, patch);
+        path = format!(
+            "{}/{}/{}/{}.{}.{}",
+            package_path(namespace)?,
+            namespace,
+            package,
+            major,
+            minor,
+            patch
+        );
     } else if let Some(cap) = re_name.captures(packages.as_str()) {
         let (_, [namespace, package]) = cap.extract();
-        path = format_package!(namespace, package);
+        path = format!("{}/{}/{}", package_path(namespace)?, namespace, package);
     } else if let Some(cap) = re_namespace.captures(packages.as_str()) {
         let (_, [namespace]) = cap.extract();
-        path = format_package!(namespace);
+        path = format!("{}/{}", package_path(namespace)?, namespace);
     } else {
         utpm_bail!(PackageNotValid);
     }

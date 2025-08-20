@@ -1,7 +1,7 @@
 use crate::utils::git::{add_git, clone_git, commit_git, exist_git, project, pull_git, push_git};
-use crate::utils::regex_package;
 use crate::utils::specs::Extra;
 use crate::utils::state::Result;
+use crate::utils::{regex_package, try_find};
 use crate::utpm_log;
 use std::env;
 use std::fs::{copy, create_dir_all};
@@ -13,7 +13,7 @@ use crate::utils::paths::{MANIFEST_PATH, get_current_dir};
 use crate::utils::paths::{
     TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
 };
-use crate::{load_manifest, utpm_bail};
+use crate::utpm_bail;
 use ignore::overrides::OverrideBuilder;
 use octocrab::Octocrab;
 use octocrab::models::{Author, UserProfile};
@@ -38,7 +38,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     utpm_log!(trace, "executing publish command");
     // TODO: Ensure there are files in the package before publishing.
     exist_git()?;
-    let config: PackageManifest = load_manifest!();
+    let config: PackageManifest = try_find(get_current_dir()?)?;
     utpm_log!(info, "Manifest load");
 
     let path_curr: &PathBuf = if let Some(path) = &cmd.path {

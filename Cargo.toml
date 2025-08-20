@@ -15,19 +15,19 @@ exclude = ["/target", "/.github"]
 dirs = "6.0"
 serde = { version = "1.0", features = ["derive"] }
 toml = { version = "^0.8.22", features = ["display"] }
-inquire = { version = "0.7.5", optional = true }
+inquire = { version = "0.7.5" }
 semver = { version = "1.0.26", features = ["serde"] }
-spdx = { version = "0.10.8", features = ["text"], optional = true }
+spdx = { version = "0.10.8", features = ["text"] }
 clap = { version = "4.5.39", features = ["derive"] }
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "std", "json"] }
-clap_complete = { version = "4.5.51", optional = true }
+clap_complete = { version = "4.5.51" }
 shadow-rs = "1.1.1"
 typst-kit = "0.13.1"
-typst-syntax = { version = "0.13.1", optional = true }
-regex = { version = "1.11.1", optional = true }
-ignore = { version = "0.4.23", optional = true } 
-octocrab = { version = "0.44.1", optional = true }
+typst-syntax = { version = "0.13.1" }
+regex = { version = "1.11.1" }
+ignore = { version = "0.4.23" } 
+octocrab = { version = "0.44.1" }
 tokio = { version = "1.45.1", features = ["full"] }
 tokio-macros = "2.5.0"
 url = "2.5.4"
@@ -52,37 +52,11 @@ path = "src/main.rs"
 build = "build.rs"
 
 [features]
-nightly = []
-clone = ["dep:regex", "dep:typst-syntax"]
-init = ["dep:spdx", "dep:inquire"]
-generate = ["dep:clap_complete"]
-install = ["link"]
-link = []
-list = []
-path = []
-publish = ["dep:octocrab", "dep:ignore", "dep:regex"]
-bump = []
-sync = ["dep:ignore", "dep:regex"]
-get = []
-unlink = ["dep:inquire", "dep:regex"]
-project = ["link", "init", "install", "clone", "bump", "sync", "publish"]
-packages = ["list", "path", "unlink", "get"]
-default_commands = ["project", "packages", "generate"]
-full_commands = ["project", "packages", "generate"]
-
-
 #### Output format
 output_json  = ["dep:serde_json"]
 output_yaml  = ["dep:serde_yaml"]
-output_toml  = []
-output_text  = []
 output_hjson = ["dep:serde-hjson"]
-default_output = ["output_json", "output_text"]
-full_output = ["default_output", "output_toml", "output_hjson", "output_yaml"]
-
-#### Default/Full features
-default = ["default_commands", "default_output"]
-full = ["full_commands", "full_output"]
+full_output = ["output_json", "output_hjson", "output_yaml"]
 
 
 # Reduce size

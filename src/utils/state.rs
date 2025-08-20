@@ -18,17 +18,17 @@ pub enum UtpmError {
     SemVer(#[from] semver::Error),
 
     /// A git-related error.
-    #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
+
     #[error("Git error: {0}")]
     Git(String),
 
     /// A git-related error.
-    #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
+
     #[error("We didn't find git on your path. Try to add it.")]
     GitNotFound,
 
     /// An error from the `inquire` crate, used for interactive prompts.
-    #[cfg(any(feature = "init", feature = "unlink"))]
+
     #[error("Inquire error: {0}")]
     Questions(#[from] inquire::InquireError),
 
@@ -37,16 +37,19 @@ pub enum UtpmError {
     IO(#[from] std::io::Error),
 
     /// An error during JSON serialization or deserialization.
+
     #[cfg(feature = "output_json")]
     #[error("Can't parse to json: {0}")]
     JsonParse(#[from] serde_json::Error),
 
     /// An error during Hjson serialization or deserialization.
-    #[cfg(feature = "output_hjson")]
+
     #[error("Can't parse to hjson: {0}")]
+    #[cfg(feature = "output_hjson")]
     HJsonParse(#[from] serde_hjson::Error),
 
     /// An error during YAML serialization or deserialization.
+
     #[cfg(feature = "output_yaml")]
     #[error("Can't parse to yaml: {0}")]
     YamlParse(#[from] serde_yaml::Error),
@@ -64,12 +67,12 @@ pub enum UtpmError {
     DeserializeMut(#[from] toml_edit::TomlError),
 
     /// An error from the `ignore` crate.
-    #[cfg(any(feature = "publish", feature = "sync"))]
+
     #[error("Ignore crate error: {0}")]
     Ignore(#[from] ignore::Error),
 
     /// An error from the `octocrab` crate for GitHub API interactions.
-    #[cfg(feature = "publish")]
+
     #[error("Octocrab error: {0}")]
     OctoCrab(#[from] octocrab::Error),
 
@@ -151,17 +154,17 @@ impl UtpmError {
         use UtpmError::*;
         match self {
             SemVer(_) => "SemVer",
-            #[cfg(any(feature = "install", feature = "clone", feature = "publish"))]
+
             Git(_) => "Git",
-            #[cfg(any(feature = "init", feature = "unlink"))]
+
             Questions(_) => "Questions",
             IO(_) => "IO",
             Serialize(_) => "Serialize",
             Deserialize(_) => "Deserialize",
             DeserializeMut(_) => "DeserializeMut",
-            #[cfg(any(feature = "publish", feature = "sync"))]
+
             Ignore(_) => "Ignore",
-            #[cfg(feature = "publish")]
+
             OctoCrab(_) => "OctoCrab",
             Unknown(_) => "Unknown",
             CurrentDir => "CurrentDir",
@@ -172,9 +175,12 @@ impl UtpmError {
             ContentFound => "ContentFound",
             AlreadyExist(_, _, _) => "AlreadyExist",
             Other(_) => "Other",
+            #[cfg(feature = "output_json")]
             JsonParse(_) => "JSONParse",
+
             #[cfg(feature = "output_hjson")]
             HJsonParse(_) => "HJSONParse",
+
             #[cfg(feature = "output_yaml")]
             YamlParse(_) => "YamlParse",
             ReqwestError(_) => "ReqwestError",
