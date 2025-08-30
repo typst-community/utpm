@@ -1,5 +1,4 @@
 [package]
-build = "build.rs"
 name = "utpm"
 version = "0.3.0"
 edition = "2024"
@@ -49,7 +48,6 @@ shadow-rs = "1.1.1"
 [[bin]]
 name = "utpm"
 path = "src/main.rs"
-build = "build.rs"
 
 [features]
 #### Output format
