@@ -191,7 +191,7 @@ pub struct PublishArgs {
     git_exclude: bool,
 
     /// Bypass the warning prompts.
-    #[arg(default_value_t = false)]
+    #[arg(long, default_value_t = false)]
     bypass_warning: bool,
 
     /// Path to a custom ignore file.
