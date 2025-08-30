@@ -309,11 +309,11 @@ pub enum PackagesArgs {
     #[command(visible_alias = "u")]
     Unlink(UnlinkArgs),
 
-    /// Get specific/all package from the remote
+    /// Get specific/all packages from the remote.
     #[command(visible_alias = "g")]
     Get(GetArgs),
 
-    /// Install a package from a git repository into a namespace
+    /// Install a package from a git repository into a namespace.
     #[command(visible_alias = "i")]
     Install(InstallArgs),
 }
@@ -330,16 +330,16 @@ pub enum ProjectArgs {
     #[command(visible_alias = "n")]
     Init(InitArgs),
 
-    /// Publish your package to the typst universe.
+    /// Publish your package to the Typst Universe.
     #[command(visible_alias = "p")]
     Publish(PublishArgs),
 
-    /// Clone a package from the typst universe or a local directory.
+    /// Clone a package from the Typst Universe or a local directory.
     #[command()]
     #[command(visible_alias = "c")]
     Clone(CloneArgs),
 
-    /// Bump all version of your package into an other.
+    /// Bump the version of your package in `typst.toml` and other project files.
     #[command()]
     #[command(visible_alias = "b")]
     Bump(BumpArgs),
@@ -354,7 +354,7 @@ pub enum ProjectArgs {
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
-    /// Subcommands for managing the project project.
+    /// Subcommands for managing the current project.
     #[command(subcommand)]
     #[command(visible_alias = "prj")]
     Project(ProjectArgs),

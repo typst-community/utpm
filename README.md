@@ -156,10 +156,10 @@ Options:
 | :--- | :---: | :--- |
 | `link` | `l` | Link the current project to the local package directory. |
 | `init` | `n` | Create a new `typst.toml` manifest for a project. |
-| `clone` | `c` | Clone a package from the typst universe or a local directory. |
-| `bump` | `b` | Bump the version of your package. |
+| `clone` | `c` | Clone a package from the Typst Universe or a local directory. |
+| `bump` | `b` | Bump the version of your package in `typst.toml` and other project files. |
 | `sync` | `s` | Synchronise all your dependencies to their last version. |
-| `publish` | `p` | **(WIP)** Intended for publishing packages. |
+| `publish` | `p` | **(WIP)** Publish your package to the Typst Universe. |
 
 ### **Packages (`pkg`)**: Manage Typst Packages
 | Command | Alias | Description |
@@ -167,7 +167,7 @@ Options:
 | `list` | `l` | List all packages in your local storage. |
 | `path` | `p` | Display the path to the typst packages folder. |
 | `unlink` | `u` | Delete a package from your local storage. |
-| `get` | `g` | Get specific/all package from the remote. |
+| `get` | `g` | Get specific/all packages from the remote. |
 | `install` | `i` | Install a package from a git repository into a namespace |
 
 ### **generate (`gen`)**: Generate Shell Completions
