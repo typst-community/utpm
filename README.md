@@ -4,7 +4,7 @@
 
 > _Unofficial Typst package manager_
 
-**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.  
+**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.
 
 [![typst-community - utpm](https://img.shields.io/static/v1?label=typst-community&message=utpm&color=blue&logo=github)](https://github.com/typst-community/utpm "Go to GitHub repo")
 [![stars - utpm](https://img.shields.io/github/stars/typst-community/utpm?style=social)](https://github.com/typst-community/utpm)
@@ -17,7 +17,7 @@
 </div>
 
 
-> [!WARNING]  
+> [!WARNING]
 > **UTPM** is still in active development, and some features may not be fully implemented. \
 > We are searching for contributors — anything you can offer will be greatly appreciated!
 
@@ -54,7 +54,7 @@
 
 ## ⚡Install
 ### With cargo
-Requires Cargo and Rust. 
+Requires Cargo and Rust.
 
 #### Main branch
 ```bash
@@ -77,7 +77,7 @@ $ cargo install utpm
 
 <details>
 <summary>
-  
+
 ### With nix
 
 </summary>
@@ -129,7 +129,7 @@ Utpm will be at `./result/bin/utpm`
 
 <div id="usage">
 
-## 🎰 Usage 
+## 🎰 Usage
 Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
 
 ```
@@ -156,10 +156,10 @@ Options:
 | :--- | :---: | :--- |
 | `link` | `l` | Link the current project to the local package directory. |
 | `init` | `n` | Create a new `typst.toml` manifest for a project. |
-| `clone` | `c` | Clone a package from the typst universe or a local directory. |
-| `bump` | `b` | Bump the version of your package. |
+| `clone` | `c` | Clone a package from the Typst Universe or a local directory. |
+| `bump` | `b` | Bump the version of your package in `typst.toml` and other project files. |
 | `sync` | `s` | Synchronise all your dependencies to their last version. |
-| `publish` | `p` | **(WIP)** Intended for publishing packages. |
+| `publish` | `p` | **(WIP)** Publish your package to the Typst Universe. |
 
 ### **Packages (`pkg`)**: Manage Typst Packages
 | Command | Alias | Description |
@@ -167,7 +167,7 @@ Options:
 | `list` | `l` | List all packages in your local storage. |
 | `path` | `p` | Display the path to the typst packages folder. |
 | `unlink` | `u` | Delete a package from your local storage. |
-| `get` | `g` | Get specific/all package from the remote. |
+| `get` | `g` | Get specific/all packages from the remote. |
 | `install` | `i` | Install a package from a git repository into a namespace |
 
 ### **generate (`gen`)**: Generate Shell Completions
