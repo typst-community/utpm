@@ -441,7 +441,6 @@ pub enum Workspace {
     // #[command(visible_alias = "p")]
     // #[cfg(feature = "publish")]
     // Publish(PublishArgs),
-
     /// Clone a package from the typst universe or a local directory.
     #[command()]
     #[cfg(feature = "clone")]
@@ -497,33 +496,16 @@ pub enum Commands {
     Generate(GenerateArgs),
 }
 
-/// An unofficial typst package manager for your projects.
-#[derive(Parser, Debug, PartialEq)]
+// maybe users want to also see the PKG_VERSION?
 #[cfg(feature = "nightly")]
-#[command(author = "Thumuss & typst-community", version = build::COMMIT_HASH)]
-pub struct Cli {
-    /// The subcommand to execute.
-    #[command(subcommand)]
-    pub command: Commands,
+const VERSION: &str = build::COMMIT_HASH;
 
-    /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long, global = true, value_enum)]
-    pub verbose: Option<Level>,
-
-    /// The output format for command results.
-    #[arg(short = 'o', long, global = true, value_enum)]
-    pub output_format: Option<OutputFormat>,
-
-    /// If you don't want to write anything on your disk.
-    #[arg(default_value_t=false, global = true, long, short='D')]
-    pub dry_run: bool,
-}
-
+#[cfg(not(feature = "nightly"))]
+const VERSION: &str = build::PKG_VERSION;
 
 /// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
-#[cfg(not(feature = "nightly"))]
-#[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
+#[command(author = "Thumuss & typst-community", version = VERSION)]
 pub struct Cli {
     /// The subcommand to execute.
     #[command(subcommand)]
@@ -538,6 +520,6 @@ pub struct Cli {
     pub output_format: Option<OutputFormat>,
 
     /// If you don't want to write anything on your disk.
-    #[arg(default_value_t=false, global = true, long, short='D')]
+    #[arg(default_value_t = false, global = true, long, short = 'D')]
     pub dry_run: bool,
 }
