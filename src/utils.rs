@@ -80,7 +80,7 @@ pub fn regex_package() -> Regex {
 pub fn write_manifest(data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;
     if !crate::utils::dryrun::get_dry_run() {
-        std::fs::write("./typst.toml", tomlfy)?;
+        std::fs::write(Path::new("./typst.toml"), tomlfy)?;
     }
     Ok(())
 }
