@@ -1,17 +1,27 @@
 use inquire::Confirm;
+use regex::Regex;
 use std::fs;
 use tracing::instrument;
 
 use crate::{
-    format_package,
     utils::{
-        dryrun::get_dry_run, paths::check_path_dir, regex_namespace, regex_package,
-        regex_packagename, state::Result,
+        dryrun::get_dry_run,
+        paths::{c_packages, check_path_dir, d_packages},
+        regex_package,
+        state::Result,
     },
     utpm_bail, utpm_log,
 };
 
 use super::UnlinkArgs;
+
+fn package_path(namespace: &str) -> Result<String> {
+    if namespace == "preview" {
+        c_packages()
+    } else {
+        d_packages()
+    }
+}
 
 /// Unlinks/deletes a package from the local storage.
 #[instrument(skip(cmd))]
@@ -22,19 +32,27 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     // Use regex to parse the package string, which can be a full package spec,
     // a package name, or just a namespace.
     let re_all = regex_package();
-    let re_name = regex_packagename();
-    let re_namespace = regex_namespace();
+    let re_name = Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap();
+    let re_namespace = Regex::new(r"^@([a-zA-Z]+)$").unwrap();
     let path: String;
 
     if let Some(cap) = re_all.captures(packages.as_str()) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
-        path = format_package!(namespace, package, major, minor, patch);
+        path = format!(
+            "{}/{}/{}/{}.{}.{}",
+            package_path(namespace)?,
+            namespace,
+            package,
+            major,
+            minor,
+            patch
+        );
     } else if let Some(cap) = re_name.captures(packages.as_str()) {
         let (_, [namespace, package]) = cap.extract();
-        path = format_package!(namespace, package);
+        path = format!("{}/{}/{}", package_path(namespace)?, namespace, package);
     } else if let Some(cap) = re_namespace.captures(packages.as_str()) {
         let (_, [namespace]) = cap.extract();
-        path = format_package!(namespace);
+        path = format!("{}/{}", package_path(namespace)?, namespace);
     } else {
         utpm_bail!(PackageNotValid);
     }
