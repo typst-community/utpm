@@ -4183,6 +4183,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "dirs",
+ "ecow",
  "fmt-derive",
  "ignore",
  "inquire",

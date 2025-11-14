@@ -6,11 +6,14 @@ use std::{
     str::FromStr,
 };
 
+use ecow::EcoString;
 use inquire::{Select, Text, required, validator::Validation};
 use semver::Version;
 use toml::Table;
 use tracing::instrument;
-use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
+use typst_syntax::package::{
+    PackageInfo, PackageManifest, PackageVersion, ToolInfo, UnknownFields, VersionBound,
+};
 
 use crate::{
     utils::{
@@ -37,31 +40,20 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     let typ = curr.clone() + MANIFEST_PATH;
     utpm_log!(info, "Current typst file: {}", typ);
 
-    // Build the package metadata from command-line arguments.
-    let mut pkg = PackageInfo {
-        name: cmd.name.clone().unwrap_or("".into()).into(),
-        version: PackageVersion {
-            major: cmd.version.major as u32,
-            minor: cmd.version.minor as u32,
-            patch: cmd.version.patch as u32,
-        },
-        entrypoint: cmd.entrypoint.to_owned().into(),
-        authors: cmd.authors.iter().flatten().map(Into::into).collect(),
-        license: cmd.license.as_ref().map(Into::into),
-        description: cmd.description.as_ref().map(Into::into),
-        repository: cmd.repository.as_ref().map(Into::into),
-        homepage: cmd.homepage.as_ref().map(Into::into),
-        keywords: cmd.keywords.iter().flatten().map(Into::into).collect(),
-        compiler: cmd.compiler.as_ref().map(|version| VersionBound {
-            major: version.major as u32,
-            minor: Some(version.minor as u32),
-            patch: Some(version.patch as u32),
-        }),
-        exclude: cmd.exclude.iter().flatten().map(Into::into).collect(),
-        categories: cmd.categories.iter().flatten().map(Into::into).collect(),
-        disciplines: cmd.disciplines.iter().flatten().map(Into::into).collect(),
-        unknown_fields: BTreeMap::new(),
+    // Initialize UTPM-specific configurations.
+    let mut extra = Extra {
+        namespace: cmd.namespace.to_owned(),
+        ..Default::default()
     };
+    utpm_log!(
+        trace,
+        "Namespace extracted? {}",
+        if extra.namespace.is_none() {
+            "no".into()
+        } else {
+            format!("yes: {}", extra.namespace.clone().unwrap())
+        }
+    );
 
     // TODO: Implement template handling.
     //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
@@ -76,6 +68,50 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     }
 
     // Interactive mode for gathering project metadata.
+    let mut pkgbuilder = PackageInfoBuilder {
+        name: cmd.name.clone().map(|name| name.into()),
+        version: Some(PackageVersion {
+            major: cmd.version.major as u32,
+            minor: cmd.version.minor as u32,
+            patch: cmd.version.patch as u32,
+        }),
+        entrypoint: Some(cmd.entrypoint.to_owned().into()),
+        authors: if let Some(yes) = &cmd.authors {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        license: cmd.license.as_ref().map(|yes| yes.into()),
+        description: cmd.description.as_ref().map(|yes| yes.into()),
+        repository: cmd.repository.as_ref().map(|yes| yes.into()),
+        homepage: cmd.homepage.as_ref().map(|yes| yes.into()),
+        keywords: if let Some(yes) = &cmd.keywords {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        compiler: cmd.compiler.as_ref().map(|yes| VersionBound {
+            major: yes.major as u32,
+            minor: Some(yes.minor as u32),
+            patch: Some(yes.patch as u32),
+        }),
+        exclude: if let Some(yes) = &cmd.exclude {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        categories: if let Some(yes) = &cmd.categories {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        disciplines: if let Some(yes) = &cmd.disciplines {
+            yes.iter().map(|f| f.into()).collect::<Vec<_>>()
+        } else {
+            vec![]
+        },
+        unknown_fields: BTreeMap::new(),
+    };
     if !cmd.cli {
         let choice = vec!["yes", "no"];
         let public = Select::new("Do you want to make your package public? Questions are on authors, license, description", choice.clone()).prompt()?;
@@ -91,44 +127,48 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             cmd.populate = true;
         }
 
-        pkg.name = Text::new("Name: ")
-            .with_validator(required!("This field is required"))
-            .with_help_message("e.g. my_example")
-            .prompt()?
-            .as_str()
-            .into();
-
-        pkg.version = PackageVersion::from_str(
-            &Text::new("Version: ")
+        pkgbuilder.name = Some(
+            Text::new("Name: ")
                 .with_validator(required!("This field is required"))
-                .with_validator(|obj: &str| match Version::parse(obj) {
-                    Ok(_) => Ok(Validation::Valid),
-                    Err(_) => Ok(Validation::Invalid(
-                        "A correct version must be types (check semVer)".into(),
-                    )),
-                })
-                .with_help_message("e.g. 1.0.0 (SemVer)")
-                .with_default("1.0.0")
-                .prompt()?,
-        )
-        .unwrap();
+                .with_help_message("e.g. my_example")
+                .prompt()?
+                .as_str()
+                .into(),
+        );
 
-        pkg.entrypoint = Text::new("Entrypoint: ")
+        let version_text = &Text::new("Version: ")
             .with_validator(required!("This field is required"))
-            .with_help_message("e.g. main.typ")
-            .with_default("main.typ")
-            .prompt()?
-            .into();
+            .with_validator(|obj: &str| match Version::parse(obj) {
+                Ok(_) => Ok(Validation::Valid),
+                Err(_) => Ok(Validation::Invalid(
+                    "A correct version must be types (check semVer)".into(),
+                )),
+            })
+            .with_help_message("e.g. 1.0.0 (SemVer)")
+            .with_default("1.0.0")
+            .prompt()?;
+        pkgbuilder.version = Some(
+            PackageVersion::from_str(version_text).expect("package version has invalid format"),
+        );
+
+        pkgbuilder.entrypoint = Some(
+            Text::new("Entrypoint: ")
+                .with_validator(required!("This field is required"))
+                .with_help_message("e.g. main.typ")
+                .with_default("main.typ")
+                .prompt()?
+                .into(),
+        );
 
         if public == "yes" {
-            pkg.authors = Text::new("Authors: ")
+            pkgbuilder.authors = Text::new("Authors: ")
                 .with_help_message("e.g. Thumus,Somebody,Somebody Else")
                 .prompt()?
                 .split(",")
                 .map(|f| f.into())
                 .collect::<Vec<_>>();
 
-            pkg.license = Some(
+            pkgbuilder.license = Some(
                 Text::new("License: ")
                     .with_help_message("e.g. MIT")
                     .with_default("Unlicense")
@@ -151,7 +191,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
                     .into(),
             );
 
-            pkg.description = Some(
+            pkgbuilder.description = Some(
                 Text::new("description: ")
                     .with_help_message("e.g. A package")
                     .prompt()?
@@ -159,26 +199,26 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             )
         }
         if more == "yes" {
-            pkg.repository = Some(
+            pkgbuilder.repository = Some(
                 Text::new("URL of the repository: ")
                     .with_help_message("e.g. https://github.com/Thumuss/utpm")
                     .prompt()?
                     .into(),
             );
-            pkg.homepage = Some(
+            pkgbuilder.homepage = Some(
                 Text::new("Homepage: ")
                     .with_help_message("e.g. anything")
                     .prompt()?
                     .into(),
             );
-            pkg.keywords = Text::new("Keywords: ")
+            pkgbuilder.keywords = Text::new("Keywords: ")
                 .with_help_message("e.g. Typst,keyword")
                 .prompt()?
                 .split(",")
                 .map(|f| f.into())
                 .collect::<Vec<_>>();
 
-            pkg.compiler = Some(
+            pkgbuilder.compiler = Some(
                 VersionBound::from_str(
                     &Text::new("Version: ")
                         .with_validator(required!("This field is required"))
@@ -195,7 +235,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
                 .unwrap(),
             );
 
-            pkg.exclude = Text::new("Exclude: ")
+            pkgbuilder.exclude = Text::new("Exclude: ")
                 .with_help_message("e.g. backup/mypassword.txt,.env")
                 .prompt()?
                 .split(",")
@@ -208,6 +248,9 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
             //TODO: Implement template creation.
         }
     }
+
+    // Build the package metadata from command-line arguments.
+    let pkg = pkgbuilder.build();
 
     // Populate the project with default files if requested.
     if cmd.populate && !get_dry_run() {
@@ -250,4 +293,59 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
 
     utpm_log!(info, "File created to {typ}");
     Ok(true)
+}
+
+struct PackageInfoBuilder {
+    /// The name of the package within its namespace.
+    pub name: Option<EcoString>,
+    /// The package's version.
+    pub version: Option<PackageVersion>,
+    /// The path of the entrypoint into the package.
+    pub entrypoint: Option<EcoString>,
+    /// A list of the package's authors.
+    pub authors: Vec<EcoString>,
+    ///  The package's license.
+    pub license: Option<EcoString>,
+    /// A short description of the package.
+    pub description: Option<EcoString>,
+    /// A link to the package's web presence.
+    pub homepage: Option<EcoString>,
+    /// A link to the repository where this package is developed.
+    pub repository: Option<EcoString>,
+    /// An array of search keywords for the package.
+    pub keywords: Vec<EcoString>,
+    /// An array with up to three of the predefined categories to help users
+    /// discover the package.
+    pub categories: Vec<EcoString>,
+    /// An array of disciplines defining the target audience for which the
+    /// package is useful.
+    pub disciplines: Vec<EcoString>,
+    /// The minimum required compiler version for the package.
+    pub compiler: Option<VersionBound>,
+    /// An array of globs specifying files that should not be part of the
+    /// published bundle.
+    pub exclude: Vec<EcoString>,
+    /// All parsed but unknown fields, this can be used for validation.
+    pub unknown_fields: UnknownFields,
+}
+
+impl PackageInfoBuilder {
+    pub fn build(self) -> PackageInfo {
+        PackageInfo {
+            name: self.name.expect("package name is not set"),
+            version: self.version.expect("package version is not set"),
+            entrypoint: self.entrypoint.expect("package entrypoint is not set"),
+            authors: self.authors,
+            license: self.license,
+            description: self.description,
+            homepage: self.homepage,
+            repository: self.repository,
+            keywords: self.keywords,
+            categories: self.categories,
+            disciplines: self.disciplines,
+            compiler: self.compiler,
+            exclude: self.exclude,
+            unknown_fields: self.unknown_fields,
+        }
+    }
 }

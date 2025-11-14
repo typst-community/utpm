@@ -23,10 +23,10 @@ tracing-subscriber = { version = "0.3.19", features = ["fmt", "std", "json"] }
 clap_complete = { version = "4.5.51" }
 shadow-rs = "1.1.1"
 typst-kit = "0.13.1"
-typst-syntax = { version = "0.13.1" }
-regex = { version = "1.11.1" }
-ignore = { version = "0.4.23" }
-octocrab = { version = "0.44.1" }
+typst-syntax = { version = "0.13.1", optional = true }
+regex = { version = "1.11.1", optional = true }
+ignore = { version = "0.4.23", optional = true }
+octocrab = { version = "0.44.1", optional = true }
 tokio = { version = "1.45.1", features = ["full"] }
 tokio-macros = "2.5.0"
 url = "2.5.4"
@@ -41,6 +41,7 @@ ptree = "0.5.2"
 reqwest = { version = "0.12.22", optional = false, features = ["json"] }
 itertools = "0.14.0"
 toml_edit = "0.23.3"
+ecow = "0.2"
 
 [build-dependencies]
 shadow-rs = "1.1.1"
