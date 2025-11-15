@@ -100,7 +100,8 @@ pub fn regex_package() -> Regex {
 
 /// Returns a regex for matching typst import statements (`#import "@namespace/name:version"`).
 pub fn regex_import() -> Regex {
-    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#).unwrap()
+    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#)
+        .unwrap()
 }
 
 /// Writes a `PackageManifest` to `./typst.toml` in pretty TOML format.

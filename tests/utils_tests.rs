@@ -10,7 +10,7 @@ mod regex_tests {
     #[test]
     fn test_valid_package_formats() {
         let re = regex_package();
-        
+
         // Valid formats
         assert!(re.is_match("@preview/package:2.0.1"));
         assert!(re.is_match("@local/package:1.0.0"));
@@ -24,7 +24,7 @@ mod regex_tests {
     #[test]
     fn test_invalid_package_formats() {
         let re = regex_package();
-        
+
         // Invalid formats
         assert!(!re.is_match("@preview/package-:2.0.1")); // Trailing dash
         assert!(!re.is_match("@local/p:1..1")); // Double dots
@@ -40,7 +40,7 @@ mod regex_tests {
     #[test]
     fn test_edge_cases() {
         let re = regex_package();
-        
+
         assert!(re.is_match("@local/AAAAAAAAAAAAAA:2.0.1"));
         assert!(re.is_match("@x/y:0.0.1"));
         assert!(!re.is_match("@/package:1.0.0"));
@@ -55,7 +55,7 @@ mod regex_import_tests {
     #[test]
     fn test_valid_import_formats() {
         let re = regex_import();
-        
+
         assert!(re.is_match("#import \"@preview/package:1.0.0\""));
         assert!(re.is_match("#import \"@local/my-package:2.1.3\""));
         assert!(re.is_match("#import \"@namespace/name:0.1.0\""));
@@ -64,7 +64,7 @@ mod regex_import_tests {
     #[test]
     fn test_invalid_import_formats() {
         let re = regex_import();
-        
+
         assert!(!re.is_match("import \"@preview/package:1.0.0\"")); // Missing #
         assert!(!re.is_match("#import @preview/package:1.0.0")); // Missing quotes
         assert!(!re.is_match("#import \"preview/package:1.0.0\"")); // Missing @
@@ -79,9 +79,10 @@ mod sync_regex_tests {
     fn test_sync_regex_pattern() {
         // Test the regex pattern used in sync command
         let re = Regex::new(
-            r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#
-        ).unwrap();
-        
+            r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#,
+        )
+        .unwrap();
+
         assert!(re.is_match("#import \"@preview/example:1.0.0\""));
         assert!(re.is_match("#import \"@local/my-pkg:2.1.3\""));
     }
@@ -97,17 +98,20 @@ mod paths_tests {
         let temp_dir = setup_temp_dir();
         let current_path = temp_dir.path().join("current");
         std::fs::create_dir_all(&current_path).unwrap();
-        
+
         // Note: env::set_var is unsafe in Rust 2024 edition
         // In production code, use safer alternatives or unsafe blocks
         unsafe {
             env::set_var("UTPM_CURRENT_DIR", current_path.to_str().unwrap());
         }
-        
+
         // This would require accessing the actual function
         // For now, just verify env var is set
-        assert_eq!(env::var("UTPM_CURRENT_DIR").unwrap(), current_path.to_str().unwrap());
-        
+        assert_eq!(
+            env::var("UTPM_CURRENT_DIR").unwrap(),
+            current_path.to_str().unwrap()
+        );
+
         cleanup_test_env();
     }
 
@@ -116,13 +120,13 @@ mod paths_tests {
         let temp_dir = setup_temp_dir();
         let file_path = temp_dir.path().join("test.txt");
         std::fs::write(&file_path, "test").unwrap();
-        
+
         assert!(file_path.exists());
         assert!(file_path.is_file());
-        
+
         let dir_path = temp_dir.path().join("dir");
         std::fs::create_dir(&dir_path).unwrap();
-        
+
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
     }
@@ -130,12 +134,12 @@ mod paths_tests {
     #[test]
     fn test_has_content() {
         let temp_dir = setup_temp_dir();
-        
+
         // Empty directory
         let empty_dir = temp_dir.path().join("empty");
         std::fs::create_dir(&empty_dir).unwrap();
         assert_eq!(std::fs::read_dir(&empty_dir).unwrap().count(), 0);
-        
+
         // Directory with content
         let full_dir = temp_dir.path().join("full");
         std::fs::create_dir(&full_dir).unwrap();
@@ -187,7 +191,7 @@ mod specs_tests {
     fn test_extra_new() {
         let excludes = vec![".git".to_string(), "*.log".to_string()];
         let extra = Extra::new(Some(excludes.clone()));
-        
+
         assert!(extra.exclude.is_some());
         assert_eq!(extra.exclude.unwrap(), excludes);
     }
@@ -254,10 +258,7 @@ mod output_tests {
 
     #[test]
     fn test_output_format_variants() {
-        let formats = vec![
-            OutputFormat::Text,
-            OutputFormat::Json,
-        ];
+        let formats = vec![OutputFormat::Text, OutputFormat::Json];
 
         for format in formats {
             // Just verify they exist and can be compared

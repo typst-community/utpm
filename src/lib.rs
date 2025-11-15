@@ -9,7 +9,7 @@ pub mod commands;
 pub mod utils;
 
 // Re-export commonly used items for external use
-pub use utils::{regex_package, regex_import, copy_dir_all};
+pub use utils::{copy_dir_all, regex_import, regex_package};
 
 // Re-export for macro usage (internal)
 pub use utils::output::OutputFormat;

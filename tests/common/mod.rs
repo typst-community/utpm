@@ -1,5 +1,4 @@
 /// Common test utilities and helpers
-
 use std::env;
 use std::fs::{self, create_dir_all};
 use std::path::{Path, PathBuf};
@@ -16,7 +15,7 @@ pub fn setup_temp_dir() -> TempDir {
 pub fn create_test_manifest(dir: &Path, name: &str, version: &str) -> PathBuf {
     // Ensure directory exists
     create_dir_all(dir).expect("Failed to create directory");
-    
+
     let manifest_path = dir.join("typst.toml");
     let content = format!(
         r#"[package]
@@ -41,7 +40,7 @@ exclude = []
 pub fn create_custom_manifest(dir: &Path, content: &str) -> PathBuf {
     // Ensure directory exists
     create_dir_all(dir).expect("Failed to create directory");
-    
+
     let manifest_path = dir.join("typst.toml");
     fs::write(&manifest_path, content).expect("Failed to write test manifest");
     manifest_path
@@ -61,17 +60,17 @@ pub fn create_test_entrypoint(dir: &Path) -> PathBuf {
 pub fn create_test_package(dir: &Path, name: &str, version: &str) -> PathBuf {
     create_test_manifest(dir, name, version);
     create_test_entrypoint(dir);
-    
+
     // Create src directory
     let src_dir = dir.join("src");
     create_dir_all(&src_dir).expect("Failed to create src dir");
-    
+
     // Create examples directory
     let examples_dir = dir.join("examples");
     create_dir_all(&examples_dir).expect("Failed to create examples dir");
     fs::write(examples_dir.join("example.typ"), "// Example file")
         .expect("Failed to write example file");
-    
+
     dir.to_path_buf()
 }
 
@@ -84,7 +83,7 @@ pub fn setup_test_env(temp_dir: &Path) {
         env::set_var("UTPM_CACHE_DIR", temp_dir.join("cache"));
         env::set_var("UTPM_CURRENT_DIR", temp_dir.join("current"));
     }
-    
+
     // Create the directories
     create_dir_all(temp_dir.join("data/typst/packages")).ok();
     create_dir_all(temp_dir.join("cache/typst/packages")).ok();
