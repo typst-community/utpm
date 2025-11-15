@@ -47,10 +47,10 @@ pub fn exist_git() -> Result<bool> {
         Ok(_) => Ok(true),
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
             utpm_bail!(GitNotFound)
-        }
+        },
         Err(e) => {
             utpm_bail!(Git, e.to_string())
-        }
+        },
     }
 }
 
@@ -68,7 +68,7 @@ pub fn push_git() -> Result<bool> {
         Ok(_) => Ok(true),
         Err(e) => {
             utpm_bail!(Git, e.to_string())
-        }
+        },
     }
 }
 
@@ -86,7 +86,7 @@ pub fn pull_git() -> Result<bool> {
         Ok(_) => Ok(true),
         Err(e) => {
             utpm_bail!(Git, e.to_string())
-        }
+        },
     }
 }
 
@@ -108,7 +108,7 @@ pub fn clone_git(string: &str, path: &str) -> Result<bool> {
         Ok(_) => Ok(true),
         Err(e) => {
             utpm_bail!(Git, e.to_string())
-        }
+        },
     }
 }
 
@@ -125,7 +125,7 @@ pub fn add_git(path: &str) -> Result<bool> {
         Ok(_) => Ok(true),
         Err(e) => {
             utpm_bail!(Git, e.to_string())
-        }
+        },
     }
 }
 
@@ -143,6 +143,6 @@ pub fn commit_git(msg: &str) -> Result<bool> {
         Ok(_) => Ok(true),
         Err(e) => {
             utpm_bail!(Git, e.to_string())
-        }
+        },
     }
 }

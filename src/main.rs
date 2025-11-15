@@ -102,6 +102,8 @@ async fn main() {
 
                 ProjectArgs::Sync(cmd) => commands::sync::run(cmd).await,
                 ProjectArgs::Publish(cmd) => commands::publish::run(cmd).await,
+
+                ProjectArgs::Metadata(cmd) => commands::metadata::run(cmd).await,
             },
             Commands::Packages(p) => match p {
                 PackagesArgs::List(cmd) => commands::list::run(cmd).await,

@@ -9,6 +9,7 @@ pub mod init;
 pub mod install;
 pub mod link;
 pub mod list;
+pub mod metadata;
 pub mod package_path;
 pub mod publish;
 pub mod sync;
@@ -127,6 +128,26 @@ pub struct LinkArgs {
 
     /// Namespace
     pub namespace: Option<String>,
+
+    /// Use .ignore files to filter packaged files.
+    #[arg(short = 'i', default_value_t = false)]
+    ignore: bool,
+
+    /// Use .gitignore files to filter packaged files.
+    #[arg(short = 'g', default_value_t = true)]
+    git_ignore: bool,
+
+    /// Use .typstignore files to filter packaged files.
+    #[arg(short = 't', default_value_t = true)]
+    typst_ignore: bool,
+
+    /// Use global .gitignore to filter packaged files.
+    #[arg(short = 'G', default_value_t = true)]
+    git_global_ignore: bool,
+
+    /// Use .git/info/exclude files to filter packaged files.
+    #[arg(short = 'x', default_value_t = true)]
+    git_exclude: bool,
 }
 
 /// Arguments for the `list` and `tree` commands.
@@ -294,6 +315,20 @@ pub struct GetArgs {
     pub packages: Vec<String>,
 }
 
+/// Arguments for the `metadata` command.
+/// This command extracts metadata from typst.toml.
+#[derive(Parser, Clone, Debug, PartialEq)]
+pub struct MetadataArgs {
+    /// Path to the project directory. Defaults to the current directory.
+    #[arg(short, long)]
+    pub path: Option<PathBuf>,
+
+    /// Specific field to extract (e.g., name, version, authors).
+    /// If not specified, all metadata will be displayed.
+    #[arg(short, long)]
+    pub field: Option<String>,
+}
+
 /// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum PackagesArgs {
@@ -348,6 +383,11 @@ pub enum ProjectArgs {
     #[command()]
     #[command(visible_alias = "s")]
     Sync(SyncArgs),
+
+    /// Get metadata from typst.toml for use in scripts.
+    #[command()]
+    #[command(visible_alias = "m")]
+    Metadata(MetadataArgs),
 }
 
 /// The main command-line interface for UTPM.

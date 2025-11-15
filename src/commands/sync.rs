@@ -59,7 +59,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
         Err(e) => {
             utpm_log!(warn, "Skipping file {:?}, could not read: {}", path, e);
             Err(e)
-        }
+        },
     }?;
 
     let mut string = match String::from_utf8(content_bytes) {
@@ -67,7 +67,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
         Err(e) => {
             utpm_log!(warn, "Skipping non-UTF-8 file: {:?}", path);
             Err(e)
-        }
+        },
     }?;
 
     // Creating offset if there is multiple import and they don't have the same length

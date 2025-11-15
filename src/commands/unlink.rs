@@ -74,7 +74,7 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
                     fs::remove_dir_all(path)?;
                 }
                 Ok(true)
-            }
+            },
             Err(_) => Ok(false),
         }
     } else {

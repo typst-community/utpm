@@ -183,7 +183,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
                                 }
                             }
                             Ok(Validation::Valid)
-                        }
+                        },
                         Err(_) => Ok(Validation::Invalid("Can't parse your expression".into())),
                     })
                     .prompt()?

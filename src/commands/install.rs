@@ -83,6 +83,11 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         force: false,
         no_copy: false,
         namespace: cmd.namespace.clone(),
+        git_exclude: false,
+        git_global_ignore: false,
+        git_ignore: false,
+        ignore: false,
+        typst_ignore: false,
     };
 
     link::run(&lnk, Some(path.clone()), false).await?;

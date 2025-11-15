@@ -1,0 +1,44 @@
+# Clippy configuration for UTPM
+# See https://doc.rust-lang.org/clippy/lint_configuration.html
+
+# Warn on missing documentation for public items
+# but allow some exceptions for obvious methods
+avoid-breaking-exported-api = true
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Type complexity threshold
+type-complexity-threshold = 250
+
+# Disallowed methods (add methods you want to ban)
+# Example: disallowed-methods = ["std::env::var"]
+
+# Disallowed types
+# Example: disallowed-types = ["std::collections::HashMap"]
+
+# Standard library items
+# Allow or deny certain std library items
+# standard-macro-braces = true
+
+# Allow certain patterns
+# too-many-arguments-threshold = 7
+# too-large-for-stack = 200
+
+# Documentation settings
+missing-docs-in-crate-items = false
+
+# Numeric literals
+# literal-representation-threshold = 10
+
+# Single character names to allow
+single-char-binding-names-threshold = 4
+
+# Cyclomatic complexity
+cyclomatic-complexity-threshold = 25
+
+# Maximum allowed length for a single line
+max-line-length = 100
+
+# Allow certain lints project-wide
+# These can be overridden in specific files with #[allow(...)]

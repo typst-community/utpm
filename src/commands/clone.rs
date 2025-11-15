@@ -195,9 +195,9 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
             }
 
             Ok(true)
-        }
+        },
         Err(_) => {
             utpm_bail!(PackageNotExist);
-        }
+        },
     };
 }

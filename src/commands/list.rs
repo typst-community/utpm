@@ -153,10 +153,10 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
             match pkg {
                 Err(_) => {
                     utpm_log!(namespace_read(&format!("{}/{}", typ, e), e.to_string())?);
-                }
+                },
                 Ok(data) => {
                     utpm_log!(data)
-                }
+                },
             };
         }
         Ok(true)

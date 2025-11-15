@@ -1,0 +1,37 @@
+# Example typst.toml configuration for UTPM
+# This file demonstrates how to configure your package with UTPM settings
+
+[package]
+name = "my-awesome-package"
+version = "0.1.0"
+entrypoint = "src/lib.typ"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+description = "A short description of your package"
+repository = "https://github.com/yourusername/your-repo"
+
+# UTPM-specific configuration
+[tool.utpm]
+# Exclude files and directories from being linked when using `utpm prj link`
+# These patterns use glob syntax:
+#   - `*` matches any number of characters
+#   - `**` matches directories recursively
+#   - `!` at the start negates the pattern
+exclude = [
+  ".git",           # Exclude git repository
+  ".github",        # Exclude GitHub workflows and config
+  "*.md",           # Exclude all markdown files
+  "tests/",         # Exclude tests directory
+  "examples/",      # Exclude examples directory
+  ".vscode",        # Exclude VS Code settings
+  ".idea",          # Exclude IntelliJ IDEA settings
+  "target/",        # Exclude build artifacts
+  "*.tmp",          # Exclude temporary files
+]
+
+# Note: The `link` command also respects:
+#   - .gitignore files (enabled by default with -g flag)
+#   - .typstignore files (enabled by default with -t flag)
+#   - .ignore files (disabled by default, use -i to enable)
+#   - Global .gitignore (enabled by default with -G flag)
+#   - .git/info/exclude (enabled by default with -x flag)

@@ -108,7 +108,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             Err(err) => {
                 utpm_log!("{:?}", err);
                 utpm_bail!(OctoCrab, err);
-            }
+            },
         };
     }
 
@@ -144,12 +144,14 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         "git_exclude" => cmd.git_exclude
     );
 
-    // Add .typstignore if it exists.
-    let mut path_check = path_curr.clone().into_os_string();
-    path_check.push("/.typstignore");
-    if check_path_file(path_check) {
-        utpm_log!(info, "Added .typstignore");
-        wb.add_custom_ignore_filename(".typstignore");
+    // Add .typstignore if it exists and is enabled.
+    if cmd.typst_ignore {
+        let mut path_check = path_curr.clone().into_os_string();
+        path_check.push("/.typstignore");
+        if check_path_file(path_check) {
+            utpm_log!(info, "Added .typstignore");
+            wb.add_custom_ignore_filename(".typstignore");
+        }
     }
 
     // Add custom ignore file if specified.

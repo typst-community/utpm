@@ -56,7 +56,7 @@ output_json  = ["dep:serde_json"]
 output_yaml  = ["dep:serde_yaml"]
 output_hjson = ["dep:serde-hjson"]
 full_output = ["output_json", "output_hjson", "output_yaml"]
-
+default = ["output_json"]
 
 # Reduce size
 [profile.release]
