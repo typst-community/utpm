@@ -34,11 +34,5 @@ missing-docs-in-crate-items = false
 # Single character names to allow
 single-char-binding-names-threshold = 4
 
-# Cyclomatic complexity
-cyclomatic-complexity-threshold = 25
-
-# Maximum allowed length for a single line
-max-line-length = 100
-
 # Allow certain lints project-wide
 # These can be overridden in specific files with #[allow(...)]
