@@ -109,7 +109,7 @@ pub async fn run(cmd: &MetadataArgs) -> Result<bool> {
         compiler: config.package.compiler.map(|v| v.to_string()),
         exclude: crate::utils::specs::Extra::from(config.tool)
             .exclude
-            .clone(),
+            .map(|v| v.iter().cloned().collect::<Vec<_>>()),
     };
 
     // Handle specific field request

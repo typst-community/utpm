@@ -37,7 +37,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     utpm_log!(trace, "executing init command");
     let curr = get_current_dir()?;
     utpm_log!(info, "Current dir: {}", curr);
-    let typ = curr.clone() + MANIFEST_PATH;
+    let typ = format!("{}{}", curr, MANIFEST_PATH);
     utpm_log!(info, "Current typst file: {}", typ);
 
     // TODO: Implement template handling.
@@ -104,8 +104,8 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     if !cmd.cli {
         let choice = vec!["yes", "no"];
         let public = Select::new("Do you want to make your package public? Questions are on authors, license, description", choice.clone()).prompt()?;
-        let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", choice.clone()).prompt()?;
-        let template = Select::new("Do you want to create a template?", choice.clone()).prompt()?;
+        let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", vec!["yes", "no"]).prompt()?;
+        let template = Select::new("Do you want to create a template?", vec!["yes", "no"]).prompt()?;
         let popu = Select::new(
             "Do you want to populate your package? Files like index.typ will be created",
             choice,
@@ -243,20 +243,22 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
 
     // Populate the project with default files if requested.
     if cmd.populate && !get_dry_run() {
-        let mut file = File::create(curr.clone() + "/README.md")?; // README.md
-        file.write_all(("# ".to_string() + &pkg.name.clone()).as_bytes())?;
-        if let Some(exp) = spdx::license_id(pkg.clone().license.unwrap().to_string().as_str()) {
-            file = File::create(curr.clone() + "/LICENSE")?; // LICENSE
-            file.write_all(exp.text().as_bytes())?;
+        let mut file = File::create(format!("{}/README.md", curr))?; // README.md
+        file.write_all(format!("# {}", pkg.name).as_bytes())?;
+        if let Some(ref license) = pkg.license {
+            if let Some(exp) = spdx::license_id(&license.to_string()) {
+                file = File::create(format!("{}/LICENSE", curr))?; // LICENSE
+                file.write_all(exp.text().as_bytes())?;
+            }
         }
 
-        create_dir_all(curr.clone() + "/examples")?; // examples
-        let examples = curr.clone() + "/examples";
-        file = File::create(examples + "/tests.typ")?; // examples/tests.typ
+        create_dir_all(format!("{}/examples", curr))?; // examples
+        let examples = format!("{}/examples", curr);
+        file = File::create(format!("{}/tests.typ", examples))?; // examples/tests.typ
         let fm = format!(
-            "#import \"@local/{}:{}\": *\nDo...",
-            pkg.name.clone(),
-            pkg.version.clone()
+            "#import \"@local/{}:{}\":\n Do...",
+            pkg.name,
+            pkg.version
         );
         file.write_all(fm.as_bytes())?;
         file = File::create(Path::new(&pkg.entrypoint.to_string()))?; // main.typ

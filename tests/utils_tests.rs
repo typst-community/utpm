@@ -150,6 +150,7 @@ mod paths_tests {
 
 #[cfg(test)]
 mod specs_tests {
+    use ecow::eco_vec;
     use utpm::utils::specs::Extra;
 
     #[test]
@@ -161,7 +162,7 @@ mod specs_tests {
     #[test]
     fn test_extra_serialization() {
         let extra = Extra {
-            exclude: Some(vec!["*.md".to_string(), ".git".to_string()]),
+            exclude: Some(eco_vec![String::from("*.md"), String::from(".git")]),
         };
 
         // Test that it can be serialized
@@ -172,28 +173,31 @@ mod specs_tests {
     #[test]
     fn test_extra_with_excludes() {
         let extra = Extra {
-            exclude: Some(vec![
-                ".git".to_string(),
-                ".github".to_string(),
-                "*.md".to_string(),
-                "tests/".to_string(),
+            exclude: Some(eco_vec![
+                String::from(".git"),
+                String::from(".github"),
+                String::from("*.md"),
+                String::from("tests/"),
             ]),
         };
 
         assert!(extra.exclude.is_some());
         let excludes = extra.exclude.unwrap();
         assert_eq!(excludes.len(), 4);
-        assert!(excludes.contains(&".git".to_string()));
-        assert!(excludes.contains(&"*.md".to_string()));
+        assert!(excludes.iter().any(|s| s == ".git"));
+        assert!(excludes.iter().any(|s| s == "*.md"));
     }
 
     #[test]
     fn test_extra_new() {
-        let excludes = vec![".git".to_string(), "*.log".to_string()];
+        let excludes = eco_vec![String::from(".git"), String::from("*.log")];
         let extra = Extra::new(Some(excludes.clone()));
 
         assert!(extra.exclude.is_some());
-        assert_eq!(extra.exclude.unwrap(), excludes);
+        let unwrapped = extra.exclude.unwrap();
+        assert_eq!(unwrapped.len(), 2);
+        assert!(unwrapped.iter().any(|s| s == ".git"));
+        assert!(unwrapped.iter().any(|s| s == "*.log"));
     }
 }
 
@@ -219,13 +223,13 @@ mod state_tests {
     #[test]
     fn test_already_exist_error() {
         let err = UtpmError::AlreadyExist(
-            "test-package".to_string(),
+            String::from("test-package"),
             typst_syntax::package::PackageVersion {
                 major: 1,
                 minor: 0,
                 patch: 0,
             },
-            "Test info".to_string(),
+            String::from("Test info"),
         );
 
         let msg = format!("{}", err);

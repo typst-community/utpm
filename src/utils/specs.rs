@@ -1,3 +1,4 @@
+use ecow::EcoVec;
 use serde::{Deserialize, Serialize};
 use typst_syntax::package::ToolInfo;
 
@@ -7,7 +8,7 @@ use typst_syntax::package::ToolInfo;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Extra {
     /// A list of file patterns to exclude when publishing the package.
-    pub exclude: Option<Vec<String>>,
+    pub exclude: Option<EcoVec<String>>,
 }
 
 impl Default for Extra {
@@ -19,7 +20,7 @@ impl Default for Extra {
 
 impl Extra {
     /// Creates a new `Extra` instance with the given configuration.
-    pub fn new(exclude: Option<Vec<String>>) -> Self {
+    pub fn new(exclude: Option<EcoVec<String>>) -> Self {
         Self { exclude }
     }
 }
@@ -51,7 +52,7 @@ impl From<ToolInfo> for Extra {
                     .unwrap()
                     .iter()
                     .map(|f| f.to_string())
-                    .collect()
+                    .collect::<EcoVec<_>>()
             }),
         }
     }

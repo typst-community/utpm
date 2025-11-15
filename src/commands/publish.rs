@@ -128,8 +128,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let mut overr: OverrideBuilder = OverrideBuilder::new(path_curr);
 
     // Add excludes from the manifest to the override builder.
-    for exclude in Extra::from(config.tool).exclude.unwrap_or(vec![]) {
-        overr.add(("!".to_string() + &exclude).as_str())?;
+    if let Some(excludes) = Extra::from(config.tool).exclude {
+        for exclude in excludes.iter() {
+            overr.add(&format!("!{}", exclude))?;
+        }
     }
     wb.overrides(overr.build()?);
 

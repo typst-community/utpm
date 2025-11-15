@@ -21,6 +21,7 @@
   - `semver` (1.0.26) - Semantic versioning
   - `serde` (1.0) - Serialization/deserialization
   - `shadow-rs` (1.1.1) - Build-time information
+  - `ecow` (0.2) - Efficient copy-on-write data structures
 
 ### Project Philosophy
 - **Dry-run first**: All destructive operations support `--dry-run` mode
@@ -96,7 +97,20 @@
      - `src/commands/metadata.rs` - Metadata serialization
    - Simplified build configuration and reduced binary size options
 
-8. **Automated Multi-Platform Release System** (November 2025)
+8. **Performance Optimization with `ecow`** (November 2025)
+   - Integrated `ecow` (0.2) for efficient copy-on-write data structures
+   - Replaced `Vec<String>` with `EcoVec<String>` in `Extra` struct (utils/specs.rs)
+   - Benefits: Reduced memory allocations when cloning exclude patterns
+   - Clone operations on `Extra::exclude` now use reference counting instead of deep copies
+   - Optimized string concatenations throughout codebase:
+     - Replaced `curr.clone() + MANIFEST_PATH` with `format!("{}{}", curr, MANIFEST_PATH)`
+     - Removed unnecessary `.clone()` calls in command handlers
+     - Used string slices and references where possible
+   - Optimized HashMap construction in `get.rs` with `with_capacity` and single iteration
+   - Updated tests to use `eco_vec!` macro for test data
+   - Performance improvements particularly noticeable with large exclude pattern lists
+
+9. **Automated Multi-Platform Release System** (November 2025)
    - Created comprehensive GitHub Actions workflow (`.github/workflows/release.yml`)
    - Multi-platform build matrix for 5 platforms (Windows excluded - handled by other maintainer):
      - Linux: x86_64-gnu, aarch64-gnu, x86_64-musl

@@ -355,12 +355,12 @@ mod list_command_tests {
         let versions: Vec<_> = fs::read_dir(&data_dir)
             .unwrap()
             .filter_map(|e| e.ok())
-            .map(|e| e.file_name().to_string_lossy().to_string())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
             .collect();
 
         assert_eq!(versions.len(), 3);
-        assert!(versions.contains(&"1.0.0".to_string()));
-        assert!(versions.contains(&"2.0.0".to_string()));
+        assert!(versions.iter().any(|v| v == "1.0.0"));
+        assert!(versions.iter().any(|v| v == "2.0.0"));
 
         cleanup_test_env();
     }

@@ -47,17 +47,17 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 
     project().lock().unwrap().0 = path.clone();
 
-    let url = cmd.url.clone();
+    let url = &cmd.url;
 
     // Handle git and http(s) URLs.
     if url.starts_with("git") || url.starts_with("http") {
-        clone_git(url.as_str(), path.as_str())?;
+        clone_git(url, &path)?;
     } else {
         // Handle local paths.
-        copy_dir_all(&url, &path)?;
+        copy_dir_all(url, &path)?;
     }
     // Check for a manifest file in the source directory.
-    let typstfile = path.clone() + MANIFEST_PATH;
+    let typstfile = format!("{}{}", path, MANIFEST_PATH);
     if !check_path_file(&typstfile) {
         utpm_log!("{}", format!("x {}", url));
         return Ok(false);
@@ -66,7 +66,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     utpm_log!(trace, "Before loading manifest...", "path" => path);
     // Load the manifest and extract UTPM-specific configurations.
     let file = try_find(&path)?;
-    let namespace = cmd.namespace.clone().unwrap_or("local".into());
+    let namespace = cmd.namespace.as_deref().unwrap_or("local");
     utpm_log!(trace, "After loading manifest...");
     // Check if the package is already installed.
     if check_path_dir(format!(

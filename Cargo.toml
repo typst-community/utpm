@@ -65,10 +65,11 @@ output_hjson = ["dep:serde-hjson"]
 full_output = ["output_json", "output_hjson", "output_yaml"]
 default = ["output_json"]
 
-# Reduce size
+# Reduce size and optimize performance
 [profile.release]
-strip = true
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
+strip = true           # Strip symbols from binary
+opt-level = "z"        # Optimize for size
+lto = true             # Enable Link Time Optimization
+codegen-units = 1      # Better optimization, slower compile
+panic = "abort"        # Reduce panic handling overhead
+overflow-checks = false # Disable integer overflow checks in release
