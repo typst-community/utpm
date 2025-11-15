@@ -75,7 +75,9 @@ utpm prj link
 
 ## 📦 Installation
 
-### Cargo (Recommended)
+### Quick Install
+
+#### Cargo (Cross-platform)
 
 ```bash
 # Using cargo-binstall (fastest)
@@ -85,12 +87,28 @@ cargo binstall utpm
 cargo install utpm
 ```
 
-### Nix
+#### Arch Linux
+
+```bash
+# Using an AUR helper (yay, paru, etc.)
+yay -S utpm-bin      # Pre-built binaries
+# or
+yay -S utpm-git      # Build from latest git
+```
+
+#### Homebrew (macOS/Linux)
+
+```bash
+# Coming soon - waiting for tap approval
+brew install typst-community/utpm/utpm
+```
+
+#### Nix
 
 <details>
 <summary>📦 Nix Installation Options</summary>
 
-#### With Flakes
+##### With Flakes
 
 Temporary shell:
 ```bash
@@ -115,7 +133,7 @@ Permanent installation in `flake.nix`:
 }
 ```
 
-#### Without Flakes
+##### Without Flakes
 
 ```bash
 git clone https://github.com/typst-community/utpm.git
@@ -125,6 +143,19 @@ nix-build
 ```
 
 </details>
+
+### More Package Managers
+
+UTPM is being packaged for multiple package managers:
+
+- 📦 **Snap** - `sudo snap install utpm` (automated publishing)
+- 📦 **Flatpak** - Available on Flathub (semi-automated)
+- 📦 **Debian/Ubuntu** - `.deb` packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
+- 📦 **Fedora/RHEL** - RPM packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
+
+**For maintainers:** See [docs/PACKAGING.md](docs/PACKAGING.md) for technical details and [docs/SECRETS.md](docs/SECRETS.md) for automation setup.
+
+**Note:** Windows builds are handled separately by another maintainer.
 
 ### From Source
 

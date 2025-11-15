@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.typst_community.utpm</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>UTPM</name>
+  <summary>Unofficial Typst Package Manager</summary>
+  
+  <description>
+    <p>
+      UTPM is a powerful command-line package manager for Typst. 
+      Create, manage, and share Typst packages with ease — whether for 
+      local development or publishing to Typst Universe.
+    </p>
+  </description>
+  
+  <url type="homepage">https://github.com/typst-community/utpm</url>
+  <url type="bugtracker">https://github.com/typst-community/utpm/issues</url>
+  
+  <provides>
+    <binary>utpm</binary>
+  </provides>
+  
+  <releases>
+    <release version="0.2.0" date="2025-11-15"/>
+  </releases>
+</component>

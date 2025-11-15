@@ -74,6 +74,75 @@
    - Documentation: `docs/TESTING.md` with comprehensive testing guide
    - All tests passing, environment isolation working correctly
 
+6. **Complete API Documentation** (November 2025)
+   - All 60+ public functions now have comprehensive documentation
+   - Documented all utility functions in `src/utils.rs` (copy_dir_all, try_find_path, try_find, write_manifest)
+   - Documented all path functions in `src/utils/paths.rs` (get_data_dir, get_cache_dir, c_packages, d_packages, etc.)
+   - Documented all git operations in `src/utils/git.rs` (exist_git, clone_git, push_git, pull_git, add_git, commit_git)
+   - Documented all command run functions and helpers
+   - Added function descriptions, parameter explanations, return values, and error conditions
+   - Documentation includes usage examples and edge cases
+   - cargo doc builds successfully without warnings
+
+7. **Feature Flag Cleanup** (November 2025)
+   - Removed all command-specific feature flags (install, clone, publish, etc.)
+   - Kept only output format features: `output_json`, `output_yaml`, `output_hjson`
+   - Default feature: `output_json` (most common use case)
+   - Full output feature: `full_output = ["output_json", "output_hjson", "output_yaml"]`
+   - Features properly used with `#[cfg(feature = "...")]` in 4 files:
+     - `src/utils/state.rs` - Error handling for output formats
+     - `src/utils/macros.rs` - utpm_log! macro output formatting
+     - `src/utils/output.rs` - OutputFormat enum variants
+     - `src/commands/metadata.rs` - Metadata serialization
+   - Simplified build configuration and reduced binary size options
+
+8. **Automated Multi-Platform Release System** (November 2025)
+   - Created comprehensive GitHub Actions workflow (`.github/workflows/release.yml`)
+   - Multi-platform build matrix for 5 platforms (Windows excluded - handled by other maintainer):
+     - Linux: x86_64-gnu, aarch64-gnu, x86_64-musl
+     - macOS: x86_64, aarch64
+   - Automated workflow steps:
+     1. Builds optimized binaries for all platforms (with stripping)
+     2. Generates shell completions (bash, fish, zsh) automatically
+     3. Creates release archives (`.tar.gz` with proper structure)
+     4. Uploads artifacts to GitHub Release
+     5. Calculates SHA256 checksums for all binaries
+     6. Updates package manager files with new versions/checksums
+     7. Creates Pull Request with updated checksums
+     8. **Publishes to AUR** (utpm-bin and utpm-git packages)
+     9. **Publishes to Homebrew Tap** (typst-community/utpm)
+     10. **Publishes to Snap Store** (stable channel)
+     11. **Creates Flatpak PR** (to Flathub, requires manual merge)
+   - Trigger methods:
+     - Automatic: Push git tag starting with `v` (e.g., `v0.3.0`)
+     - Manual: Workflow dispatch from GitHub Actions UI
+   - Package manager automation:
+     - **AUR**: SSH authentication, automatic PKGBUILD update and .SRCINFO generation
+     - **Homebrew Tap**: Direct push to typst-community/homebrew-utpm repository
+     - **Snap Store**: Build snap and upload with snapcraft credentials
+     - **Flatpak**: Create PR to Flathub repository (manual review/merge required)
+   - Package manager file updates (automatic via sed):
+     - AUR PKGBUILD (utpm-bin) - version + checksums (x86_64 + aarch64)
+     - Homebrew formula - URL + checksum
+     - Debian changelog - version number
+     - RPM spec - version number
+     - Snap snapcraft.yaml - version + source tag
+     - Flatpak manifest - git tag
+   - Documentation created:
+     - `docs/RELEASING.md` - Release workflow guide for contributors
+     - `docs/PACKAGING.md` - Technical package manager details for developers
+     - `docs/PUBLISHING.md` - Publishing guide (mostly automated, minimal manual steps)
+     - `docs/SECRETS.md` - GitHub secrets configuration guide for maintainers
+     - Updated `README.md` with installation instructions for all package managers
+   - PR automation: Uses `peter-evans/create-pull-request@v5` to create PR with checksums
+   - Cross-compilation: Includes aarch64 Linux support with gcc-aarch64-linux-gnu
+   - Required GitHub secrets for full automation:
+     - `AUR_SSH_KEY` - SSH private key for publishing to AUR
+     - `SNAPCRAFT_TOKEN` - Snapcraft store credentials for Snap publishing
+     - `FLATPAK_TOKEN` - GitHub token for creating PRs on Flathub
+   - Workflow jobs: `build` → `release` → `update-checksums` → `publish-aur` + `publish-homebrew` + `publish-snap` + `publish-flatpak`
+   - All jobs run in parallel after checksums are updated for maximum efficiency
+
 ## Architecture
 
 ### Project Structure
@@ -910,6 +979,12 @@ UTPM provides comprehensive documentation for different audiences:
 - **assets/typst.toml.example** - Example configuration file
 - **.github/copilot-instructions.md** - This file, for AI assistants only (not user-facing)
 
+### Maintainer Documentation
+- **docs/RELEASING.md** - How to create releases (for contributors)
+- **docs/PACKAGING.md** - Technical details about package managers (for developers)
+- **docs/PUBLISHING.md** - Publishing guide (mostly automated)
+- **docs/SECRETS.md** - GitHub secrets configuration for automation
+
 ### Documentation Guidelines
 
 When updating UTPM:
@@ -918,8 +993,12 @@ When updating UTPM:
 3. Update **docs/CONTRIBUTING.md** for new code standards or processes
 4. Update **docs/DEVELOPMENT.md** for new development tools or workflows
 5. Update **docs/TESTING.md** for testing practices and new test categories
-6. Update **.github/copilot-instructions.md** for technical implementation details (AI context only)
-7. Update **assets/typst.toml.example** for new configuration options
+6. Update **docs/RELEASING.md** for release process changes
+7. Update **docs/PACKAGING.md** for package manager technical changes
+8. Update **docs/PUBLISHING.md** for publishing procedures (mostly automated)
+9. Update **docs/SECRETS.md** for new secrets or configuration requirements
+10. Update **.github/copilot-instructions.md** for technical implementation details (AI context only)
+11. Update **assets/typst.toml.example** for new configuration options
 
 **Important**: Never reference `.github/copilot-instructions.md` in user-facing documentation. This file is for AI assistants only.
 

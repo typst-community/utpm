@@ -1,0 +1,31 @@
+name: utpm
+version: '0.2.0'
+summary: Unofficial Typst Package Manager
+description: |
+  UTPM is a powerful command-line package manager for Typst. 
+  Create, manage, and share Typst packages with ease.
+
+grade: stable
+confinement: strict
+base: core22
+
+apps:
+  utpm:
+    command: bin/utpm
+    plugs:
+      - home
+      - network
+
+parts:
+  utpm:
+    plugin: rust
+    source: https://github.com/typst-community/utpm.git
+    source-type: git
+    source-tag: v0.2.0
+    build-packages:
+      - pkg-config
+      - libssl-dev
+    override-build: |
+      cargo build --release --all-features
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp target/release/utpm $SNAPCRAFT_PART_INSTALL/bin/
