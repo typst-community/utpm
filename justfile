@@ -49,17 +49,21 @@ test-coverage:
 test-watch:
     cargo watch -x 'test --all-features'
 
-# Build in debug mode
+# Build in debug mode (skips shadow-rs for faster incremental builds)
 build:
+    UTPM_SKIP_SHADOW=1 cargo build
+
+# Build in debug mode with full build info
+build-full:
     cargo build
 
-# Build in release mode
+# Build in release mode (always includes build info)
 build-release:
     cargo build --release
 
-# Check if the code compiles
+# Check if the code compiles (fast, skips shadow-rs)
 check:
-    cargo check --all-targets --all-features
+    UTPM_SKIP_SHADOW=1 cargo check --all-targets --all-features
 
 # Run all checks (format, clippy, tests)
 ci: fmt-check clippy test
@@ -72,11 +76,6 @@ clean:
 # Install the binary locally
 install:
     cargo install --path .
-
-# Install the binary to ~/.cargo/bin
-install-local:
-    cargo build --release
-    cp ./target/release/utpm ~/.cargo/bin/
 
 # Update dependencies
 update:
@@ -146,6 +145,6 @@ bench:
 audit:
     cargo audit
 
-# Watch for changes and run checks
+# Watch for changes and run checks (fast, skips shadow-rs)
 watch:
-    cargo watch -x check -x test -x run
+    UTPM_SKIP_SHADOW=1 cargo watch -x check -x test -x run

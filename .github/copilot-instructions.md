@@ -1000,8 +1000,8 @@ UTPM provides comprehensive documentation for different audiences:
 - **docs/SECRETS.md** - GitHub secrets configuration for automation
 
 ### GitHub Actions
-- **action.yml** - Composite action to install UTPM in workflows
-- **docs/ACTION.md** - Action documentation and usage examples
+- **[Thumuss/setup-utpm](https://github.com/Thumuss/setup-utpm)** - Composite action to install UTPM in workflows (separate repository)
+- **docs/ACTION.md** - Redirect to setup-utpm repository for action documentation
 
 ### Documentation Guidelines
 

@@ -21,7 +21,7 @@
 ## ✨ Quick Start
 
 ```bash
-# Install UTPM
+# Install UTPM (see [Installation](#-installation) for all options)
 cargo install utpm
 
 # Create a new package
@@ -46,7 +46,7 @@ utpm prj link
 - **🔄 Dependency Management** - Sync dependencies and bump versions with ease
 - **📊 Metadata Extraction** - Extract package info for scripts and CI/CD pipelines
 - **🎨 Flexible Output** - JSON, HJSON, YAML, TOML, or human-readable text
-- **🛡️ Safe by Default** - Dry-run mode for all destructive operations
+- **🛡️ Try Features without Risk** - Dry-run mode for all destructive operations
 - **⚡ Fast & Lightweight** - Written in Rust for speed and reliability
 
 ## 🎯 Features
@@ -155,7 +155,7 @@ UTPM is being packaged for multiple package managers:
 
 **For maintainers:** See [docs/PACKAGING.md](docs/PACKAGING.md) for technical details and [docs/SECRETS.md](docs/SECRETS.md) for automation setup.
 
-**Note:** Windows builds are handled separately by another maintainer.
+**Note:** Windows builds are generated here but scoop is managed by an another user. See [Scoop bucket for typst](https://github.com/typst-community/scoop-bucket) for more infos.
 
 ### From Source
 
@@ -175,10 +175,10 @@ Use UTPM in your CI/CD workflows:
 
 ```yaml
 - name: Setup UTPM
-  uses: typst-community/utpm@v0.3.0
+  uses: Thumuss/setup-utpm@v1
 ```
 
-See [docs/ACTION.md](docs/ACTION.md) for complete documentation and examples.
+See the [setup-utpm repository](https://github.com/Thumuss/setup-utpm) for complete documentation and examples.
 
 ### Basic Commands
 

@@ -2,6 +2,9 @@
 
 GitHub Action to install and configure UTPM (Unofficial Typst Package Manager) in your workflows.
 
+See the repo on **[github.com/Thumuss/setup-utpm](https://github.com/Thumuss/setup-utpm)**
+
+
 ## Features
 
 - ✅ Cross-platform support (Linux x86_64/aarch64, macOS x86_64/arm64)
@@ -16,14 +19,14 @@ GitHub Action to install and configure UTPM (Unofficial Typst Package Manager) i
 
 ```yaml
 - name: Setup UTPM
-  uses: typst-community/utpm@v0.3.0
+  uses: Thumuss/utpm@v0.3.0
 ```
 
 ### Specify Version
 
 ```yaml
 - name: Setup UTPM
-  uses: typst-community/utpm@v0.3.0
+  uses: Thumuss/utpm@v0.3.0
   with:
     version: '0.3.0'
 ```
@@ -32,7 +35,7 @@ GitHub Action to install and configure UTPM (Unofficial Typst Package Manager) i
 
 ```yaml
 - name: Setup UTPM
-  uses: typst-community/utpm@v0.3.0
+  uses: Thumuss/utpm@v0.3.0
   with:
     version: 'latest'
     token: ${{ secrets.GITHUB_TOKEN }}
@@ -68,13 +71,13 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Setup UTPM
-        uses: typst-community/utpm@v0.3.0
+        uses: Thumuss/utpm@v0.3.0
       
       - name: Link local package
         run: utpm prj link
       
       - name: Install Typst
-        uses: typst-community/setup-typst@v3
+        uses: Thumuss/setup-typst@v3
       
       - name: Compile document
         run: typst compile main.typ
@@ -94,7 +97,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Setup UTPM
-        uses: typst-community/utpm@v0.3.0
+        uses: Thumuss/utpm@v0.3.0
         with:
           version: 'latest'
       
@@ -123,7 +126,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Setup UTPM
-        uses: typst-community/utpm@v0.3.0
+        uses: Thumuss/utpm@v0.3.0
       
       - name: Test UTPM
         run: |
@@ -156,7 +159,7 @@ Cache key format: `utpm-{platform}-{version}`
 If you encounter GitHub API rate limiting, provide a token:
 
 ```yaml
-- uses: typst-community/utpm@v0.3.0
+- uses: Thumuss/utpm@v0.3.0
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
 ```
