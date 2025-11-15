@@ -40,21 +40,6 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     let typ = curr.clone() + MANIFEST_PATH;
     utpm_log!(info, "Current typst file: {}", typ);
 
-    // Initialize UTPM-specific configurations.
-    let mut extra = Extra {
-        namespace: cmd.namespace.to_owned(),
-        ..Default::default()
-    };
-    utpm_log!(
-        trace,
-        "Namespace extracted? {}",
-        if extra.namespace.is_none() {
-            "no".into()
-        } else {
-            format!("yes: {}", extra.namespace.clone().unwrap())
-        }
-    );
-
     // TODO: Implement template handling.
     //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
 
