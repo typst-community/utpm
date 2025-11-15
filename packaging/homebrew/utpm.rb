@@ -12,6 +12,9 @@ class Utpm < Formula
     
     # Generate and install shell completions
     generate_completions_from_executable(bin/"utpm", "generate")
+    
+    # Install documentation
+    doc.install "docs/GUIDE.md"
   end
 
   test do

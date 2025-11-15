@@ -9,10 +9,12 @@ license=('MIT')
 depends=('gcc-libs')
 provides=('utpm')
 conflicts=('utpm' 'utpm-git')
-source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/typst-community/utpm/releases/download/v${pkgver}/utpm-x86_64-unknown-linux-gnu.tar.gz")
-source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/typst-community/utpm/releases/download/v${pkgver}/utpm-aarch64-unknown-linux-gnu.tar.gz")
-sha256sums_x86_64=('SKIP')
-sha256sums_aarch64=('SKIP')
+source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/typst-community/utpm/releases/download/v${pkgver}/utpm-x86_64-unknown-linux-gnu.tar.gz"
+               "https://raw.githubusercontent.com/typst-community/utpm/v${pkgver}/docs/GUIDE.md")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/typst-community/utpm/releases/download/v${pkgver}/utpm-aarch64-unknown-linux-gnu.tar.gz"
+                "https://raw.githubusercontent.com/typst-community/utpm/v${pkgver}/docs/GUIDE.md")
+sha256sums_x86_64=('SKIP' 'SKIP')
+sha256sums_aarch64=('SKIP' 'SKIP')
 
 package() {
     # Install binary
@@ -25,5 +27,6 @@ package() {
     
     # Install documentation
     install -Dm644 "${srcdir}/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+    install -Dm644 "${srcdir}/docs/GUIDE.md" "${pkgdir}/usr/share/doc/${pkgname}/GUIDE.md"
     install -Dm644 "${srcdir}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }

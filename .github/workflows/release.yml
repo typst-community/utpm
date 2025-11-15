@@ -80,11 +80,13 @@ jobs:
 
       - name: Create tarball
         run: |
-          mkdir -p dist
+          mkdir -p dist docs
+          cp docs/GUIDE.md dist/
           tar czf dist/${{ matrix.asset_name }}.tar.gz \
             -C target/${{ matrix.target }}/release ${{ matrix.artifact_name }} \
             -C ../../../completions utpm.bash utpm.fish _utpm \
-            -C ../../../ README.md LICENSE
+            -C ../../../ README.md LICENSE \
+            -C dist GUIDE.md
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

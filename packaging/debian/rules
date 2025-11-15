@@ -8,3 +8,4 @@ override_dh_auto_build:
 
 override_dh_auto_install:
 	install -Dm755 target/release/utpm debian/utpm/usr/bin/utpm
+	install -Dm644 docs/GUIDE.md debian/utpm/usr/share/doc/utpm/GUIDE.md

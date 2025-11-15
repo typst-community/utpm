@@ -26,6 +26,7 @@ install -Dm755 target/release/utpm %{buildroot}%{_bindir}/utpm
 %files
 %license LICENSE
 %doc README.md
+%doc docs/GUIDE.md
 %{_bindir}/utpm
 
 %changelog
