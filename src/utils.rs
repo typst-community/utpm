@@ -39,6 +39,15 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
     Ok(())
 }
 
+/// Finds the path to a `typst.toml` manifest file in the given directory.
+///
+/// Returns an error if the manifest file does not exist.
+///
+/// # Arguments
+/// * `s` - The directory to search in
+///
+/// # Errors
+/// Returns `UtpmError::Manifest` if `typst.toml` is not found.
 pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
     let manifest_path = PathBuf::from_iter([s.as_ref(), "typst.toml".as_ref()]);
 
@@ -48,6 +57,18 @@ pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
     Ok(manifest_path)
 }
 
+/// Finds and parses a `typst.toml` manifest file in the given directory.
+///
+/// Returns the parsed `PackageManifest` structure.
+///
+/// # Arguments
+/// * `s` - The directory containing the manifest file
+///
+/// # Errors
+/// Returns an error if:
+/// - The manifest file is not found
+/// - The file cannot be read
+/// - The TOML content is invalid
 pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
     let e = read_to_string(try_find_path(s)?)?;
     let f: PackageManifest = toml::from_str(&e)?;
@@ -77,6 +98,22 @@ pub fn regex_package() -> Regex {
     Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
+/// Returns a regex for matching typst import statements (`#import "@namespace/name:version"`).
+pub fn regex_import() -> Regex {
+    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#).unwrap()
+}
+
+/// Writes a `PackageManifest` to `./typst.toml` in pretty TOML format.
+///
+/// Respects dry-run mode - if dry-run is enabled, the file is not actually written.
+///
+/// # Arguments
+/// * `data` - The package manifest to write
+///
+/// # Errors
+/// Returns an error if:
+/// - The manifest cannot be serialized to TOML
+/// - The file cannot be written (if not in dry-run mode)
 pub fn write_manifest(data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;
     if !crate::utils::dryrun::get_dry_run() {

@@ -15,9 +15,14 @@ use crate::{
 
 use super::BumpArgs;
 
-/// Check if there is a tag.
-/// If there is, it creates a new string like an html element
-/// If not, return value
+/// Wraps a value in HTML-like tags if a tag is provided.
+///
+/// # Arguments
+/// * `tag` - Optional tag name (e.g., "version")
+/// * `value` - The value to wrap
+///
+/// # Returns
+/// If tag is Some, returns `<tag>value</tag>`. Otherwise, returns the value unchanged.
 fn tag_change<'a>(tag: Option<&str>, value: &'a str) -> Cow<'a, str> {
     if let Some(tag) = tag {
         Cow::Owned(format!("<{tag}>{value}</{tag}>"))
@@ -26,6 +31,11 @@ fn tag_change<'a>(tag: Option<&str>, value: &'a str) -> Cow<'a, str> {
     }
 }
 
+/// Bumps the version number in typst.toml and optionally in other files.
+///
+/// Updates the package version in the manifest and searches for the old version
+/// in specified files, replacing it with the new version. Supports wrapping
+/// versions in HTML-like tags for special file formats.
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
     utpm_log!(trace, "executing bump command");

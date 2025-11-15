@@ -18,6 +18,10 @@ use crate::{
 
 use super::SyncArgs;
 
+/// Synchronizes package dependencies to their latest versions.
+///
+/// Can either sync all `.typ` files in the current directory, or only specified files.
+/// When in check-only mode, reports available updates without modifying files.
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
     if cmd.files.is_empty() {
@@ -31,6 +35,10 @@ pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
     }
 }
 
+/// Runs sync on all `.typ` files in the current directory.
+///
+/// # Arguments
+/// * `cmd` - If true, only checks for updates without modifying files
 async fn default_run(cmd: bool) -> Result<bool> {
     let dir = &get_current_dir()?;
     let path = Path::new(dir);

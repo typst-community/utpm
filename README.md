@@ -272,6 +272,7 @@ utpm -o json prj metadata | jq '.authors'
 | **[📘 Complete Guide](docs/GUIDE.md)** | Comprehensive guide for users, package authors, and contributors |
 | **[🤝 Contributing](docs/CONTRIBUTING.md)** | Code standards, testing, and contribution process |
 | **[🛠️ Development](docs/DEVELOPMENT.md)** | Development setup, workflow, and tools |
+| **[🧪 Testing](docs/TESTING.md)** | Testing guide, running tests, and writing new tests |
 
 ---
 

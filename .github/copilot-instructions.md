@@ -58,8 +58,21 @@
    - Added `docs/GUIDE.md` - Comprehensive guide for users, package authors, and contributors
    - Moved `docs/CONTRIBUTING.md` - Contribution guidelines and code standards
    - Moved `docs/DEVELOPMENT.md` - Development workflow and tooling
+   - Added `docs/TESTING.md` - Comprehensive testing guide and documentation
    - `.github/copilot-instructions.md` remains in .github/ for AI assistant context
    - All documentation accessible and beginner-friendly
+
+5. **Comprehensive Test Suite** (November 2025)
+   - Created full test infrastructure with 60+ tests
+   - Test structure: `tests/common/mod.rs` with 10 helper functions
+   - Unit tests: `tests/utils_tests.rs` - 18 tests for utility functions
+   - Command tests: `tests/command_tests.rs` - 24 tests for all commands
+   - Integration tests: `tests/integration_tests.rs` - 14 end-to-end workflow tests
+   - Test dependencies: `tempfile = "3.15"` for isolated testing
+   - Library exports: `src/lib.rs` exposes modules for testing
+   - Enhanced `justfile` with test commands (test-unit, test-integration, test-module, test-coverage, test-watch)
+   - Documentation: `docs/TESTING.md` with comprehensive testing guide
+   - All tests passing, environment isolation working correctly
 
 ## Architecture
 
@@ -68,6 +81,7 @@
 ```
 src/
 ├── main.rs                 # Entry point, CLI dispatcher, logging setup
+├── lib.rs                  # Library exports for testing and external use
 ├── commands.rs             # CLI argument definitions and command routing
 ├── utils.rs                # Utility functions and module aggregator
 ├── commands/               # Individual command implementations
@@ -92,6 +106,13 @@ src/
     ├── paths.rs           # Path resolution and directory management
     ├── specs.rs           # [tool.utpm] configuration parsing
     └── state.rs           # Error types and Result definitions
+
+tests/
+├── common/
+│   └── mod.rs              # Common test utilities (10 helper functions)
+├── utils_tests.rs          # Unit tests for utils modules (18 tests)
+├── command_tests.rs        # Tests for individual commands (24 tests)
+└── integration_tests.rs    # Integration tests (14 tests)
 ```
 
 ### Command Hierarchy
@@ -885,6 +906,7 @@ UTPM provides comprehensive documentation for different audiences:
 ### Developer Documentation
 - **docs/CONTRIBUTING.md** - Contribution guidelines, code standards, commit conventions
 - **docs/DEVELOPMENT.md** - Development workflow, tooling, and daily commands
+- **docs/TESTING.md** - Comprehensive testing guide and documentation
 - **assets/typst.toml.example** - Example configuration file
 - **.github/copilot-instructions.md** - This file, for AI assistants only (not user-facing)
 
@@ -895,8 +917,9 @@ When updating UTPM:
 2. Update **docs/GUIDE.md** for detailed user-facing documentation
 3. Update **docs/CONTRIBUTING.md** for new code standards or processes
 4. Update **docs/DEVELOPMENT.md** for new development tools or workflows
-5. Update **.github/copilot-instructions.md** for technical implementation details (AI context only)
-6. Update **assets/typst.toml.example** for new configuration options
+5. Update **docs/TESTING.md** for testing practices and new test categories
+6. Update **.github/copilot-instructions.md** for technical implementation details (AI context only)
+7. Update **assets/typst.toml.example** for new configuration options
 
 **Important**: Never reference `.github/copilot-instructions.md` in user-facing documentation. This file is for AI assistants only.
 

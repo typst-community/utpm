@@ -64,6 +64,13 @@ cargo test --all-features -- --nocapture
 just test-verbose
 ```
 
+See [**Testing Guide**](TESTING.md) for comprehensive testing documentation, including:
+- Test structure and categories
+- Writing new tests
+- Running specific test suites
+- Test helpers and utilities
+- Debugging tests
+
 ## Development Workflow
 
 ### 1. Setup

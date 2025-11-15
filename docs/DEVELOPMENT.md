@@ -112,6 +112,13 @@ cargo test --test test_name
 cargo test module_name::test_function
 ```
 
+**For comprehensive testing documentation**, see [**Testing Guide**](TESTING.md):
+- Test structure and categories (60+ tests)
+- Test helpers and utilities
+- Running unit, command, and integration tests
+- Writing new tests
+- Debugging and troubleshooting
+
 ## Git Hooks
 
 The project provides optional git hooks to automatically check code quality before commits.

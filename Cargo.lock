@@ -4200,6 +4200,7 @@ dependencies = [
  "serde_yaml",
  "shadow-rs",
  "spdx",
+ "tempfile",
  "thiserror 2.0.12",
  "tokio",
  "tokio-macros",

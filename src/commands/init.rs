@@ -45,6 +45,10 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
 
     // Check if manifest already exists.
     if check_path_file(&typ) && !cmd.force {
+        utpm_log!(
+            error,
+            "typst.toml already exists. Use --force to overwrite it."
+        );
         return Ok(false);
     }
 

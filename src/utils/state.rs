@@ -89,15 +89,21 @@ pub enum UtpmError {
     HomeDir,
 
     /// An error for a missing `typst.toml` manifest.
-    #[error("Missing manifest.")]
+    #[error(
+        "Missing typst.toml manifest file in the current directory.\nRun 'utpm prj init' to create one."
+    )]
     Manifest,
 
     /// An error for an invalid package string.
-    #[error("Can't extract your package. Example of a package: @namespace/package:1.0.0")]
+    #[error(
+        "Invalid package format.\n\nAccepted formats:\n  - Full: @namespace/package:1.0.0\n  - Without version: @namespace/package\n  - Namespace only: @namespace\n\nExample: @preview/example:1.0.0"
+    )]
     PackageNotValid,
 
     /// An error for an invalid package string.
-    #[error("Package didn't match, the name or the version is incorrect.")]
+    #[error(
+        "Package format error: the name or version is incorrect.\nExpected format: @namespace/package:version\nExample: @preview/example:1.0.0"
+    )]
     PackageFormatError,
 
     #[error("There is no files in the new package. You should change your ignored files.")]
@@ -111,7 +117,7 @@ pub enum UtpmError {
 
     /// An error when a specified package does not exist.
     #[error(
-        "This package doesn't exist. Verify on https://typst.app/universe to see if the package exist and/or the version is correct."
+        "Package not found.\n\nPossible causes:\n  - Package doesn't exist in your local storage\n  - Package name or version is incorrect\n  - Package is not published yet\n\nCheck available packages:\n  - Local: utpm pkg list\n  - Remote: https://typst.app/universe"
     )]
     PackageNotExist,
 

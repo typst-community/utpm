@@ -241,7 +241,10 @@ pub struct GenerateArgs {
 /// This command clones a package from the typst universe or a local directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
 pub struct CloneArgs {
-    /// The name of the package to clone (e.g., `@preview/example:1.0.0`).
+    /// The package to clone.
+    ///
+    /// Format: @namespace/package:version
+    /// Example: @preview/example:1.0.0
     #[arg()]
     pub package: String,
 
@@ -270,7 +273,12 @@ pub struct CloneArgs {
 /// This command removes a package from the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
 pub struct UnlinkArgs {
-    /// The name of the package to unlink.
+    /// The package to unlink.
+    ///
+    /// Formats accepted:
+    ///   - Full: @namespace/package:1.0.0
+    ///   - Package: @namespace/package (removes all versions)
+    ///   - Namespace: @namespace (removes entire namespace)
     package: String,
 
     /// Confirm the deletion of the package directory without a prompt.
@@ -308,10 +316,11 @@ pub struct SyncArgs {
 
 #[derive(Parser, Clone, Debug, PartialEq)]
 /// Arguments for the `get` command.
-/// This command gets from the remote the package you research.
-/// By default: Give you all packages available
+/// This command gets package information from Typst Universe.
+/// By default: Lists all available packages.
 pub struct GetArgs {
-    /// Packages you want to have a look.
+    /// Package names to query (e.g., @preview/example).
+    /// Leave empty to list all packages.
     pub packages: Vec<String>,
 }
 
@@ -418,14 +427,23 @@ pub struct Cli {
     pub command: Commands,
 
     /// Enable verbose logging for debugging purposes.
+    ///
+    /// Levels: error, warn, info (default), debug, trace
+    /// Example: utpm -v trace prj link
     #[arg(short = 'v', long, global = true, value_enum)]
     pub verbose: Option<Level>,
 
     /// The output format for command results.
+    ///
+    /// Formats: text (default), json, yaml, toml, hjson
+    /// Example: utpm -o json pkg list
     #[arg(short = 'o', long, global = true, value_enum)]
     pub output_format: Option<OutputFormat>,
 
-    /// If you don't want to write anything on your disk.
+    /// Preview changes without writing to disk (dry-run mode).
+    ///
+    /// Useful for testing commands before execution.
+    /// Example: utpm --dry-run prj link
     #[arg(default_value_t = false, global = true, long, short = 'D')]
     pub dry_run: bool,
 }

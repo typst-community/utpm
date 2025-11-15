@@ -477,17 +477,24 @@ All new features must include tests.
 
 **Run tests:**
 ```bash
-cargo test
+cargo test --all-features
 # Or
 just test
 ```
 
 **Run with output:**
 ```bash
-cargo test -- --nocapture
+cargo test --all-features -- --nocapture
 # Or
 just test-verbose
 ```
+
+**For detailed testing documentation**, see [**Testing Guide**](TESTING.md):
+- 60+ tests covering utils, commands, and integration workflows
+- Test helpers and utilities
+- Running specific test suites
+- Writing new tests
+- Test coverage and debugging
 
 ### Git Workflow
 

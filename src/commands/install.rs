@@ -16,6 +16,13 @@ use crate::{
 use super::{InstallArgs, link};
 use tracing::instrument;
 
+/// Installs a package from a git repository.
+///
+/// Clones the repository to a temporary directory, validates the package structure,
+/// and then links it to the local package directory.
+///
+/// # Note
+/// This command requires git to be installed and cannot run in dry-run mode.
 #[instrument]
 pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     if get_dry_run() {

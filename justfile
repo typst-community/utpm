@@ -29,6 +29,26 @@ test:
 test-verbose:
     cargo test --all-features -- --nocapture
 
+# Run only unit tests (in src/)
+test-unit:
+    cargo test --lib --all-features
+
+# Run only integration tests (in tests/)
+test-integration:
+    cargo test --test '*' --all-features
+
+# Run tests for a specific module
+test-module MODULE:
+    cargo test {{MODULE}} --all-features -- --nocapture
+
+# Run tests and show coverage (requires cargo-tarpaulin)
+test-coverage:
+    cargo tarpaulin --all-features --out Html --output-dir coverage
+
+# Run tests in watch mode (requires cargo-watch)
+test-watch:
+    cargo watch -x 'test --all-features'
+
 # Build in debug mode
 build:
     cargo build

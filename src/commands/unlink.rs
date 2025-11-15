@@ -15,6 +15,13 @@ use crate::{
 
 use super::UnlinkArgs;
 
+/// Returns the package directory path for a given namespace.
+///
+/// # Arguments
+/// * `namespace` - The package namespace ("preview" or other)
+///
+/// # Returns
+/// The cache directory for "preview" namespace, or the data directory for others.
 fn package_path(namespace: &str) -> Result<String> {
     if namespace == "preview" {
         c_packages()
@@ -23,7 +30,14 @@ fn package_path(namespace: &str) -> Result<String> {
     }
 }
 
-/// Unlinks/deletes a package from the local storage.
+/// Unlinks (removes) a package from local storage.
+///
+/// Supports removing:
+/// - A specific version: `@namespace/package:1.0.0`
+/// - All versions of a package: `@namespace/package`
+/// - An entire namespace: `@namespace`
+///
+/// Prompts for confirmation unless `--yes` flag is used.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     utpm_log!(trace, "executing unlink command");
