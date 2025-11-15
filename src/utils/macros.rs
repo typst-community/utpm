@@ -1,116 +1,3 @@
-/// A macro to load the `typst.toml` manifest from the current or a specified directory.
-///
-/// # Usage
-///
-/// ```rust,ignore
-/// // Load from the current directory
-/// let manifest = load_manifest!();
-///
-/// // Load from a specific path
-/// let manifest = load_manifest!("/path/to/project");
-/// ```
-#[macro_export]
-macro_rules! load_manifest {
-    () => {
-        $crate::utils::try_find(&$crate::utils::paths::get_current_dir()?)?
-    };
-    ($var:expr) => {
-        $crate::utils::try_find($var)?
-    };
-}
-
-/// A macro to write a `Manifest` struct to a `typst.toml` file.
-///
-/// # Usage
-///
-/// ```rust,ignore
-/// let manifest: Manifest = load_manifest!().unwrap();
-/// // Write to `typst.toml` in the current directory
-/// write_manifest!(&manifest);
-///
-/// // Write to a specific path
-/// write_manifest!(&manifest => "/path/to/project/typst.toml");
-/// ```
-#[macro_export]
-macro_rules! write_manifest {
-    ($var:expr => $path:expr) => {
-        let tomlfy: String = toml::to_string_pretty($var)?;
-        if !crate::utils::dryrun::get_dry_run() {
-            std::fs::write($path, tomlfy)?
-        }
-    };
-    ($var:expr) => {
-        let tomlfy: String = toml::to_string_pretty($var)?;
-        if !crate::utils::dryrun::get_dry_run() {
-            std::fs::write("./typst.toml", tomlfy)?
-        }
-    };
-}
-
-/// A macro to format the path to a typst package.
-///
-/// This macro constructs the path to a package based on its namespace, name, and version.
-/// It correctly resolves the base directory for `@preview` and other namespaces.
-#[macro_export]
-macro_rules! format_package {
-    ($namespace:expr) => {{
-        (format!(
-            "{}/{}",
-            if $namespace == "preview" {
-                $crate::utpm_log!("preview found, cache dir use");
-                $crate::utils::paths::c_packages()?
-            } else {
-                $crate::utpm_log!("no preview found, data dir use");
-                $crate::utils::paths::d_packages()?
-            },
-            $namespace
-        ))
-    }};
-
-    ($namespace:expr, $package:expr) => {{
-        (format!("{}/{}", $crate::format_package!($namespace), $package))
-    }};
-
-    ($namespace:ident, $package:ident, $major:ident, $minor:ident, $patch:ident) => {{
-        (format!(
-            "{}/{}.{}.{}",
-            $crate::format_package!($namespace, $package),
-            $major,
-            $minor,
-            $patch
-        ))
-    }};
-}
-
-/// A macro to configure SSH credentials for git operations.
-///
-/// It attempts to use an SSH agent first, then falls back to a private key file.
-/// The key path can be specified via the `UTPM_KEYPATH` environment variable.
-/// A passphrase can be provided via the `UTPM_PASSPHRASE` environment variable.
-#[macro_export]
-macro_rules! load_creds {
-    ($callbacks:expr, $val:expr) => {{
-        $callbacks.credentials(|_, username_from_url, _| {
-            let binding: String =
-                env::var("UTPM_USERNAME").unwrap_or(username_from_url.unwrap_or("git").to_string());
-            let username: &str = binding.as_str();
-            match git2::Cred::ssh_key_from_agent(username) {
-                Ok(cred) => Ok(cred),
-                Err(_) => Ok(match env::var("UTPM_PASSPHRASE") {
-                    Ok(s) => {
-                        $crate::utpm_log!(info, "passphrase" => false);
-                        git2::Cred::ssh_key(username, None, Path::new(&$val), Some(s.as_str()))?
-                    }
-                    Err(_) => {
-                        $crate::utpm_log!(info, "passphrase" => false);
-                        git2::Cred::ssh_key(username, None, Path::new(&$val), None)?
-                    }
-                }),
-            }
-        });
-    }};
-}
-
 /// A macro to exit a function early with a `UtpmError`.
 ///
 /// # Usage
@@ -136,6 +23,23 @@ macro_rules! utpm_bail {
 ///
 /// This macro supports different log levels and can handle various data types,
 /// serializing them to JSON, YAML, etc., if the corresponding output format is selected.
+///
+/// Works like (more or less) the `info!`, `trace!`, etc... macros
+///
+/// # Examples
+/// Print a simple text:
+/// ```rust,ignore
+/// utpm_log!(info, "Hello! I'm secretly alive...");
+/// utpm_log!("Don't listen to him! He is not!");
+/// utpm_log!(error, "It's urgent.");
+/// ```
+/// Print values directly accessible from a JSON processor:
+/// ```rust,ignore
+/// let path = "/your/heart/";
+/// utpm_log!(trace, "Accessing your heart...", "path" => path);
+/// ```
+///
+/// TODO: Finish examples
 #[macro_export]
 macro_rules! utpm_log {
     ($(@g)? $lvl:ident, $data:expr $(, $($args:expr => $val:expr),*)?) => {{
@@ -144,9 +48,7 @@ macro_rules! utpm_log {
             $crate::OutputFormat::Json => tracing::$lvl!($($($args = $val),*,)? "{}", serde_json::to_string(&$data).unwrap()),
             #[cfg(feature = "output_yaml")]
             $crate::OutputFormat::Yaml => tracing::$lvl!($($($args = $val),*,)? "{}", serde_yaml::to_string(&$data).unwrap()),
-            #[cfg(feature = "output_toml")]
             $crate::OutputFormat::Toml => tracing::$lvl!($($($args = $val),*,)? "{}", toml::to_string(&$data).unwrap()),
-            #[cfg(feature = "output_text")]
             $crate::OutputFormat::Text => tracing::$lvl!($($($args = $val),*,)? "{}", $data),
             #[cfg(feature = "output_hjson")]
             $crate::OutputFormat::Hjson => tracing::$lvl!($($($args = $val),*,)? "{}", serde_hjson::to_string(&$data).unwrap()),
@@ -158,9 +60,7 @@ macro_rules! utpm_log {
             $crate::OutputFormat::Json => tracing::$lvl!($($args = $val),* data = &$data),
             #[cfg(feature = "output_yaml")]
             $crate::OutputFormat::Yaml => tracing::$lvl!($($args = $val),* "{}", serde_yaml::to_string(&$data)?),
-            #[cfg(feature = "output_toml")]
             $crate::OutputFormat::Toml => tracing::$lvl!($($args = $val),* "{}", toml::to_string(&$data)?),
-            #[cfg(feature = "output_text")]
             $crate::OutputFormat::Text => tracing::$lvl!($($args = $val),* "{}", $data),
             #[cfg(feature = "output_hjson")]
             $crate::OutputFormat::Hjson => tracing::$lvl!($($args = $val),* "{}", serde_hjson::ser::to_string(&$data)?),

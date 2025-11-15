@@ -29,6 +29,13 @@ pub struct RawPackage {
     pub updated_at: i64,
 }
 
+/// Fetches all packages from the Typst Universe registry.
+///
+/// # Returns
+/// A vector of all available packages from `packages.typst.org`.
+///
+/// # Errors
+/// Returns an error if the HTTP request fails or the response cannot be parsed.
 pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
     let packages: Vec<RawPackage> = reqwest::get("https://packages.typst.org/preview/index.json")
         .await?
@@ -37,27 +44,43 @@ pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
     Ok(packages)
 }
 
+/// Fetches all packages and creates a hashmap for lookup by name or name:version.
+///
+/// # Returns
+/// A hashmap where keys can be either:
+/// - Package name (e.g., "mypackage") - returns the latest version
+/// - Package name with version (e.g., "mypackage:1.0.0") - returns that specific version
+///
+/// # Errors
+/// Returns an error if the HTTP request fails or the response cannot be parsed.
 pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> {
     let packages: Vec<RawPackage> = get_all_packages().await?;
-    let packages_version: Vec<RawPackage> = packages.clone();
-    let mut hashmap: HashMap<String, RawPackage> =
-        packages.into_iter().map(|e| (e.name.clone(), e)).collect();
-    let hashmap_version: HashMap<String, RawPackage> = packages_version
-        .into_iter()
-        .map(|e| (format!("{}:{}", e.name.clone(), e.version.clone()), e))
-        .collect();
-    hashmap.extend(hashmap_version);
+    let mut hashmap: HashMap<String, RawPackage> = HashMap::with_capacity(packages.len() * 2);
+
+    for pkg in packages {
+        // Insert by name (latest version)
+        let name = pkg.name.clone();
+        let version_key = format!("{}:{}", pkg.name, pkg.version);
+
+        hashmap.insert(name, pkg.clone());
+        hashmap.insert(version_key, pkg);
+    }
+
     Ok(hashmap)
 }
 
+/// Retrieves and displays package information from the Typst Universe registry.
+///
+/// If specific packages are requested, displays only those packages.
+/// Otherwise, displays all available packages.
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a GetArgs) -> Result<bool> {
     utpm_log!(trace, "executing get command");
-    if cmd.packages.len() != 0 {
+    if !cmd.packages.is_empty() {
         let packages: HashMap<String, RawPackage> = get_packages_name_version().await?;
         for e in &cmd.packages {
             if !packages.contains_key(e) {
-                utpm_log!(warn, "Package not found, input: {}", e);
+                utpm_log!(warn, "Package not found", "input" => e);
                 continue;
             }
             let package = packages.get(e).unwrap();

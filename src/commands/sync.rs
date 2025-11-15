@@ -1,6 +1,7 @@
 use std::{fs::write, path::Path};
 
-use ignore::{overrides::OverrideBuilder, WalkBuilder};
+use ignore::{WalkBuilder, overrides::OverrideBuilder};
+use regex::Regex;
 use tracing::instrument;
 
 use std::result::Result as R;
@@ -10,7 +11,6 @@ use crate::{
     utils::{
         dryrun::get_dry_run,
         paths::{d_packages, get_current_dir},
-        regex_import,
         state::{Result, UtpmError},
     },
     utpm_bail, utpm_log,
@@ -18,9 +18,13 @@ use crate::{
 
 use super::SyncArgs;
 
+/// Synchronizes package dependencies to their latest versions.
+///
+/// Can either sync all `.typ` files in the current directory, or only specified files.
+/// When in check-only mode, reports available updates without modifying files.
 #[instrument(skip(cmd))]
 pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
-    if cmd.files.len() == 0 {
+    if cmd.files.is_empty() {
         utpm_log!(trace, "Running default check...");
         default_run(cmd.check_only).await?;
         Ok(true)
@@ -31,6 +35,10 @@ pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
     }
 }
 
+/// Runs sync on all `.typ` files in the current directory.
+///
+/// # Arguments
+/// * `cmd` - If true, only checks for updates without modifying files
 async fn default_run(cmd: bool) -> Result<bool> {
     let dir = &get_current_dir()?;
     let path = Path::new(dir);
@@ -38,11 +46,11 @@ async fn default_run(cmd: bool) -> Result<bool> {
     let mut overr: OverrideBuilder = OverrideBuilder::new(path);
     overr.add("*.typ")?;
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
-        if let Some(file_type) = result.file_type() {
-            if !file_type.is_dir() {
-                utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
-                file_run(result.path(), cmd).await?;
-            }
+        if let Some(file_type) = result.file_type()
+            && !file_type.is_dir()
+        {
+            utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
+            file_run(result.path(), cmd).await?;
         }
     }
     Ok(true)
@@ -50,13 +58,16 @@ async fn default_run(cmd: bool) -> Result<bool> {
 
 // TODO: Comments using utpm_log
 async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
-    let re = regex_import();
+    let re = Regex::new(
+        r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#,
+    )
+    .unwrap();
     let content_bytes = match std::fs::read(path) {
         Ok(bytes) => Ok(bytes),
         Err(e) => {
             utpm_log!(warn, "Skipping file {:?}, could not read: {}", path, e);
             Err(e)
-        }
+        },
     }?;
 
     let mut string = match String::from_utf8(content_bytes) {
@@ -64,7 +75,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
         Err(e) => {
             utpm_log!(warn, "Skipping non-UTF-8 file: {:?}", path);
             Err(e)
-        }
+        },
     }?;
 
     // Creating offset if there is multiple import and they don't have the same length

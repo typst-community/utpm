@@ -10,24 +10,27 @@ use inquire::{Select, Text, required, validator::Validation};
 use semver::Version;
 use toml::Table;
 use tracing::instrument;
-use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
+use typst_syntax::package::{
+    PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound,
+};
 
 use crate::{
     utils::{
         dryrun::get_dry_run,
-        paths::{check_path_file, get_current_dir},
+        paths::{MANIFEST_PATH, check_path_file, get_current_dir},
         specs::Extra,
         state::Result,
+        write_manifest,
     },
-    utpm_log, write_manifest,
+    utpm_log,
+    utpm_bail,
 };
-
-use crate::utpm_bail;
 
 use super::InitArgs;
 
+
 /// Build the package metadata through an interactive prompt
-fn interactive_pkg_info(cmd: &mut InitArgs, extra: &mut Extra) -> Result<PackageInfo> {
+fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
     let choice = vec!["yes", "no"];
     let public = Select::new(
         "Do you want to make your package public? Questions are on authors, license, description",
@@ -35,11 +38,6 @@ fn interactive_pkg_info(cmd: &mut InitArgs, extra: &mut Extra) -> Result<Package
     )
     .prompt()?;
     let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", choice.clone()).prompt()?;
-    let extra_opts = Select::new(
-        "Do you want to specify information of utpm? Questions are on the namespace",
-        choice.clone(),
-    )
-    .prompt()?;
     let template = Select::new("Do you want to create a template?", choice.clone()).prompt()?;
     let popu = Select::new(
         "Do you want to populate your package? Files like index.typ will be created",
@@ -79,7 +77,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs, extra: &mut Extra) -> Result<Package
         .with_default("main.typ")
         .prompt()?
         .into();
-    
+
     let mut pkg = PackageInfo {
         name,
         version,
@@ -120,7 +118,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs, extra: &mut Extra) -> Result<Package
                             }
                         }
                         Ok(Validation::Valid)
-                    }
+                    },
                     Err(_) => Ok(Validation::Invalid("Can't parse your expression".into())),
                 })
                 .prompt()?
@@ -183,19 +181,9 @@ fn interactive_pkg_info(cmd: &mut InitArgs, extra: &mut Extra) -> Result<Package
             .collect::<Vec<_>>();
     }
 
-    if extra_opts == "yes" {
-        extra.namespace = Some(
-            Text::new("Namespace: ")
-                .with_help_message("e.g. backup/mypassword.txt,.env")
-                .with_default("local")
-                .prompt()?
-                .to_string(),
-        )
-    }
-
     if template == "yes" {
         //TODO: Implement template creation.
-        utpm_bail!(General, "Template creation is not implemented yet.".into());
+        utpm_bail!(Unknown, "Template creation is not implemented yet.".into());
     }
 
     Ok(pkg)
@@ -271,36 +259,37 @@ fn cmd_pkg_info(cmd: &InitArgs) -> Result<PackageInfo> {
     })
 }
 
-fn create_pkg_info(cmd: &mut InitArgs, extra: &mut Extra) -> Result<PackageInfo> {
+fn create_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
     if !cmd.cli {
-        interactive_pkg_info(cmd, extra)
+        interactive_pkg_info(cmd)
     } else {
         cmd_pkg_info(cmd)
     }
 }
 
-fn populate_project_files(curr: &String, pkg: &PackageInfo, extra: &Extra) -> Result<()> {
-    let mut file = File::create(curr.clone() + "/README.md")?; // README.md
-    file.write_all(("# ".to_string() + &pkg.name.clone()).as_bytes())?;
-    if let Some(exp) = spdx::license_id(pkg.clone().license.unwrap().to_string().as_str()) {
-        file = File::create(curr.clone() + "/LICENSE")?; // LICENSE
+
+fn populate_project_files(project_dir: &String, pkg: &PackageInfo) -> Result<()> {
+    let mut file = File::create(format!("{}/README.md", project_dir))?; // README.md
+    file.write_all(format!("# {}", pkg.name).as_bytes())?;
+    if let Some(ref license) = pkg.license
+        && let Some(exp) = spdx::license_id(license.as_ref())
+    {
+        file = File::create(format!("{}/LICENSE", project_dir))?; // LICENSE
         file.write_all(exp.text().as_bytes())?;
     }
 
-    create_dir_all(curr.clone() + "/examples")?; // examples
-    let examples = curr.clone() + "/examples";
-    file = File::create(examples + "/tests.typ")?; // examples/tests.typ
-    let fm = format!(
-        "#import \"@{}/{}:{}\": *\nDo...",
-        extra.namespace.clone().unwrap_or("preview".to_string()),
-        pkg.name.clone(),
-        pkg.version.clone().to_string()
-    );
+    create_dir_all(format!("{}/examples", project_dir))?; // examples
+    let examples = format!("{}/examples", project_dir);
+    file = File::create(format!("{}/tests.typ", examples))?; // examples/tests.typ
+    let fm = format!("#import \"@local/{}:{}\":\n Do...", pkg.name, pkg.version);
     file.write_all(fm.as_bytes())?;
     file = File::create(Path::new(&pkg.entrypoint.to_string()))?; // main.typ
-    file.write_all(b"// This file is generated by UTPM (https://github.com/Thumuss/utpm)")?;
+    file.write_all(
+        b"// This file is generated by UTPM (https://github.com/typst-community/utpm)",
+    )?;
     Ok(())
 }
+
 
 /// Initializes a new typst project by creating a `typst.toml` manifest.
 ///
@@ -309,31 +298,20 @@ fn populate_project_files(curr: &String, pkg: &PackageInfo, extra: &Extra) -> Re
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     utpm_log!(trace, "executing init command");
-    let curr = get_current_dir()?;
-    utpm_log!(info, "Current dir: {}", curr);
-    let typ = curr.clone() + "/typst.toml";
+    let project_dir: String = get_current_dir()?;
+    utpm_log!(info, "Current dir: {}", project_dir);
+    let typ = format!("{}{}", project_dir, MANIFEST_PATH);
     utpm_log!(info, "Current typst file: {}", typ);
-
-    // Initialize UTPM-specific configurations.
-    let mut extra = Extra::default();
-    extra.namespace = cmd.namespace.to_owned();
-    utpm_log!(
-        trace,
-        "Namespace extracted? {}",
-        if extra.namespace.is_none() {
-            "no".into()
-        } else {
-            format!("yes: {}", extra.namespace.clone().unwrap())
-        }
-    );
-
-    let pkg = create_pkg_info(cmd, &mut extra)?;
 
     // TODO: Implement template handling.
     //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
 
     // Check if manifest already exists.
     if check_path_file(&typ) && !cmd.force {
+        utpm_log!(
+            error,
+            "typst.toml already exists. Use --force to overwrite it."
+        );
         return Ok(false);
     }
 
@@ -341,14 +319,17 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         utpm_log!(warn, "--force is a dangerous flag, use it cautiously");
     }
 
+    // Build the package metadata from command-line arguments.
+    let pkg = create_pkg_info(cmd)?;
+
     // Populate the project with default files if requested.
     if cmd.populate && !get_dry_run() {
-        populate_project_files(&curr, &pkg, &extra)?;
+        populate_project_files(&project_dir, &pkg)?;
     }
 
     // Create the `[tool.utpm]` table.
     let mut keys: BTreeMap<_, Table> = BTreeMap::new();
-    keys.insert("utpm".into(), Table::try_from(extra.clone())?);
+    keys.insert("utpm".into(), Table::try_from(Extra::default())?);
 
     // Construct the final manifest.
     let manif = PackageManifest {
@@ -359,7 +340,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     };
 
     // Write the manifest to `typst.toml`.
-    write_manifest!(&manif);
+    write_manifest(&manif)?;
 
     utpm_log!(info, "File created to {typ}");
     Ok(true)

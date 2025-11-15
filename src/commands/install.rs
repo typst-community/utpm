@@ -1,129 +1,75 @@
-use std::{env, fs, path::Path};
+use std::fs;
 
 use crate::{
     commands::LinkArgs,
-    load_manifest,
     utils::{
         copy_dir_all,
         dryrun::get_dry_run,
-        paths::{
-            check_path_dir, check_path_file, d_packages, datalocalutpm, get_current_dir,
-            get_ssh_dir,
-        },
-        specs::Extra,
-        state::{Result, UtpmError},
+        git::{clone_git, exist_git, project},
+        paths::{MANIFEST_PATH, check_path_dir, check_path_file, d_packages, datalocalutpm},
+        state::Result,
+        try_find,
     },
     utpm_log,
 };
 
-use git2::{build::RepoBuilder, Cred, FetchOptions, RemoteCallbacks};
+use super::{InstallArgs, link};
 use tracing::instrument;
 
-use super::{link, InstallArgs};
-
-/// Entry point for the install command.
+/// Installs a package from a git repository.
 ///
-/// Cleans up temporary directories before starting the installation process.
+/// Clones the repository to a temporary directory, validates the package structure,
+/// and then links it to the local package directory.
+///
+/// # Note
+/// This command requires git to be installed and cannot run in dry-run mode.
 #[instrument]
 pub async fn run(cmd: &InstallArgs) -> Result<bool> {
-    let path = format!("{}/tmp", datalocalutpm()?);
-    if check_path_dir(&path) && !get_dry_run() {
-        fs::remove_dir_all(path)?;
-    }
-    if !get_dry_run() {
-        init(cmd, 0).await?;
-    } else {
+    if get_dry_run() {
         utpm_log!(warn, "Dry-run, can't do anything");
+        return Ok(true);
     }
-    Ok(true)
-}
 
-/// Installs dependencies recursively.
-///
-/// If a URL is provided, it clones the repository from the given URL.
-/// Otherwise, it installs dependencies from the `typst.toml` manifest in the current directory.
-pub async fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
+    exist_git()?;
+
     utpm_log!(trace, "executing init command for install");
 
-    // Determine the source path for the installation.
-    let path = if let Some(url) = &cmd.url {
-        // If a URL is provided, create a temporary directory for cloning.
-        let dir = format!("{}/tmp/{}", datalocalutpm()?, i);
-        utpm_log!(debug, "url is set to {}, creating {}", url, dir);
-        dir
-    } else {
-        // Otherwise, use the current directory.
-        let dir = get_current_dir()?;
-        utpm_log!(debug, "url is none, current dir: {}", dir);
-        dir
-    };
-
-    // If a URL is provided, clone or copy the repository.
-    if let Some(x) = &cmd.url {
-        fs::create_dir_all(&path)?;
-        let sshpath = get_ssh_dir()?;
-        let ed: String = sshpath.clone() + "/id_ed25519";
-        let rsa: String = sshpath + "/id_rsa";
-        // Determine the SSH key to use.
-        let val: String = match env::var("UTPM_KEYPATH") {
-            Ok(val) => val,
-            Err(_) => {
-                if check_path_file(&ed) {
-                    ed
-                } else {
-                    rsa
-                }
-            }
-        };
-        // Handle git and http(s) URLs.
-        if x.starts_with("git") || x.starts_with("http") {
-            let mut callbacks = RemoteCallbacks::new();
-            callbacks.credentials(|_, username_from_url, _| {
-                let binding = env::var("UTPM_USERNAME")
-                    .unwrap_or(username_from_url.unwrap_or("git").to_string());
-                let username = binding.as_str();
-                match Cred::ssh_key_from_agent(username) {
-                    Ok(cred) => Ok(cred),
-                    Err(_) => Cred::ssh_key(
-                        username,
-                        None,
-                        Path::new(&val),
-                        Some(
-                            env::var("UTPM_PASSPHRASE")
-                                .unwrap_or(String::new())
-                                .as_str(),
-                        ),
-                    ),
-                }
-            });
-
-            let mut fo = FetchOptions::new();
-            fo.remote_callbacks(callbacks);
-
-            let mut builder = RepoBuilder::new();
-            builder.fetch_options(fo);
-            builder.clone(&x, Path::new(&path))?;
-        } else {
-            // Handle local paths.
-            copy_dir_all(&x, &path)?;
-        }
-    };
-
-    // Check for a manifest file in the source directory.
-    let typstfile = path.clone() + "/typst.toml";
-    if !check_path_file(&typstfile) {
-        let origin = cmd.url.clone().unwrap_or("/".into());
-        utpm_log!("{}", format!("x {}", origin));
-        return Ok::<bool, UtpmError>(false);
+    let path = format!("{}/tmp", datalocalutpm()?);
+    if check_path_dir(&path) && !get_dry_run() {
+        fs::remove_dir_all(&path)?;
     }
 
-    // Load the manifest and extract UTPM-specific configurations.
-    let file = load_manifest!(&path);
-    let utpm = Extra::from(file.tool);
-    let namespace = utpm.namespace.unwrap_or("local".into());
+    // Determine the source path for the installation.
+    utpm_log!(debug, "url is set to {}, creating {}", &cmd.url, path);
 
+    // If a URL is provided, clone or copy the repository.
+    fs::create_dir_all(&path)?;
+
+    project().lock().unwrap().0 = path.clone();
+
+    let url = &cmd.url;
+
+    // Handle git and http(s) URLs.
+    if url.starts_with("git") || url.starts_with("http") {
+        clone_git(url, &path)?;
+    } else {
+        // Handle local paths.
+        copy_dir_all(url, &path)?;
+    }
+    // Check for a manifest file in the source directory.
+    let typstfile = format!("{}{}", path, MANIFEST_PATH);
+    if !check_path_file(&typstfile) {
+        utpm_log!("{}", format!("x {}", url));
+        return Ok(false);
+    }
+
+    utpm_log!(trace, "Before loading manifest...", "path" => path);
+    // Load the manifest and extract UTPM-specific configurations.
+    let file = try_find(&path)?;
+    let namespace = cmd.namespace.as_deref().unwrap_or("local");
+    utpm_log!(trace, "After loading manifest...");
     // Check if the package is already installed.
-    if check_path_dir(&format!(
+    if check_path_dir(format!(
         "{}/{}/{}/{}",
         d_packages()?,
         namespace,
@@ -137,36 +83,23 @@ pub async fn init(cmd: &InstallArgs, i: usize) -> Result<bool> {
         return Ok(true);
     }
 
-    // Recursively install dependencies.
     utpm_log!("{}", format!("Installing {}...", file.package.name));
-    if let Some(vec_depend) = utpm.dependencies {
-        let mut y = 0;
-
-        for a in &vec_depend {
-            y += 1;
-            let ins = InstallArgs {
-                force: cmd.force,
-                url: Some(a.to_string()),
-            };
-            let ini = init(&ins, i * vec_depend.len() + y);
-            let _ = Box::pin(ini).await?;
-        }
-    }
 
     // Link the installed package and clean up temporary files.
-    if !cmd.url.is_none() {
-        let lnk = LinkArgs {
-            force: cmd.force,
-            no_copy: false,
-        };
-        link::run(&lnk, Some(path.clone()), false).await?; //TODO: change here too
-        fs::remove_dir_all(&path)?;
-        utpm_log!(info, "+ {}:{}", file.package.name, file.package.version);
-    } else {
-        utpm_log!(
-            info,
-            "* Installation complete! If you want to use it as a lib, just do a `utpm link`!"
-        )
-    }
+    let lnk = LinkArgs {
+        force: false,
+        no_copy: false,
+        namespace: cmd.namespace.clone(),
+        git_exclude: false,
+        git_global_ignore: false,
+        git_ignore: false,
+        ignore: false,
+        typst_ignore: false,
+    };
+
+    link::run(&lnk, Some(path.clone()), false).await?;
+    fs::remove_dir_all(&path)?;
+
+    utpm_log!(info, "+ {}:{}", file.package.name, file.package.version);
     Ok(true)
 }

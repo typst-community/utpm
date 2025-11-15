@@ -1,39 +1,29 @@
-use std::ffi::OsStr;
-use std::fmt::Debug;
-use std::fs::{self, create_dir_all, read_to_string};
-use std::path::{Path, PathBuf};
+use std::fs::read_to_string;
+use std::path::PathBuf;
+use std::{fs, path::Path};
 
-#[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
-use git2::{
-    build::{CheckoutBuilder, RepoBuilder},
-    FetchOptions, RemoteCallbacks, Repository,
-};
-use paths::{check_path_file, get_ssh_dir, has_content};
 use regex::Regex;
-use typst_syntax::package::PackageManifest;
-#[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
-use std::{env, io, result::Result as R};
-use tracing::instrument;
-use typst_kit::download::{DownloadState, Progress};
 
+use std::{io, result::Result as R};
+use typst_kit::download::{DownloadState, Progress};
+use typst_syntax::package::PackageManifest;
+
+pub mod dryrun;
+pub mod git;
 pub mod macros;
 pub mod output;
 pub mod paths;
 pub mod specs;
 pub mod state;
-pub mod dryrun;
 
 use crate::utpm_bail;
 
 use self::state::Result;
 
-#[cfg(any(feature = "publish"))]
-use octocrab::models::UserProfile;
-
 /// Recursively copies a directory from a source to a destination.
 ///
 /// This function is based on the solution from:
-/// https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
+/// <https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust>
 /// It has been edited to fit the needs of the CI environment.
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
@@ -49,6 +39,15 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
     Ok(())
 }
 
+/// Finds the path to a `typst.toml` manifest file in the given directory.
+///
+/// Returns an error if the manifest file does not exist.
+///
+/// # Arguments
+/// * `s` - The directory to search in
+///
+/// # Errors
+/// Returns `UtpmError::Manifest` if `typst.toml` is not found.
 pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
     let manifest_path = PathBuf::from_iter([s.as_ref(), "typst.toml".as_ref()]);
 
@@ -58,18 +57,28 @@ pub fn try_find_path(s: impl AsRef<Path>) -> Result<PathBuf> {
     Ok(manifest_path)
 }
 
+/// Finds and parses a `typst.toml` manifest file in the given directory.
+///
+/// Returns the parsed `PackageManifest` structure.
+///
+/// # Arguments
+/// * `s` - The directory containing the manifest file
+///
+/// # Errors
+/// Returns an error if:
+/// - The manifest file is not found
+/// - The file cannot be read
+/// - The TOML content is invalid
 pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
     let e = read_to_string(try_find_path(s)?)?;
-
     let f: PackageManifest = toml::from_str(&e)?;
     Ok(f)
-
 }
 
 /// Creates a symlink. This function is platform-specific.
 ///
 /// On Unix systems, it creates a standard symbolic link.
-#[cfg(unix)]
+#[cfg(not(windows))]
 pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
     use std::os::unix::fs::symlink;
     symlink(origin, new_path)
@@ -85,48 +94,33 @@ pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<()
 }
 
 /// Returns a regex for matching typst package specifications (`@namespace/name:version`).
-#[cfg(any(feature = "clone", feature = "publish", feature = "unlink"))]
 pub fn regex_package() -> Regex {
-    Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
+    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
-/// Returns a regex for matching a typst package namespace (`@namespace`).
-#[cfg(any(feature = "unlink"))]
-pub fn regex_namespace() -> Regex {
-    Regex::new(r"^@([a-z]+)$").unwrap()
-}
-
-#[cfg(any(feature = "clone"))]
-pub fn regex_pkg_simple() -> Regex {
-    Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap()
-}
-
-#[cfg(any(feature = "clone"))]
-pub fn regex_pkg_simple_pkg() -> Regex {
-    Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap()
-}
-
-#[cfg(any(feature = "clone"))]
-pub fn regex_pkg_simple_ver() -> Regex {
-    Regex::new(r"^(\d+)\.(\d+)\.(\d+)$").unwrap()
-}
-
-
-#[cfg(any(feature = "clone"))]
-pub fn regex_pkg_simple_name() -> Regex {
-    Regex::new(r"^(\w+)$").unwrap()
-}
-
-
-/// Returns a regex for matching a typst package name (`@namespace/name`).
-#[cfg(any(feature = "unlink"))]
-pub fn regex_packagename() -> Regex {
-    Regex::new(r"^@([a-z]+)\/([a-z]+(?:\-[a-z]+)?)$").unwrap()
-}
-
-/// Returns a regex for matching a import of a package (`#import "@namespace/name:1.0.0"`).
+/// Returns a regex for matching typst import statements (`#import "@namespace/name:version"`).
 pub fn regex_import() -> Regex {
-    Regex::new("\\#import \"@([a-z]+)\\/([a-z]+(?:\\-[a-z]+)?)\\:(\\d+)\\.(\\d+)\\.(\\d+)\"").unwrap()
+    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#)
+        .unwrap()
+}
+
+/// Writes a `PackageManifest` to `./typst.toml` in pretty TOML format.
+///
+/// Respects dry-run mode - if dry-run is enabled, the file is not actually written.
+///
+/// # Arguments
+/// * `data` - The package manifest to write
+///
+/// # Errors
+/// Returns an error if:
+/// - The manifest cannot be serialized to TOML
+/// - The file cannot be written (if not in dry-run mode)
+pub fn write_manifest(data: &PackageManifest) -> Result<()> {
+    let tomlfy: String = toml::to_string_pretty(data)?;
+    if !crate::utils::dryrun::get_dry_run() {
+        std::fs::write(Path::new("./typst.toml"), tomlfy)?;
+    }
+    Ok(())
 }
 
 //todo: impl
@@ -144,155 +138,18 @@ impl Progress for ProgressPrint {
     fn print_finish(&mut self, _state: &DownloadState) {}
 }
 
-/// Updates a local git repository of packages by pulling from a remote URL.
-///
-/// If the repository does not exist locally, it will be cloned.
-/// If it exists, it will be updated by fetching and fast-forwarding the 'main' branch.
-#[cfg(any(feature = "publish", feature = "clone", feature = "install"))]
-#[instrument]
-pub fn update_git_packages<P>(path_packages: P, url: &str) -> Result<Repository>
-where
-    P: AsRef<Path> + AsRef<OsStr> + Debug,
-{
-    use crate::{load_creds, utpm_bail, utpm_log};
-
-    create_dir_all(&path_packages)?;
-    let repo: Repository;
-    let sshpath = get_ssh_dir()?;
-    let ed: String = sshpath.clone() + "/id_ed25519";
-    let rsa: String = sshpath + "/id_rsa";
-    let val: String = match env::var("UTPM_KEYPATH") {
-        Ok(val) => val,
-        Err(_) => {
-            if check_path_file(&ed) {
-                ed
-            } else {
-                rsa
-            }
-        }
-    };
-    utpm_log!(info, "path" => val);
-    let mut callbacks = RemoteCallbacks::new();
-    load_creds!(callbacks, val);
-    let mut fo = FetchOptions::new();
-    fo.remote_callbacks(callbacks);
-
-    // Check if the repository already exists.
-    if has_content(&path_packages)? {
-        utpm_log!(info, "Content found, starting a 'git pull origin main'");
-        repo = Repository::open(path_packages)?;
-        let mut remote = repo.find_remote("origin")?;
-        remote.fetch(&["main"], Some(&mut fo), None)?;
-        let fetch_head = repo.find_reference("FETCH_HEAD")?;
-        let fetch_commit = repo.reference_to_annotated_commit(&fetch_head)?;
-        let analysis = repo.merge_analysis(&[&fetch_commit])?;
-
-        if analysis.0.is_up_to_date() {
-            utpm_log!(info, "up to date, nothing to do");
-        } else if analysis.0.is_fast_forward() {
-            let refname = format!("refs/heads/{}", "main");
-            let mut reference = repo.find_reference(&refname)?;
-            reference.set_target(fetch_commit.id(), "Fast-Forward")?;
-            repo.set_head(&refname)?;
-            repo.checkout_head(Some(CheckoutBuilder::default().force()))?;
-            utpm_log!(info, "fast forward done");
-        } else {
-            utpm_log!(error, "Can't rebase for now.");
-            utpm_bail!(Rebase)
-        }
-    } else {
-        // If the repository doesn't exist, clone it.
-        utpm_log!(info, "Start cloning");
-        let mut builder = RepoBuilder::new();
-        builder.fetch_options(fo);
-        repo = builder.clone(url, Path::new(&path_packages))?;
-        utpm_log!(info, "Package cloned");
-    };
-    Ok(repo)
-}
-
-/// Commits and pushes changes in a local git repository to the remote.
-#[cfg(any(feature = "publish"))]
-pub fn push_git_packages(repo: Repository, user: UserProfile, message: &str) -> Result<()> {
-    use git2::{IndexAddOption, Oid, PushOptions, Signature};
-    use tracing::{span, Level};
-
-    use crate::{load_creds, utpm_log};
-
-    // `instrument` macro cannot be used here, so we create a span manually.
-    let spans = span!(Level::INFO, "push_git_packages");
-    let _guard = spans.enter();
-
-    // --- Git Commit ---
-    utpm_log!(info, "Starting commit");
-    let uid = user.id.to_string();
-
-    // Create a git signature for the commit author.
-    let author = Signature::now(
-        user.name.unwrap_or(uid.clone()).as_str(),
-        user.email.unwrap_or(format!("{uid}@github.com")).as_str(),
-    )?;
-
-    // Stage all changes.
-    let mut index = repo.index()?;
-    index.add_all(&["."], IndexAddOption::DEFAULT, None)?;
-    index.write()?;
-    let oid = index.write_tree()?;
-    utpm_log!(info, "Index added");
-
-    // Create the commit.
-    let last_commit = repo.head()?.peel_to_commit()?;
-    let tree = repo.find_tree(oid)?;
-    let oid: Oid = repo.commit(
-        Some("HEAD"),
-        &author,
-        &author,
-        message,
-        &tree,
-        &[&last_commit],
-    )?;
-    utpm_log!(info, "Commit created", "id" => oid.to_string());
-
-    // --- Git Push ---
-    let sshpath = get_ssh_dir()?;
-    let ed: String = sshpath.clone() + "/id_ed25519";
-    let rsa: String = sshpath + "/id_rsa";
-    let val: String = match env::var("UTPM_KEYPATH") {
-        Ok(val) => val,
-        Err(_) => {
-            if check_path_file(&ed) {
-                ed
-            } else {
-                rsa
-            }
-        }
-    };
-    utpm_log!(info, "path" => val);
-    let mut callbacks = RemoteCallbacks::new();
-    load_creds!(callbacks, val);
-
-    let mut po = PushOptions::new();
-    po.remote_callbacks(callbacks);
-
-    // Push the changes to the remote repository.
-    repo.find_remote("origin")?
-        .push::<&str>(&["refs/heads/main"], Some(&mut po))?;
-
-    return Ok(());
-}
-
-#[cfg(test)]
 mod tests {
-    use super::*;
     #[test]
     fn regex() {
-        let re = regex_package();
+        let re = super::regex_package();
         assert!(re.is_match("@preview/package:2.0.1"));
         assert!(!re.is_match("@preview/package-:2.0.1"));
-        assert!(!re.is_match("@local/package-A:2.0.1"));
+        assert!(re.is_match("@local/package-A:2.0.1"));
         assert!(re.is_match("@local/package-a:2.0.1"));
+        assert!(re.is_match("@local/AAAAAAAAAAAAAA:2.0.1"));
         assert!(!re.is_match("@local/p:1..1"));
         assert!(re.is_match("@a/p:1.0.1"));
+        assert!(!re.is_match("@a/p:v1.0.1"));
         assert!(!re.is_match("@/p:1.0.1"));
         assert!(!re.is_match("p:1.0.1"));
         assert!(!re.is_match("@a/p"));

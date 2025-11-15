@@ -2,9 +2,9 @@
 
 ![UTPM logo](./assets/logo.svg)
 
-> _Unofficial Typst package manager_
+> _Unofficial Typst Package Manager_
 
-**UTPM** is a _package manager_ for **[local](https://github.com/typst/packages#local-packages)** and **[remote](https://github.com/typst/packages)** Typst packages. Quickly create and manage _projects_ and _templates_ on your system, and publish them directly to **Typst Universe**.  
+**UTPM** is a powerful command-line package manager for [Typst](https://typst.app/). Create, manage, and share Typst packages with ease — whether for local development or publishing to **Typst Universe**.
 
 [![typst-community - utpm](https://img.shields.io/static/v1?label=typst-community&message=utpm&color=blue&logo=github)](https://github.com/typst-community/utpm "Go to GitHub repo")
 [![stars - utpm](https://img.shields.io/github/stars/typst-community/utpm?style=social)](https://github.com/typst-community/utpm)
@@ -16,96 +16,124 @@
 
 </div>
 
+---
 
-> [!WARNING]  
-> **UTPM** is still in active development, and some features may not be fully implemented. \
-> We are searching for contributors — anything you can offer will be greatly appreciated!
-
-
-## 🔥 Features
-
-- [x] ✨ Create and initialize packages rapidly (`utpm workspace init`)
-  - [x] ⏯️ Alias shorthands (e.g., `workspace` -> `ws`, `packages` -> `pkg`)
-  - [x] ⌨️ Intuitive Clap CLI
-- [x] 🛠️ Manage project dependencies
-  - [x] ➕ Add dependencies (`utpm ws add`)
-  - [x] ➖ Remove dependencies (`utpm ws delete`)
-  - [x] 🔄 Sync dependencies to the latest versions (`utpm ws sync`)
-  - [x] 📦 Install dependencies from `typst.toml` (`utpm ws install`)
-- [x] 📦 Manage local and remote packages
-  - [x] 📥 Clone packages from the Typst Universe (`utpm ws clone`)
-  - [x] 🔗 Link local packages for development (`utpm ws link`)
-  - [x] 🗑️ Unlink and bulk-delete packages (`utpm pkg unlink`, `utpm pkg bulk-delete`)
-  - [x] ⬆️ Bump package version (`utpm ws bump`)
-- [x] 🔎 Discover and inspect packages
-  - [x] 🗃️ List local packages (`utpm pkg list`)
-  - [x] 🌲 Tree view for packages (`utpm pkg list --tree`)
-  - [x] ℹ️ Get package information from the remote (`utpm pkg get`)
-  - [x] ✅ Check for new package versions without updating (`utpm ws sync -c`)
-- [x] 📤 Flexible output formats
-  - [x] 📝 Classic text and JSON output (fully supported)
-  - [x] ⚠️ YAML, HJSON, and TOML output (experimental, under active development, and not included in official utpm builds — requires manual build for access)
-- [ ] 🚀 Automated publication directly to Typst Universe!
-
-**_...And more soon!_**
-
-
-<div id="install">
-
-## ⚡Install
-### With cargo
-Requires Cargo and Rust. 
+## ✨ Quick Start
 
 ```bash
-$ cargo install --git https://github.com/typst-community/utpm
+# Install UTPM
+cargo install utpm
+
+# Create a new package
+utpm prj init
+
+# Link it for local development
+utpm prj link
+
+# Use it in Typst!
+# #import "@local/my-package:0.1.0": *
 ```
 
-Or 
+> [!NOTE]
+> **UTPM** is actively developed and growing! Some features are still in progress. \
+> Contributions are welcome — check out our [contributing guide](docs/CONTRIBUTING.md)!
+
+
+## 🔥 Why UTPM?
+
+- **🚀 Rapid Development** - Create and link packages instantly for local testing
+- **📦 Smart File Management** - Respects `.gitignore`, `.typstignore`, and custom exclude patterns
+- **🔄 Dependency Management** - Sync dependencies and bump versions with ease
+- **📊 Metadata Extraction** - Extract package info for scripts and CI/CD pipelines
+- **🎨 Flexible Output** - JSON, HJSON, YAML, TOML, or human-readable text
+- **🛡️ Safe by Default** - Dry-run mode for all destructive operations
+- **⚡ Fast & Lightweight** - Written in Rust for speed and reliability
+
+## 🎯 Features
+
+### Package Development
+- ✨ **Initialize** packages with interactive prompts (`utpm prj init`)
+- 🔗 **Link** packages for local development (`utpm prj link`)
+- ⬆️ **Bump** versions with semantic versioning (`utpm prj bump`)
+- 📋 **Extract metadata** for automation (`utpm prj metadata`)
+
+### Dependency Management
+- 📥 **Clone** packages from Typst Universe (`utpm prj clone`)
+- 🔄 **Sync** dependencies to latest versions (`utpm prj sync`)
+- 📦 **Install** from git repositories (`utpm pkg install`)
+
+### Package Discovery
+- 🗃️ **List** local packages with tree view (`utpm pkg list --tree`)
+- ℹ️ **Get** package info from remote (`utpm pkg get`)
+- 🔍 **Check** for updates without applying (`utpm prj sync -c`)
+
+### Coming Soon
+- 🚀 **Publish** directly to Typst Universe (in development)
+
+
+---
+
+## 📦 Installation
+
+### Quick Install
+
+#### Cargo (Cross-platform)
 
 ```bash
-$ cargo install utpm
+# Using cargo-binstall (fastest)
+cargo binstall utpm
+
+# Or build from source
+cargo install utpm
 ```
+
+#### Arch Linux
+
+```bash
+# Using an AUR helper (yay, paru, etc.)
+yay -S utpm-bin      # Pre-built binaries
+# or
+yay -S utpm-git      # Build from latest git
+```
+
+#### Homebrew (macOS/Linux)
+
+```bash
+# Coming soon - waiting for tap approval
+brew install typst-community/utpm/utpm
+```
+
+#### Nix
 
 <details>
-<summary>
-  
-### With nix
+<summary>📦 Nix Installation Options</summary>
 
-</summary>
+##### With Flakes
 
-#### Nix with flakes enabled:
-
-Get utpm for a bash session without installing it:
-
+Temporary shell:
 ```bash
-$ nix shell github:typst-community/utpm
+nix shell github:typst-community/utpm
 ```
 
-Or if you use NixOS or home-manager with a flake, install it permanently in your `flake.nix` or your modules:
-
+Permanent installation in `flake.nix`:
 ```nix
 {
   inputs.utpm.url = "github:typst-community/utpm";
-  # ...
-
+  
   outputs = { self, nixpkgs, ... }@inputs: {
-    # change `yourhostname` or `yourusername` to your actual hostname or username
-    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem { #or homeConfigurations.yourusername
+    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      modules = [
-        # ...
-        {
-          environment.systemPackages = [ inputs.utpm.packages.${system}.default ]; #or home.packages
-        }
-      ];
+      modules = [{
+        environment.systemPackages = [ 
+          inputs.utpm.packages.${system}.default 
+        ];
+      }];
     };
   };
 }
 ```
 
-#### Nix without flakes:
-
-Clone the repo and then nix-build into the utpm directory:
+##### Without Flakes
 
 ```bash
 git clone https://github.com/typst-community/utpm.git
@@ -113,64 +141,234 @@ cd utpm
 nix-build
 ./result/bin/utpm
 ```
-Utpm will be at `./result/bin/utpm`
 
 </details>
-<div/>
 
-<div id="usage">
+### More Package Managers
 
-## 🎰 Usage 
-Further usage information can be found by running `utpm --help` or `utpm <command> --help` on any of the sub commands. Documentation is still in progress, feel free to ask questions in the issues section. Currently the github documentation is pretty much a mirror of the help command.
+UTPM is being packaged for multiple package managers:
 
+- 📦 **Snap** - `sudo snap install utpm` (automated publishing)
+- 📦 **Flatpak** - Available on Flathub (semi-automated)
+- 📦 **Debian/Ubuntu** - `.deb` packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
+- 📦 **Fedora/RHEL** - RPM packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
+
+**For maintainers:** See [docs/PACKAGING.md](docs/PACKAGING.md) for technical details and [docs/SECRETS.md](docs/SECRETS.md) for automation setup.
+
+**Note:** Windows builds are handled separately by another maintainer.
+
+### From Source
+
+```bash
+git clone https://github.com/typst-community/utpm.git
+cd utpm
+cargo install --path .
 ```
-Usage: utpm [OPTIONS] <COMMAND>
 
-Commands:
-  workspace  Create, edit, delete your workspace for your package [aliases: ws]
-  packages   use packages related to Typst [aliases: pkg]
-  generate   Generate shell completions [aliases: gen]
-  help       Print this message or the help of the given subcommand(s)
+---
+
+## 🚀 Usage
+
+### GitHub Actions
+
+Use UTPM in your CI/CD workflows:
+
+```yaml
+- name: Setup UTPM
+  uses: typst-community/utpm@v0.3.0
+```
+
+See [docs/ACTION.md](docs/ACTION.md) for complete documentation and examples.
+
+### Basic Commands
+
+```bash
+# Create a new package
+utpm prj init
+
+# Link for local development
+utpm prj link
+
+# Clone from Typst Universe
+utpm prj clone @preview/example:1.0.0
+
+# Bump version
+utpm prj bump 1.2.0
+
+# List installed packages
+utpm pkg list --tree
+
+# Get metadata for scripts
+VERSION=$(utpm prj metadata -f version)
+```
+
+### Command Overview
+
+#### Project Management (`utpm prj`)
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `init` | `n` | Create a new `typst.toml` manifest interactively |
+| `link` | `l` | Link package for local development (respects ignore files) |
+| `clone` | `c` | Clone a package from Typst Universe |
+| `bump` | `b` | Bump package version (supports semantic versioning) |
+| `sync` | `s` | Sync dependencies to latest versions |
+| `metadata` | `m` | Extract metadata for scripts and automation |
+| `publish` | `p` | 🚧 Publish to Typst Universe _(coming soon)_ |
+
+#### Package Management (`utpm pkg`)
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `list` | `l` | List installed packages (supports tree view) |
+| `path` | `p` | Show package directory path |
+| `unlink` | `u` | Remove a linked package |
+| `get` | `g` | Get package info from remote |
+| `install` | `i` | Install package from git repository |
+
+#### Other Commands
+
+- `utpm generate` (`g`) - Generate shell completion scripts
+
+### Global Options
+
+```bash
+utpm [OPTIONS] <COMMAND>
 
 Options:
-  -v, --verbose <VERBOSE>  Gives you more information, permet debug
-  -h, --help               Print help
-  -V, --version            Print version
+  -v, --verbose <LEVEL>     Logging level (trace, debug, info, warn, error)
+  -o, --output <FORMAT>     Output format (text, json, yaml, toml, hjson)
+  -D, --dry-run             Preview changes without writing to disk
+  -h, --help                Show help information
+  -V, --version             Show version
 ```
 
-### **Workspace (`ws`)**: Manage Your Project Workspace
-| Command | Alias | Description |
-| :--- | :---: | :--- |
-| `link` | `l` | Link the current project to the local package directory. |
-| `install` | `i` | Install all dependencies from the `typst.toml` manifest. |
-| `add` | `a` | Add dependencies to the manifest and then install them. |
-| `delete` | `d` | Delete dependencies from the manifest. |
-| `init` | `n` | Create a new `typst.toml` manifest for a project. |
-| `clone` | | Clone a package from the typst universe or a local directory. |
-| `bump` | | Bump the version of your package. |
-| `sync` | | Synchronise all your dependencies to their last version. |
-| `publish` | `p` | **(WIP)** Intended for publishing packages. |
+> 💡 **Tip**: Use `utpm <command> --help` for detailed command-specific help
 
-### **Packages (`pkg`)**: Manage Typst Packages
-| Command | Alias | Description |
-| :--- | :---: | :--- |
-| `list` | `l` | List all packages in your local storage. |
-| `path` | `p` | Display the path to the typst packages folder. |
-| `unlink` | `u` | Delete a package from your local storage. |
-| `bulk-delete` | `bd` | Delete multiple packages or a whole namespace at once. |
-| `get` | `g` | Get specific/all package from the remote. |
-| `tree` | `t` | **[DEPRECATED]** Display packages as a tree. Use `list --tree` instead. |
+---
 
-### **generate (`gen`)**: Generate Shell Completions
+## ⚙️ Configuration
 
-<div/>
+UTPM extends the standard `typst.toml` with a `[tool.utpm]` section for package-specific settings.
 
-<div id="contribution">
+### Excluding Files
 
-## ❤️ Contribution
+Control which files are included when linking or publishing:
 
-If you want to help me develop this package, simply make an issue or a PR!
+```toml
+[package]
+name = "my-package"
+version = "0.1.0"
+# ... other standard fields
 
-By using this app, you contribute to it, thank you! <3
+[tool.utpm]
+exclude = [
+  ".git",
+  ".github",
+  "*.md",           # Exclude all Markdown files
+  "tests/",         # Exclude tests directory
+  "examples/",      # Exclude examples
+  "**/*.bak",       # Exclude backup files recursively
+]
+```
+
+**Pattern Syntax:**
+- `*` - Match files in current directory (e.g., `*.md`)
+- `**` - Match recursively (e.g., `**/*.tmp`)
+- `!pattern` - Negate/include pattern
+- Patterns ending with `/` match directories only
+
+**Ignore Files Respected:**
+- `.gitignore` (default: enabled)
+- `.typstignore` (default: enabled)
+- `.ignore` (optional, enable with `--ignore`)
+- Custom patterns in `[tool.utpm]`
+
+### Metadata Extraction
+
+Extract package metadata for scripts and CI/CD:
+
+```bash
+# Get specific field (outputs plain text)
+VERSION=$(utpm prj metadata -f version)
+NAME=$(utpm prj metadata -f name)
+
+# Use in automation
+echo "Building $NAME version $VERSION"
+git tag "v$VERSION"
+
+# Get all metadata as JSON
+utpm -o json prj metadata | jq '.authors'
+```
+
+**Available fields:** `name`, `version`, `entrypoint`, `authors`, `license`, `description`, `repository`, `homepage`, `keywords`, `categories`, `disciplines`, `compiler`, `exclude`
+
+📄 **Example**: See [`assets/typst.toml.example`](assets/typst.toml.example) for a complete configuration reference.
+
+---
+
+## 📖 Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[📘 Complete Guide](docs/GUIDE.md)** | Comprehensive guide for users, package authors, and contributors |
+| **[🤝 Contributing](docs/CONTRIBUTING.md)** | Code standards, testing, and contribution process |
+| **[🛠️ Development](docs/DEVELOPMENT.md)** | Development setup, workflow, and tools |
+| **[🧪 Testing](docs/TESTING.md)** | Testing guide, running tests, and writing new tests |
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions of all kinds! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
+
+### Quick Start for Contributors
+
+```bash
+# 1. Install development tools
+cargo install just
+
+# 2. Setup git hooks (optional but recommended)
+just setup-hooks
+
+# 3. Before committing
+just fix    # Auto-format and fix linting issues
+just ci     # Run all checks (format, lint, test)
+```
+
+### What You Can Do
+
+- 🐛 **Report bugs** - Open an issue with details
+- 💡 **Suggest features** - Share your ideas in discussions
+- 📝 **Improve docs** - Help make documentation clearer
+- 🔧 **Fix issues** - Pick up a "good first issue"
+- ✨ **Add features** - Implement new functionality
+
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for detailed guidelines on code standards, testing, and the PR process.
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with ❤️ by the [Typst Community](https://github.com/typst-community)
+
+**Key Dependencies:**
+- [Typst](https://typst.app/) - The amazing typesetting system
+- [Rust](https://www.rust-lang.org/) - Systems programming language
+- [Clap](https://github.com/clap-rs/clap) - Command-line argument parsing
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#)**
+
+Made with ❤️ for the Typst community
 
 </div>
