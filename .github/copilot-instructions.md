@@ -985,6 +985,10 @@ UTPM provides comprehensive documentation for different audiences:
 - **docs/PUBLISHING.md** - Publishing guide (mostly automated)
 - **docs/SECRETS.md** - GitHub secrets configuration for automation
 
+### GitHub Actions
+- **action.yml** - Composite action to install UTPM in workflows
+- **docs/ACTION.md** - Action documentation and usage examples
+
 ### Documentation Guidelines
 
 When updating UTPM:

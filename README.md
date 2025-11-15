@@ -169,6 +169,17 @@ cargo install --path .
 
 ## 🚀 Usage
 
+### GitHub Actions
+
+Use UTPM in your CI/CD workflows:
+
+```yaml
+- name: Setup UTPM
+  uses: typst-community/utpm@v0.3.0
+```
+
+See [docs/ACTION.md](docs/ACTION.md) for complete documentation and examples.
+
 ### Basic Commands
 
 ```bash

@@ -1,0 +1,148 @@
+name: 'Setup UTPM'
+description: 'Install and configure UTPM (Unofficial Typst Package Manager)'
+author: 'Typst Community'
+
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'Version of UTPM to install (e.g., "0.3.0" or "latest")'
+    required: false
+    default: 'latest'
+  
+  token:
+    description: 'GitHub token for API requests (to avoid rate limiting)'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: 'The installed version of UTPM'
+    value: ${{ steps.install.outputs.version }}
+  
+  cache-hit:
+    description: 'Whether the installation was restored from cache'
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Detect platform
+      id: platform
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          TARGET="x86_64-pc-windows-msvc"
+          OS="windows"
+          ARCH="x86_64"
+        else
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m)
+          
+          case "$OS" in
+            linux)
+              case "$ARCH" in
+                x86_64) TARGET="x86_64-unknown-linux-gnu" ;;
+                aarch64) TARGET="aarch64-unknown-linux-gnu" ;;
+                *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+              esac
+              ;;
+            darwin)
+              case "$ARCH" in
+                x86_64) TARGET="x86_64-apple-darwin" ;;
+                arm64) TARGET="aarch64-apple-darwin" ;;
+                *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+              esac
+              ;;
+            *)
+              echo "Unsupported OS: $OS"
+              exit 1
+              ;;
+          esac
+        fi
+        
+        echo "target=$TARGET" >> $GITHUB_OUTPUT
+        echo "os=$OS" >> $GITHUB_OUTPUT
+        echo "arch=$ARCH" >> $GITHUB_OUTPUT
+
+    - name: Get latest version
+      id: version
+      if: inputs.version == 'latest'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        LATEST=$(curl -s -H "Authorization: token $GH_TOKEN" \
+          https://api.github.com/repos/typst-community/utpm/releases/latest | \
+          grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+        echo "version=$LATEST" >> $GITHUB_OUTPUT
+
+    - name: Set version
+      id: set-version
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          VERSION="${{ steps.version.outputs.version }}"
+        else
+          VERSION="${{ inputs.version }}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Cache UTPM
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/bin/utpm
+        key: utpm-${{ steps.platform.outputs.target }}-${{ steps.set-version.outputs.version }}
+
+    - name: Download and install UTPM
+      id: install
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        VERSION="${{ steps.set-version.outputs.version }}"
+        TARGET="${{ steps.platform.outputs.target }}"
+        OS="${{ steps.platform.outputs.os }}"
+        
+        # Determine archive format and download URL
+        if [ "$OS" = "windows" ]; then
+          ARCHIVE="utpm-${TARGET}.zip"
+          BINARY="utpm.exe"
+        else
+          ARCHIVE="utpm-${TARGET}.tar.gz"
+          BINARY="utpm"
+        fi
+        
+        DOWNLOAD_URL="https://github.com/typst-community/utpm/releases/download/v${VERSION}/${ARCHIVE}"
+        echo "Downloading UTPM v${VERSION} for ${TARGET}..."
+        curl -sL "$DOWNLOAD_URL" -o "$ARCHIVE"
+        
+        # Extract binary
+        if [ "$OS" = "windows" ]; then
+          unzip -q "$ARCHIVE" "$BINARY"
+        else
+          tar xzf "$ARCHIVE" "$BINARY"
+        fi
+        
+        # Install to ~/.local/bin
+        mkdir -p ~/.local/bin
+        mv "$BINARY" ~/.local/bin/
+        chmod +x ~/.local/bin/"$BINARY"
+        
+        # Cleanup
+        rm "$ARCHIVE"
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Add to PATH
+      shell: bash
+      run: |
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Verify installation
+      shell: bash
+      run: |
+        utpm --version
+        echo "✅ UTPM installed successfully!"
