@@ -62,7 +62,10 @@ impl<'b> RawPck<'b> {
 pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     utpm_log!(trace, "executing clone command");
     // Determine the target path for the clone operation.
-    let path: PathBuf = cmd.path.clone().unwrap_or_else(|| get_current_dir().unwrap().into());
+    let path: PathBuf = cmd
+        .path
+        .clone()
+        .unwrap_or_else(|| get_current_dir().unwrap().into());
 
     // Check if the target directory already has content.
     if has_content(&path)? {

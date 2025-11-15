@@ -56,16 +56,16 @@ pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
 pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> {
     let packages: Vec<RawPackage> = get_all_packages().await?;
     let mut hashmap: HashMap<String, RawPackage> = HashMap::with_capacity(packages.len() * 2);
-    
+
     for pkg in packages {
         // Insert by name (latest version)
         let name = pkg.name.clone();
         let version_key = format!("{}:{}", pkg.name, pkg.version);
-        
+
         hashmap.insert(name, pkg.clone());
         hashmap.insert(version_key, pkg);
     }
-    
+
     Ok(hashmap)
 }
 

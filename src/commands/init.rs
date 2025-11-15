@@ -105,7 +105,8 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         let choice = vec!["yes", "no"];
         let public = Select::new("Do you want to make your package public? Questions are on authors, license, description", choice.clone()).prompt()?;
         let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", vec!["yes", "no"]).prompt()?;
-        let template = Select::new("Do you want to create a template?", vec!["yes", "no"]).prompt()?;
+        let template =
+            Select::new("Do you want to create a template?", vec!["yes", "no"]).prompt()?;
         let popu = Select::new(
             "Do you want to populate your package? Files like index.typ will be created",
             choice,
@@ -245,21 +246,17 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     if cmd.populate && !get_dry_run() {
         let mut file = File::create(format!("{}/README.md", curr))?; // README.md
         file.write_all(format!("# {}", pkg.name).as_bytes())?;
-        if let Some(ref license) = pkg.license {
-            if let Some(exp) = spdx::license_id(&license.to_string()) {
-                file = File::create(format!("{}/LICENSE", curr))?; // LICENSE
-                file.write_all(exp.text().as_bytes())?;
-            }
+        if let Some(ref license) = pkg.license
+            && let Some(exp) = spdx::license_id(license.as_ref())
+        {
+            file = File::create(format!("{}/LICENSE", curr))?; // LICENSE
+            file.write_all(exp.text().as_bytes())?;
         }
 
         create_dir_all(format!("{}/examples", curr))?; // examples
         let examples = format!("{}/examples", curr);
         file = File::create(format!("{}/tests.typ", examples))?; // examples/tests.typ
-        let fm = format!(
-            "#import \"@local/{}:{}\":\n Do...",
-            pkg.name,
-            pkg.version
-        );
+        let fm = format!("#import \"@local/{}:{}\":\n Do...", pkg.name, pkg.version);
         file.write_all(fm.as_bytes())?;
         file = File::create(Path::new(&pkg.entrypoint.to_string()))?; // main.typ
         file.write_all(
