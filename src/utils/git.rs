@@ -33,7 +33,7 @@ impl State {
 /// Lazily initialized via `OnceLock` on first use.
 pub fn project() -> &'static Mutex<State> {
     static STRING: OnceLock<Mutex<State>> = OnceLock::new();
-    STRING.get_or_init(|| (Mutex::new(State::new())))
+    STRING.get_or_init(|| Mutex::new(State::new()))
 }
 
 /// Check if Git is available in PATH by running `git --version`.
