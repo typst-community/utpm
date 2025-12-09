@@ -10,6 +10,7 @@ use typst_kit::{download::Downloader, package::PackageStorage};
 use crate::{
     build,
     commands::get::get_packages_name_version,
+    path,
     utils::{
         ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
@@ -104,16 +105,10 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     // Determine the local path for the package based on its namespace.
     let val = if pkg.namespace == "preview" {
         utpm_log!(info, "preview found, cache dir use");
-        c_packages()?
-            .join(pkg.namespace)
-            .join(pkg.package)
-            .join(pkg.version)
+        path!(c_packages()?, pkg.namespace, pkg.package, pkg.version)
     } else {
         utpm_log!(info, "no preview found, data dir use");
-        d_packages()?
-            .join(pkg.namespace)
-            .join(pkg.package)
-            .join(pkg.version)
+        path!(d_packages()?, pkg.namespace, pkg.package, pkg.version)
     };
 
     // If the package already exists locally, copy or symlink it.
