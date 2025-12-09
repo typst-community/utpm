@@ -49,7 +49,7 @@ async fn default_run(cmd: bool) -> Result<bool> {
         if let Some(file_type) = result.file_type()
             && !file_type.is_dir()
         {
-            utpm_log!(info, "Syncing {}...", result.file_name().to_str().unwrap());
+            utpm_log!(info, "Syncing {}...", result.file_name().to_string_lossy());
             file_run(result.path(), cmd).await?;
         }
     }
@@ -153,7 +153,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
         if !get_dry_run() {
             write(path, &string)?
         };
-        utpm_log!(info, "{} written", path.to_str().unwrap());
+        utpm_log!(info, "{} written", path.display());
     }
     Ok(true)
 }

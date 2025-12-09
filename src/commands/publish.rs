@@ -5,9 +5,8 @@ use crate::utils::{regex_package, try_find};
 use crate::utpm_log;
 use std::env;
 use std::fs::{copy, create_dir_all};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::result::Result as R;
-use std::str::FromStr;
 
 use crate::utils::paths::{MANIFEST_FILE, get_current_dir};
 use crate::utils::paths::{
@@ -46,7 +45,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     } else {
         &get_current_dir()?
     };
-    utpm_log!(info, "Path: {}", path_curr.to_str().unwrap());
+    utpm_log!(info, "Path: {}", path_curr.display());
 
     let version: String = config.package.version.to_string();
     let name: String = config.package.name.into();
@@ -59,12 +58,12 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         utpm_bail!(PackageFormatError); // TODO: Improve error handling.
     }
 
-    let path_curr_str: &str = path_curr.to_str().unwrap();
     let path_packages = default_typst_packages()?;
-    let path_packages_new: String = format!(
-        "{}/packages/preview/{name}/{version}",
-        path_packages.to_str().unwrap()
-    );
+    let path_packages_new = path_packages
+        .join("packages")
+        .join("preview")
+        .join(&name)
+        .join(&version);
 
     // --- GitHub Handling ---
     let crab = Octocrab::builder()
@@ -122,9 +121,13 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     match pull_git() {
         Ok(_) => Ok(true),
-        Err(_) => clone_git(path_packages.to_str().unwrap(), fork.as_str()),
+        Err(_) => clone_git(&path_packages.to_string_lossy(), fork.as_str()),
     }?;
-    utpm_log!(info, "Path to the new package {}", path_packages_new);
+    utpm_log!(
+        info,
+        "Path to the new package {}",
+        path_packages_new.display()
+    );
 
     // Use WalkBuilder to respect ignore files.
     let mut wb: WalkBuilder = WalkBuilder::new(path_curr);
@@ -160,26 +163,28 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     // Add custom ignore file if specified.
-    if let Some(custom_ignore) = &cmd.custom_ignore {
-        let filename = custom_ignore.file_name().unwrap().to_str().unwrap();
-        utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
-        if check_path_file(custom_ignore) {
-            utpm_log!(info, "File exist, adding it", "custom_ignore" => filename);
-            wb.add_custom_ignore_filename(filename);
+    if let Some(custom_ignore) = &cmd.custom_ignore
+        && let Some(filename) = custom_ignore.file_name().and_then(|f| f.to_str()) {
+            utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
+            if check_path_file(custom_ignore) {
+                utpm_log!(info, "File exist, adding it", "custom_ignore" => filename);
+                wb.add_custom_ignore_filename(filename);
+            }
         }
-    }
 
     // --- Copy Files ---
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
-            let path: &Path = result.path();
-            let name: String = path.to_str().unwrap().to_string();
-            let l: String = name.replace::<&str>(path_curr_str, &path_packages_new);
-            utpm_log!("{}", l);
+            let path = result.path();
+            let relative = path
+                .strip_prefix(path_curr)
+                .map_err(|e| anyhow::anyhow!("Failed to strip prefix: {}", e))?;
+            let dest_path = path_packages_new.join(relative);
+            utpm_log!("{}", dest_path.display());
             if file_type.is_dir() {
-                create_dir_all(l)?;
+                create_dir_all(&dest_path)?;
             } else {
-                copy(path, l)?;
+                copy(path, &dest_path)?;
             }
         }
     }
@@ -188,19 +193,22 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     if !has_content(&path_packages_new)? {
         utpm_bail!(NoFiles);
     }
-    let manifest_check = PathBuf::from(&path_packages_new).join(MANIFEST_FILE);
-    if !check_path_file(manifest_check) {
-        utpm_bail!(OmitedTypstFile, path_packages_new.clone());
+    let manifest_check = path_packages_new.join(MANIFEST_FILE);
+    if !check_path_file(&manifest_check) {
+        utpm_bail!(OmitedTypstFile, path_packages_new.display().to_string());
     }
     let entry = config.package.entrypoint;
-    let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
-    entryfile.push(Path::new(&entry.to_string()));
+    let entryfile = path_packages_new.join(entry.as_str());
     let entrystr = entry.to_string();
     utpm_log!(trace, "entryfile" => entrystr);
-    if !check_path_file(entryfile) {
-        utpm_bail!(OmitedEntryfile, entrystr, path_packages_new);
+    if !check_path_file(&entryfile) {
+        utpm_bail!(
+            OmitedEntryfile,
+            entrystr,
+            path_packages_new.display().to_string()
+        );
     }
-    utpm_log!(info, "files copied to {}", path_packages_new);
+    utpm_log!(info, "files copied to {}", path_packages_new.display());
 
     // --- Git Push ---
     utpm_log!(info, "Getting information from github");
@@ -219,7 +227,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .clone()
         .unwrap_or(format!("{} using utpm", &name_replaced));
 
-    project().lock().unwrap().0 = PathBuf::from(path_packages_new);
+    project().lock().unwrap().0 = path_packages_new;
 
     add_git(".")?;
     commit_git(&msg)?;

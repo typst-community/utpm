@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::PathBuf;
 
 use crate::{
     commands::LinkArgs,
@@ -35,36 +34,41 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 
     utpm_log!(trace, "executing init command for install");
 
-    let path = format!("{}/tmp", datalocalutpm()?.to_str().unwrap());
+    let path = datalocalutpm()?.join("tmp");
     if check_path_dir(&path) && !get_dry_run() {
         fs::remove_dir_all(&path)?;
     }
 
     // Determine the source path for the installation.
-    utpm_log!(debug, "url is set to {}, creating {}", &cmd.url, path);
+    utpm_log!(
+        debug,
+        "url is set to {}, creating {}",
+        &cmd.url,
+        path.display().to_string()
+    );
 
     // If a URL is provided, clone or copy the repository.
     fs::create_dir_all(&path)?;
 
-    project().lock().unwrap().0 = PathBuf::from(path.clone());
+    project().lock().unwrap().0 = path.clone();
 
     let url = &cmd.url;
 
     // Handle git and http(s) URLs.
     if url.starts_with("git") || url.starts_with("http") {
-        clone_git(url, &path)?;
+        clone_git(url, &path.to_string_lossy())?;
     } else {
         // Handle local paths.
         copy_dir_all(url, &path)?;
     }
     // Check for a manifest file in the source directory.
-    let typstfile = format!("{}{}", path, MANIFEST_FILE);
+    let typstfile = path.join(MANIFEST_FILE);
     if !check_path_file(&typstfile) {
         utpm_log!("{}", format!("x {}", url));
         return Ok(false);
     }
 
-    utpm_log!(trace, "Before loading manifest...", "path" => path);
+    utpm_log!(trace, "Before loading manifest...", "path" => path.display().to_string());
     // Load the manifest and extract UTPM-specific configurations.
     let file = try_find(&path)?;
     let namespace = cmd.namespace.as_deref().unwrap_or("local");
@@ -98,7 +102,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         typst_ignore: false,
     };
 
-    link::run(&lnk, &Some(path.clone()), false).await?;
+    link::run(&lnk, &Some(path.display().to_string()), false).await?;
     fs::remove_dir_all(&path)?;
 
     utpm_log!(info, "+ {}:{}", file.package.name, file.package.version);

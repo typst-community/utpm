@@ -2,7 +2,7 @@ use std::{
     collections::BTreeMap,
     fs::{File, create_dir_all},
     io::Write,
-    path::PathBuf,
+    path::Path,
     str::FromStr,
 };
 
@@ -244,7 +244,7 @@ fn create_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
     }
 }
 
-fn populate_project_files(project_dir: &PathBuf, pkg: &PackageInfo) -> Result<()> {
+fn populate_project_files(project_dir: &Path, pkg: &PackageInfo) -> Result<()> {
     let mut file = File::create(project_dir.join("README.md"))?; // README.md
     file.write_all(format!("# {}", pkg.name).as_bytes())?;
     if let Some(ref license) = pkg.license

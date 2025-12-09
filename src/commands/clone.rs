@@ -118,7 +118,7 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     // If the package already exists locally, copy or symlink it.
     if check_path_dir(&val) {
-        utpm_log!(info, "Package found locally at {}", val.to_str().unwrap());
+        utpm_log!(info, "Package found locally at {}", val.display());
         if cmd.download_only {
             utpm_log!(info, "download only, nothing to do.");
             return Ok(true);
@@ -179,7 +179,7 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     return match result_download {
         Ok(val) => {
-            utpm_log!(info, "package downloaded", "path" => val.to_str().unwrap());
+            utpm_log!(info, "package downloaded", "path" => val.display().to_string());
             if cmd.download_only {
                 utpm_log!(debug, "download complete, nothing to do");
                 return Ok(true);
