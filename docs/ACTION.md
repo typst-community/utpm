@@ -77,7 +77,7 @@ jobs:
         run: utpm prj link
       
       - name: Install Typst
-        uses: Thumuss/setup-typst@v3
+        uses: typst-community/setup-typst@v3
       
       - name: Compile document
         run: typst compile main.typ
