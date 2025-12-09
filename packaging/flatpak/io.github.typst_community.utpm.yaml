@@ -1,0 +1,30 @@
+app-id: io.github.typst_community.utpm
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: utpm
+
+finish-args:
+  - --share=network
+  - --filesystem=home
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/utpm/cargo
+
+modules:
+  - name: utpm
+    buildsystem: simple
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --verbose
+      - install -Dm755 ./target/release/utpm -t /app/bin/
+    sources:
+      - type: git
+        url: https://github.com/typst-community/utpm.git
+        tag: v0.2.0
+      - type: file
+        path: Cargo.lock

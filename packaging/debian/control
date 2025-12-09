@@ -1,0 +1,19 @@
+Source: utpm
+Section: devel
+Priority: optional
+Maintainer: Typst Community <https://github.com/typst-community>
+Build-Depends: debhelper-compat (= 13),
+               dh-cargo,
+               cargo,
+               rustc
+Standards-Version: 4.6.0
+Homepage: https://github.com/typst-community/utpm
+Rules-Requires-Root: no
+
+Package: utpm
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Unofficial Typst Package Manager
+ UTPM is a powerful command-line package manager for Typst.
+ Create, manage, and share Typst packages with ease — whether for
+ local development or publishing to Typst Universe.

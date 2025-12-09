@@ -1,0 +1,51 @@
+# Maintainer: Typst Community <https://github.com/typst-community>
+pkgname=utpm-git
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="Unofficial Typst Package Manager (git version)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/typst-community/utpm"
+license=('MIT')
+depends=('gcc-libs')
+makedepends=('rust' 'cargo' 'git')
+provides=('utpm')
+conflicts=('utpm' 'utpm-bin')
+source=("git+https://github.com/typst-community/utpm.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "${srcdir}/utpm"
+    git describe --long --tags | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+build() {
+    cd "${srcdir}/utpm"
+    cargo build --release --locked --all-features
+    
+    # Generate shell completions
+    ./target/release/utpm generate bash > utpm.bash
+    ./target/release/utpm generate fish > utpm.fish
+    ./target/release/utpm generate zsh > _utpm
+}
+
+check() {
+    cd "${srcdir}/utpm"
+    cargo test --release --locked
+}
+
+package() {
+    cd "${srcdir}/utpm"
+    
+    # Install binary
+    install -Dm755 "target/release/utpm" "${pkgdir}/usr/bin/utpm"
+    
+    # Install shell completions
+    install -Dm644 "utpm.bash" "${pkgdir}/usr/share/bash-completion/completions/utpm"
+    install -Dm644 "utpm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/utpm.fish"
+    install -Dm644 "_utpm" "${pkgdir}/usr/share/zsh/site-functions/_utpm"
+    
+    # Install documentation
+    install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+    install -Dm644 "docs/GUIDE.md" "${pkgdir}/usr/share/doc/${pkgname}/GUIDE.md"
+    install -Dm644 "LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

@@ -11,10 +11,8 @@ pub enum OutputFormat {
     #[cfg(feature = "output_yaml")]
     Yaml,
     /// TOML format.
-    #[cfg(feature = "output_toml")]
     Toml,
     /// Plain text format.
-    #[cfg(feature = "output_text")]
     Text,
     /// Hjson format.
     #[cfg(feature = "output_hjson")]

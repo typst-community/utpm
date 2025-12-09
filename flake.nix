@@ -46,7 +46,7 @@
             OPENSSL_NO_VENDOR = 1;
             inherit cargoArtifacts src;
             meta = {
-              homepage = "https://github.com/Thumuss/utpm";
+              homepage = "https://github.com/typst-community/utpm";
               licence = pkgs.stdenv.lib.licences.MIT;
               description = "UTPM is a package manager for local and remote Typst packages.";
               longDescription = "UTPM is a package manager for local and remote Typst packages. Quickly create and manage projects and templates on your system, and publish them directly to Typst Universe.";

@@ -1,13 +1,14 @@
 use fmt_derive::{Debug, Display};
-use ptree::{print_tree, TreeItem};
+use ptree::{TreeItem, print_tree};
 use serde::Serialize;
 use std::borrow::Cow;
 use std::fs;
+use std::path::Path;
 use tracing::instrument;
 
 use crate::{
     utils::{
-        output::{get_output_format, OutputFormat},
+        output::{OutputFormat, get_output_format},
         paths::{c_packages, d_packages},
         state::Result,
     },
@@ -128,12 +129,12 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
     if cmd.tree && get_output_format() == OutputFormat::Text {
         return run_tree(cmd);
     }
-    let typ: String = d_packages()?;
+    let typ = d_packages()?;
     // If `--all` is specified, list packages from both data and cache directories.
     if cmd.all {
-        let preview: String = c_packages()?;
-        let data1 = read(typ)?;
-        let data2 = read(preview)?;
+        let preview = c_packages()?;
+        let data1 = read(&typ)?;
+        let data2 = read(&preview)?;
         utpm_log!(data1);
         utpm_log!(data2);
         return Ok(true);
@@ -141,70 +142,64 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
 
     // If specific packages/namespaces are included, list only those.
     if let Some(list) = &cmd.include {
-        let preview: String = c_packages()?;
+        let preview = c_packages()?;
         for e in list {
             if e == "preview" {
-                let data = read(preview)?;
+                let data = read(&preview)?;
                 utpm_log!(data);
                 return Ok(true);
             }
-            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
-
+            let pkg = package_read(typ.join("local").join(e), e.to_string());
             match pkg {
                 Err(_) => {
-                    utpm_log!(namespace_read(&format!("{}/{}", typ, e), e.to_string())?);
-                }
+                    utpm_log!(namespace_read(typ.join(e), e.to_string())?);
+                },
                 Ok(data) => {
                     utpm_log!(data)
-                }
+                },
             };
         }
         Ok(true)
     } else {
         // By default, list packages from the data directory.
-        let data = read(typ)?;
+        let data = read(&typ)?;
         utpm_log!(data);
         return Ok(true);
     }
 }
 
 /// Reads all namespaces and packages from a given directory path.
-pub fn read(typ: String) -> Result<Data> {
-    let dirs = fs::read_dir(&typ)?;
-    let mut data = Data::new(typ);
+pub fn read(typ: impl AsRef<Path>) -> Result<Data> {
+    let typ_path = typ.as_ref();
+    let dirs = fs::read_dir(typ_path)?;
+    let mut data = Data::new(typ_path.display().to_string());
 
     for dir_res in dirs {
         let dir = dir_res?;
-        let nms = namespace_read(
-            &dir.path().to_str().unwrap().into(),
-            dir.file_name().into_string().unwrap(),
-        )?;
+        let nms = namespace_read(dir.path(), dir.file_name().to_string_lossy().to_string())?;
         data.list_namespace.push(nms);
     }
     Ok(data)
 }
 
 /// Reads all versions of a specific package.
-pub fn package_read(typ: &String, name: String) -> Result<Package> {
+pub fn package_read(typ: impl AsRef<Path>, name: String) -> Result<Package> {
     let mut pkg = Package::new(name);
-    for dir_res in fs::read_dir(&typ)? {
+    for dir_res in fs::read_dir(typ)? {
         let dir: fs::DirEntry = dir_res?;
         pkg.list_version
-            .push(dir.file_name().to_str().unwrap().into());
+            .push(dir.file_name().to_string_lossy().to_string());
     }
     pkg.list_version.sort();
     Ok(pkg)
 }
 
 /// Reads all packages within a specific namespace.
-pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
+pub fn namespace_read(typ: impl AsRef<Path>, name: String) -> Result<Namespace> {
     let mut nms = Namespace::new(name);
-    for dir_res in fs::read_dir(&typ)? {
+    for dir_res in fs::read_dir(typ)? {
         let dir = dir_res?;
-        let pkg = package_read(
-            &dir.path().to_str().unwrap().into(),
-            dir.file_name().to_str().unwrap().into(),
-        )?;
+        let pkg = package_read(dir.path(), dir.file_name().to_string_lossy().to_string())?;
         nms.list_packages.push(pkg);
     }
     Ok(nms)
@@ -214,33 +209,33 @@ pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
 #[instrument(skip(cmd))]
 pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
     utpm_log!(trace, "executing list command with tree format");
-    let typ: String = d_packages()?;
+    let typ = d_packages()?;
     if cmd.all {
-        let preview: String = c_packages()?;
-        let data1 = read(typ)?;
-        let data2 = read(preview)?;
+        let preview = c_packages()?;
+        let data1 = read(&typ)?;
+        let data2 = read(&preview)?;
         print_tree(&data1)?;
         print_tree(&data2)?;
         return Ok(true);
     }
 
     if let Some(list) = &cmd.include {
-        let preview: String = c_packages()?;
+        let preview = c_packages()?;
         for e in list {
             if e == "preview" {
-                let data = read(preview)?;
+                let data = read(&preview)?;
                 print_tree(&data)?;
                 return Ok(true);
             }
-            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
+            let pkg = package_read(typ.join("local").join(e), e.to_string());
             match pkg {
-                Err(_) => print_tree(&namespace_read(&format!("{}/{}", typ, e), e.to_string())?),
+                Err(_) => print_tree(&namespace_read(typ.join(e), e.to_string())?),
                 Ok(data) => print_tree(&data),
             }?;
         }
         Ok(true)
     } else {
-        let data = read(typ)?;
+        let data = read(&typ)?;
         print_tree(&data)?;
         return Ok(true);
     }

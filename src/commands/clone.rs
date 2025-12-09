@@ -1,5 +1,9 @@
-use std::path::PathBuf;
+use std::{
+    borrow::Cow,
+    path::{Path, PathBuf},
+};
 
+use regex::Regex;
 use tracing::instrument;
 use typst_kit::{download::Downloader, package::PackageStorage};
 
@@ -7,12 +11,11 @@ use crate::{
     build,
     commands::get::get_packages_name_version,
     utils::{
-        copy_dir_all,
+        ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
-        regex_pkg_simple, regex_pkg_simple_name, regex_pkg_simple_pkg, regex_pkg_simple_ver,
         state::{Result, UtpmError},
-        symlink_all, ProgressPrint,
+        symlink_all,
     },
     utpm_bail, utpm_log,
 };
@@ -43,7 +46,8 @@ impl<'b> RawPck<'b> {
         }
     }
     pub async fn name<'a: 'b>(package: &'a str) -> Result<Self> {
-        let version = match get_packages_name_version().await?.get(package) {
+        let packages = get_packages_name_version().await?;
+        let version = match packages.get(package) {
             Some(e) => e.version.clone(),
             None => return Err(UtpmError::PackageNotExist),
         };
@@ -61,10 +65,10 @@ impl<'b> RawPck<'b> {
 pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     utpm_log!(trace, "executing clone command");
     // Determine the target path for the clone operation.
-    let path: PathBuf = if let Some(path) = &cmd.path {
-        path.clone()
+    let path: Cow<'_, Path> = if let Some(path) = &cmd.path {
+        Cow::Borrowed(path)
     } else {
-        get_current_dir()?.into()
+        Cow::Owned(get_current_dir()?)
     };
 
     // Check if the target directory already has content.
@@ -80,9 +84,9 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     // Use regex to parse the package specification string.
     let package: &String = &cmd.package;
     let pkg: RawPck;
-    let re_all = regex_pkg_simple();
-    let re_name = regex_pkg_simple_pkg();
-    let re_namespace = regex_pkg_simple_name();
+    let re_all = Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap();
+    let re_name = Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap();
+    let re_namespace = Regex::new(r"^(\w+)$").unwrap();
 
     if let Some(cap) = re_all.captures(package.as_str()) {
         let (_, [namespace, packaged, version]) = cap.extract();
@@ -98,23 +102,23 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     }
 
     // Determine the local path for the package based on its namespace.
-    let val = format!(
-        "{}/{}/{}/{}",
-        pkg.namespace,
-        pkg.package,
-        pkg.version,
-        if pkg.namespace == "preview" {
-            utpm_log!(info, "preview found, cache dir use");
-            c_packages()?
-        } else {
-            utpm_log!(info, "no preview found, data dir use");
-            d_packages()?
-        }
-    );
+    let val = if pkg.namespace == "preview" {
+        utpm_log!(info, "preview found, cache dir use");
+        c_packages()?
+            .join(pkg.namespace)
+            .join(pkg.package)
+            .join(pkg.version)
+    } else {
+        utpm_log!(info, "no preview found, data dir use");
+        d_packages()?
+            .join(pkg.namespace)
+            .join(pkg.package)
+            .join(pkg.version)
+    };
 
     // If the package already exists locally, copy or symlink it.
     if check_path_dir(&val) {
-        utpm_log!(info, "Package found locally at {}", val);
+        utpm_log!(info, "Package found locally at {}", val.display());
         if cmd.download_only {
             utpm_log!(info, "download only, nothing to do.");
             return Ok(true);
@@ -143,13 +147,14 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     // Prepare to download the package.
     let pkg_sto = PackageStorage::new(
-        Some(c_packages()?.into()),
-        Some(d_packages()?.into()),
+        Some(c_packages()?),
+        Some(d_packages()?),
         Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
     );
     let printer = &mut ProgressPrint {};
 
-    let (_, [major, minor, patch]) = regex_pkg_simple_ver()
+    let (_, [major, minor, patch]) = Regex::new(r"^(\d+)\.(\d+)\.(\d+)$")
+        .unwrap()
         .captures(pkg.version)
         .unwrap()
         .extract();
@@ -174,7 +179,7 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     return match result_download {
         Ok(val) => {
-            utpm_log!(info, "package downloaded", "path" => val.to_str().unwrap());
+            utpm_log!(info, "package downloaded", "path" => val.display().to_string());
             if cmd.download_only {
                 utpm_log!(debug, "download complete, nothing to do");
                 return Ok(true);
@@ -194,9 +199,9 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
             }
 
             Ok(true)
-        }
+        },
         Err(_) => {
             utpm_bail!(PackageNotExist);
-        }
+        },
     };
 }

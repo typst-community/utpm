@@ -1,42 +1,23 @@
-/// Linker: This module dynamically links all the command modules.
-/// Each command is a separate module, conditionally compiled based on feature flags.
-#[cfg(feature = "add")]
-pub mod add;
-#[cfg(feature = "bulk_delete")]
-pub mod bulk_delete;
-#[cfg(feature = "bump")]
+//! Linker: This module dynamically links all the command modules.
+//! Each command is a separate module, conditionally compiled based on feature flags.
+
 pub mod bump;
-#[cfg(feature = "clone")]
 pub mod clone;
-#[cfg(feature = "delete")]
-pub mod delete;
-#[cfg(feature = "generate")]
 pub mod generate;
 pub mod get;
-#[cfg(feature = "init")]
 pub mod init;
-#[cfg(feature = "install")]
 pub mod install;
-#[cfg(feature = "link")]
 pub mod link;
-#[cfg(feature = "list")]
 pub mod list;
-#[cfg(feature = "path")]
+pub mod metadata;
 pub mod package_path;
-#[cfg(feature = "publish")]
 pub mod publish;
-#[cfg(feature = "sync")]
 pub mod sync;
-#[cfg(feature = "tree")]
-pub mod tree;
-#[cfg(feature = "unlink")]
 pub mod unlink;
 
-#[cfg(any(feature = "clone", feature = "publish"))]
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-#[cfg(feature = "generate")]
 use clap_complete::Shell;
 use tracing::Level;
 
@@ -46,7 +27,6 @@ use crate::utils::output::OutputFormat;
 /// Arguments for the `init` command.
 /// This command initializes a new `typst.toml` manifest file in the current directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "init")]
 pub struct InitArgs {
     /// Disable interactive session and use command-line arguments only.
     #[arg(short = 'm', long, requires = "ni")]
@@ -137,7 +117,6 @@ pub struct InitArgs {
 /// Arguments for the `link` command.
 /// This command links a local project to the UTPM package directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "link")]
 pub struct LinkArgs {
     /// Force the copy of the directory or creation of the symlink.
     #[arg(short, long)]
@@ -146,12 +125,34 @@ pub struct LinkArgs {
     /// Create a symlink instead of copying the project files.
     #[arg(short, long)]
     pub no_copy: bool,
+
+    /// Namespace
+    pub namespace: Option<String>,
+
+    /// Use .ignore files to filter packaged files.
+    #[arg(short = 'i', default_value_t = false)]
+    ignore: bool,
+
+    /// Use .gitignore files to filter packaged files.
+    #[arg(short = 'g', default_value_t = true)]
+    git_ignore: bool,
+
+    /// Use .typstignore files to filter packaged files.
+    #[arg(short = 't', default_value_t = true)]
+    typst_ignore: bool,
+
+    /// Use global .gitignore to filter packaged files.
+    #[arg(short = 'G', default_value_t = true)]
+    git_global_ignore: bool,
+
+    /// Use .git/info/exclude files to filter packaged files.
+    #[arg(short = 'x', default_value_t = true)]
+    git_exclude: bool,
 }
 
 /// Arguments for the `list` and `tree` commands.
 /// These commands display the packages in the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(any(feature = "list", feature = "tree"))]
 pub struct ListTreeArgs {
     /// List all packages, including those in the `@preview` namespace.
     #[arg(short, long)]
@@ -169,7 +170,6 @@ pub struct ListTreeArgs {
 /// Arguments for the `bump` command.
 /// This command bump the version of your package
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "bump")]
 pub struct BumpArgs {
     /// The tag to look at when you bump other files.
     /// If the file is written in markdown or html, it will looks into the code to find `<tag>0.1.0</tag>`
@@ -186,7 +186,6 @@ pub struct BumpArgs {
 /// Arguments for the `publish` command.
 /// This command publishes a package to the typst universe.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "publish")]
 pub struct PublishArgs {
     /// Path to the project to publish. Defaults to the current directory.
     #[arg()]
@@ -213,7 +212,7 @@ pub struct PublishArgs {
     git_exclude: bool,
 
     /// Bypass the warning prompts.
-    #[arg(default_value_t = false)]
+    #[arg(long, default_value_t = false)]
     bypass_warning: bool,
 
     /// Path to a custom ignore file.
@@ -232,7 +231,6 @@ pub struct PublishArgs {
 /// Arguments for the `generate` command.
 /// This command generates shell completion scripts.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "generate")]
 pub struct GenerateArgs {
     /// The shell to generate a completion script for.
     #[arg(value_enum)]
@@ -242,9 +240,11 @@ pub struct GenerateArgs {
 /// Arguments for the `clone` command.
 /// This command clones a package from the typst universe or a local directory.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "clone")]
 pub struct CloneArgs {
-    /// The name of the package to clone (e.g., `@preview/example:1.0.0`).
+    /// The package to clone.
+    ///
+    /// Format: @namespace/package:version
+    /// Example: @preview/example:1.0.0
     #[arg()]
     pub package: String,
 
@@ -272,9 +272,13 @@ pub struct CloneArgs {
 /// Arguments for the `unlink` command.
 /// This command removes a package from the local storage.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "unlink")]
 pub struct UnlinkArgs {
-    /// The name of the package to unlink.
+    /// The package to unlink.
+    ///
+    /// Formats accepted:
+    ///   - Full: @namespace/package:1.0.0
+    ///   - Package: @namespace/package (removes all versions)
+    ///   - Namespace: @namespace (removes entire namespace)
     package: String,
 
     /// Confirm the deletion of the package directory without a prompt.
@@ -282,46 +286,21 @@ pub struct UnlinkArgs {
     yes: bool,
 }
 
-/// Arguments for the `bulk-delete` command.
-/// This command removes multiple packages at once.
-#[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "bulk_delete")]
-pub struct BulkDeleteArgs {
-    /// A comma-separated list of package names to delete (e.g., `mypackage:1.0.0,another:2.1.0`).
-    #[clap(value_delimiter = ',')]
-    names: Vec<String>,
-
-    /// The namespace to bulk-delete packages from.
-    #[arg(short, long)]
-    namespace: Option<String>,
-}
-
 /// Arguments for the `install` command.
-/// This command installs dependencies from the manifest or a given URL.
+/// This command installs a package from a git repository, not from Typst Universe.
+/// You will require to have git install on your machine.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "install")]
 pub struct InstallArgs {
-    /// URL or path to a specific package to install. If not provided, installs dependencies from the manifest.
+    /// URL or path to a specific package to install.
     #[arg(num_args = 1..)]
-    pub url: Option<String>,
+    pub url: String,
 
-    /// Force link commands for all dependencies.
-    #[arg(short, long, default_value_t = false)]
-    pub force: bool,
-}
-
-/// Arguments for the `delete` command.
-/// This command removes dependencies from the manifest.
-#[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "delete")]
-pub struct DeleteArgs {
-    /// URIs of dependencies to remove from the manifest.
-    #[clap(short, long, num_args = 1..)]
-    pub uri: Vec<String>,
+    /// The namespace you want to put your installed package. Default to local
+    #[arg(short, long)]
+    pub namespace: Option<String>,
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "sync")]
 /// Arguments for the `sync` command.
 /// This command synchronise package from the remote or the local .
 /// Can't check remote unofficial packages.
@@ -336,193 +315,111 @@ pub struct SyncArgs {
 }
 
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "get")]
 /// Arguments for the `get` command.
-/// This command gets from the remote the package you research.
-/// By default: Give you all packages available
+/// This command gets package information from Typst Universe.
+/// By default: Lists all available packages.
 pub struct GetArgs {
-    /// Files to sync packages. Default to all files
+    /// Package names to query (e.g., @preview/example).
+    /// Leave empty to list all packages.
     pub packages: Vec<String>,
 }
 
-/// Arguments for the `add` command.
-/// This command adds dependencies to the manifest.
+/// Arguments for the `metadata` command.
+/// This command extracts metadata from typst.toml.
 #[derive(Parser, Clone, Debug, PartialEq)]
-#[cfg(feature = "add")]
-pub struct AddArgs {
-    /// The URL or path of the repository to add as a dependency.
-    pub uri: Vec<String>,
+pub struct MetadataArgs {
+    /// Path to the project directory. Defaults to the current directory.
+    #[arg(short, long)]
+    pub path: Option<PathBuf>,
+
+    /// Specific field to extract (e.g., name, version, authors).
+    /// If not specified, all metadata will be displayed.
+    #[arg(short, long)]
+    pub field: Option<String>,
 }
 
 /// An enumeration of subcommands for managing local packages.
 #[derive(Subcommand, Debug, PartialEq)]
-#[cfg(any(
-    feature = "tree",
-    feature = "list",
-    feature = "path",
-    feature = "unlink",
-    feature = "bulk_delete",
-    feature = "get"
-))]
-pub enum Packages {
-    /// [DEPRECATED] Display packages as a tree. Use `list --tree` instead.
-    #[command(visible_alias = "t")]
-    #[cfg(feature = "tree")]
-    #[command(about = "[DEPRECIATED] Use list with --tree.")]
-    Tree(ListTreeArgs),
-
+pub enum PackagesArgs {
     /// List all packages in your local storage.
     #[command(visible_alias = "l")]
-    #[cfg(feature = "list")]
     List(ListTreeArgs),
 
     /// Display the path to the typst packages folder.
     #[command(visible_alias = "p")]
-    #[cfg(feature = "path")]
     Path,
 
     /// Delete a package from your local storage.
     #[command(visible_alias = "u")]
-    #[cfg(feature = "unlink")]
     Unlink(UnlinkArgs),
 
-    /// Delete multiple packages or a whole namespace at once.
-    #[command(visible_alias = "bd")]
-    #[cfg(feature = "bulk_delete")]
-    BulkDelete(BulkDeleteArgs),
-
-    /// Get specific/all package from the remote
+    /// Get specific/all packages from the remote.
     #[command(visible_alias = "g")]
-    #[cfg(feature = "get")]
     Get(GetArgs),
+
+    /// Install a package from a git repository into a namespace.
+    #[command(visible_alias = "i")]
+    Install(InstallArgs),
 }
 
-/// An enumeration of subcommands for managing the project workspace.
+/// An enumeration of subcommands for managing the project project.
 #[derive(Subcommand, Debug, PartialEq)]
-#[cfg(any(
-    feature = "link",
-    feature = "init",
-    feature = "install",
-    feature = "add",
-    feature = "delete",
-    feature = "init",
-    feature = "publish",
-    feature = "bump",
-    feature = "sync",
-    feature = "clone"
-))]
-pub enum Workspace {
+#[allow(clippy::large_enum_variant)]
+pub enum ProjectArgs {
     /// Link the current project to the local package directory.
     #[command(visible_alias = "l")]
-    #[cfg(feature = "link")]
     Link(LinkArgs),
-
-    /// Install all dependencies from the `typst.toml` manifest.
-    #[command(visible_alias = "i")]
-    #[cfg(feature = "install")]
-    Install(InstallArgs),
-
-    /// Add dependencies to the manifest and then install them.
-    #[command(visible_alias = "a")]
-    #[cfg(feature = "add")]
-    Add(AddArgs),
-
-    /// Delete dependencies from the manifest.
-    #[command(visible_alias = "d")]
-    #[cfg(feature = "delete")]
-    Delete(DeleteArgs),
 
     /// Create a new `typst.toml` manifest for a project.
     #[command(visible_alias = "n")]
-    #[cfg(feature = "init")]
     Init(InitArgs),
 
-    // Publish your package to the typst universe. (WIP)
-    // #[command(visible_alias = "p")]
-    // #[cfg(feature = "publish")]
-    // Publish(PublishArgs),
+    /// Publish your package to the Typst Universe.
+    #[command(visible_alias = "p")]
+    Publish(PublishArgs),
 
-    /// Clone a package from the typst universe or a local directory.
+    /// Clone a package from the Typst Universe or a local directory.
     #[command()]
-    #[cfg(feature = "clone")]
+    #[command(visible_alias = "c")]
     Clone(CloneArgs),
 
-    /// Bump all version of your package into an other.
+    /// Bump the version of your package in `typst.toml` and other project files.
     #[command()]
-    #[cfg(feature = "bump")]
+    #[command(visible_alias = "b")]
     Bump(BumpArgs),
 
     /// Synchronise all your dependencies into their last version.
     #[command()]
-    #[cfg(feature = "sync")]
+    #[command(visible_alias = "s")]
     Sync(SyncArgs),
+
+    /// Get metadata from typst.toml for use in scripts.
+    #[command()]
+    #[command(visible_alias = "m")]
+    Metadata(MetadataArgs),
 }
 
 /// The main command-line interface for UTPM.
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
-    /// Subcommands for managing the project workspace.
+    /// Subcommands for managing the current project.
     #[command(subcommand)]
-    #[command(visible_alias = "ws")]
-    #[cfg(any(
-        feature = "link",
-        feature = "init",
-        feature = "install",
-        feature = "add",
-        feature = "delete",
-        feature = "init",
-        feature = "publish",
-        feature = "bump",
-        feature = "sync",
-        feature = "clone"
-    ))]
-    Workspace(Workspace),
+    #[command(visible_alias = "prj")]
+    Project(ProjectArgs),
 
     /// Subcommands for managing local packages.
     #[command(subcommand)]
     #[command(visible_alias = "pkg")]
-    #[cfg(any(
-        feature = "tree",
-        feature = "list",
-        feature = "path",
-        feature = "unlink",
-        feature = "bulk_delete",
-        feature = "get"
-    ))]
-    Packages(Packages),
+    Packages(PackagesArgs),
 
     /// Generate shell completion scripts.
     #[command(visible_alias = "g")]
-    #[cfg(feature = "generate")]
     Generate(GenerateArgs),
 }
 
 /// An unofficial typst package manager for your projects.
 #[derive(Parser, Debug, PartialEq)]
-#[cfg(feature = "nightly")]
-#[command(author = "Thumuss & typst-community", version = build::COMMIT_HASH)]
-pub struct Cli {
-    /// The subcommand to execute.
-    #[command(subcommand)]
-    pub command: Commands,
-
-    /// Enable verbose logging for debugging purposes.
-    #[arg(short = 'v', long, global = true, value_enum)]
-    pub verbose: Option<Level>,
-
-    /// The output format for command results.
-    #[arg(short = 'o', long, global = true, value_enum)]
-    pub output_format: Option<OutputFormat>,
-
-    /// If you don't want to write anything on your disk.
-    #[arg(default_value_t=false, global = true, long, short='D')]
-    pub dry_run: bool,
-}
-
-
-/// An unofficial typst package manager for your projects.
-#[derive(Parser, Debug, PartialEq)]
-#[cfg(not(feature = "nightly"))]
 #[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
 pub struct Cli {
     /// The subcommand to execute.
@@ -530,14 +427,23 @@ pub struct Cli {
     pub command: Commands,
 
     /// Enable verbose logging for debugging purposes.
+    ///
+    /// Levels: error, warn, info (default), debug, trace
+    /// Example: utpm -v trace prj link
     #[arg(short = 'v', long, global = true, value_enum)]
     pub verbose: Option<Level>,
 
     /// The output format for command results.
+    ///
+    /// Formats: text (default), json, yaml, toml, hjson
+    /// Example: utpm -o json pkg list
     #[arg(short = 'o', long, global = true, value_enum)]
     pub output_format: Option<OutputFormat>,
 
-    /// If you don't want to write anything on your disk.
-    #[arg(default_value_t=false, global = true, long, short='D')]
+    /// Preview changes without writing to disk (dry-run mode).
+    ///
+    /// Useful for testing commands before execution.
+    /// Example: utpm --dry-run prj link
+    #[arg(default_value_t = false, global = true, long, short = 'D')]
     pub dry_run: bool,
 }

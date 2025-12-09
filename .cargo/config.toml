@@ -1,0 +1,41 @@
+# Cargo configuration for UTPM
+# Additional build optimizations and settings
+
+[build]
+# Parallel compilation (default uses available cores automatically)
+# jobs = 4  # Uncomment and adjust if needed
+
+[profile.release]
+# Additional release profile settings
+# These complement the settings in Cargo.toml
+
+[target.x86_64-unknown-linux-gnu]
+# Linux-specific optimizations
+rustflags = [
+    "-C", "target-cpu=native",     # Optimize for the current CPU
+]
+
+[target.x86_64-unknown-linux-musl]
+# MUSL static binary optimizations
+rustflags = [
+    "-C", "target-cpu=generic",
+    "-C", "link-arg=-s",           # Strip symbols
+]
+
+[target.x86_64-apple-darwin]
+# macOS optimizations
+rustflags = [
+    "-C", "target-cpu=native",
+]
+
+[target.aarch64-apple-darwin]
+# Apple Silicon optimizations
+rustflags = [
+    "-C", "target-cpu=native",
+]
+
+[target.x86_64-pc-windows-msvc]
+# Windows optimizations
+rustflags = [
+    "-C", "target-cpu=native",
+]

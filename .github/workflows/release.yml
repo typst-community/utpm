@@ -1,96 +1,397 @@
-# SPDX-License-Identifier: Apache-2.0
-# Credits: The Typst Authors
+name: Release
 
-# Based on ripgrep's release action:
-# https://github.com/BurntSushi/ripgrep/blob/master/.github/workflows/release.yml
-
-name: Build Release Binaries
 on:
-  workflow_dispatch:
   push:
     tags:
-      - "v*"
-  release:
-    types: [published]
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.3.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  build-release:
-    name: release ${{ matrix.target }}
+  build:
+    name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-        - target: x86_64-unknown-linux-musl
-          os: ubuntu-latest
-          cross: true
-        - target: aarch64-unknown-linux-musl
-          os: ubuntu-latest
-          cross: true
-        - target: armv7-unknown-linux-musleabi
-          os: ubuntu-latest
-          cross: true
-        - target: riscv64gc-unknown-linux-gnu
-          os: ubuntu-latest
-          cross: true
-        - target: x86_64-apple-darwin
-          os: macos-latest
-          cross: false
-        - target: aarch64-apple-darwin
-          os: macos-latest
-          cross: false
-        - target: x86_64-pc-windows-msvc
-          os: windows-latest
-          cross: false
-        - target: aarch64-pc-windows-msvc
-          os: windows-latest
-          cross: false
+          # Linux
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: utpm
+            asset_name: utpm-x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: utpm
+            asset_name: utpm-aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact_name: utpm
+            asset_name: utpm-x86_64-unknown-linux-musl
+          
+          # macOS
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: utpm
+            asset_name: utpm-x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: utpm
+            asset_name: utpm-aarch64-apple-darwin
+          
+          # Windows
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: utpm.exe
+            asset_name: utpm-x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            artifact_name: utpm.exe
+            asset_name: utpm-aarch64-pc-windows-msvc
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@1.85
-      with:
-        target: ${{ matrix.target }}
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Run Cross
-      if: ${{ matrix.cross }}
-      run: |
-        cargo install cross --git https://github.com/cross-rs/cross.git --locked --rev 085092ca
-        cross build --release --target ${{ matrix.target }}
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
 
-    - name: Run Cargo
-      if: ${{ !matrix.cross }}
-      run: cargo build --release --target ${{ matrix.target }}
+      - name: Install cross-compilation tools (Linux)
+        if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
 
-    - name: Create artifact directory
-      shell: bash
-      run: |
-        directory=utpm-${{ matrix.target }}
-        mkdir $directory
-        cp README.md LICENSE $directory
-        if [ -f target/${{ matrix.target }}/release/utpm.exe ]; then
-          cp target/${{ matrix.target }}/release/utpm.exe $directory
-          7z a -r $directory.zip $directory
-        else
-          cp target/${{ matrix.target }}/release/utpm $directory
-          tar cJf $directory.tar.xz $directory
-        fi
+      - name: Build binary
+        run: cargo build --release --all-features --target ${{ matrix.target }}
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      if: github.event_name == 'workflow_dispatch'
-      with:
-        name: utpm-${{ matrix.target }}
-        path: "utpm-${{ matrix.target }}.*"
-        retention-days: 3
+      - name: Strip binary
+        run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
 
-    - name: Add artifacts to release
-      uses: ncipollo/release-action@v1
-      if: github.event_name == 'release' || github.event_name == 'push'
-      with:
-        artifacts: "utpm-${{ matrix.target }}.*"
-        allowUpdates: true
-        omitNameDuringUpdate: true
-        omitBodyDuringUpdate: true
+      - name: Generate shell completions
+        run: |
+          mkdir -p completions
+          target/${{ matrix.target }}/release/utpm generate bash > completions/utpm.bash
+          target/${{ matrix.target }}/release/utpm generate fish > completions/utpm.fish
+          target/${{ matrix.target }}/release/utpm generate zsh > completions/_utpm
+
+      - name: Create tarball
+        run: |
+          mkdir -p dist docs
+          cp docs/GUIDE.md dist/
+          tar czf dist/${{ matrix.asset_name }}.tar.gz \
+            -C target/${{ matrix.target }}/release ${{ matrix.artifact_name }} \
+            -C ../../../completions utpm.bash utpm.fish _utpm \
+            -C ../../../ README.md LICENSE \
+            -C dist GUIDE.md
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: dist/*
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: artifacts/*/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-checksums:
+    name: Update Package Manager Files
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Calculate checksums
+        id: checksums
+        run: |
+          # Calculate SHA256 for each artifact
+          mkdir -p checksums
+          
+          for file in artifacts/*/*; do
+            if [ -f "$file" ]; then
+              basename=$(basename "$file")
+              sha256=$(sha256sum "$file" | awk '{print $1}')
+              echo "${basename}=${sha256}" >> checksums/all.txt
+              echo "Calculated: ${basename} = ${sha256}"
+            fi
+          done
+          
+          # Export specific checksums for package managers
+          echo "linux_x86_64=$(grep 'x86_64-unknown-linux-gnu.tar.gz' checksums/all.txt | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+          echo "linux_aarch64=$(grep 'aarch64-unknown-linux-gnu.tar.gz' checksums/all.txt | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+          echo "macos_x86_64=$(grep 'x86_64-apple-darwin.tar.gz' checksums/all.txt | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+          echo "macos_aarch64=$(grep 'aarch64-apple-darwin.tar.gz' checksums/all.txt | cut -d'=' -f2)" >> $GITHUB_OUTPUT
+
+      - name: Update AUR PKGBUILD
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          
+          # Update utpm-bin
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" packaging/aur/utpm-bin/PKGBUILD
+          sed -i "s/^sha256sums_x86_64=.*/sha256sums_x86_64=('${{ steps.checksums.outputs.linux_x86_64 }}')/" packaging/aur/utpm-bin/PKGBUILD
+          sed -i "s/^sha256sums_aarch64=.*/sha256sums_aarch64=('${{ steps.checksums.outputs.linux_aarch64 }}')/" packaging/aur/utpm-bin/PKGBUILD
+
+      - name: Update Homebrew Formula
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          
+          sed -i "s|url \".*\"|url \"https://github.com/typst-community/utpm/archive/refs/tags/v${VERSION}.tar.gz\"|" packaging/homebrew/utpm.rb
+          sed -i "s/sha256 \".*\"/sha256 \"${{ steps.checksums.outputs.macos_x86_64 }}\"/" packaging/homebrew/utpm.rb
+
+      # Scoop is handled by another maintainer for Windows builds
+
+      - name: Update Debian/RPM versions
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          
+          # Update Debian changelog
+          sed -i "s/utpm (.*)/utpm (${VERSION}-1)/" packaging/debian/changelog
+          
+          # Update RPM spec
+          sed -i "s/^Version:.*/Version: ${VERSION}/" packaging/fedora/utpm.spec
+
+      - name: Update Snap/Flatpak versions
+        run: |
+          VERSION="${{ needs.release.outputs.version }}"
+          
+          # Update Snap
+          sed -i "s/^version:.*/version: '${VERSION}'/" packaging/snap/snapcraft.yaml
+          sed -i "s|source-tag:.*|source-tag: v${VERSION}|" packaging/snap/snapcraft.yaml
+          
+          # Update Flatpak
+          sed -i "s|tag:.*|tag: v${VERSION}|" packaging/flatpak/io.github.typst_community.utpm.yaml
+
+      - name: Create Pull Request with updates
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update package manager files for v${{ needs.release.outputs.version }}"
+          title: "chore: update package manager files for v${{ needs.release.outputs.version }}"
+          body: |
+            Automated update of package manager configuration files for release v${{ needs.release.outputs.version }}.
+            
+            Updated:
+            - AUR PKGBUILD with new checksums (x86_64 + aarch64)
+            - Homebrew formula with new version and checksum
+            - Debian/RPM version numbers
+            - Snap/Flatpak manifests with new version tags
+            
+            **Note:** Windows builds (Scoop) are handled separately by another maintainer.
+            
+            Checksums:
+            - Linux x86_64 (gnu): `${{ steps.checksums.outputs.linux_x86_64 }}`
+            - Linux aarch64 (gnu): `${{ steps.checksums.outputs.linux_aarch64 }}`
+            - macOS x86_64: `${{ steps.checksums.outputs.macos_x86_64 }}`
+            - macOS aarch64: `${{ steps.checksums.outputs.macos_aarch64 }}`
+          branch: update-packaging-${{ needs.release.outputs.version }}
+          delete-branch: true
+
+  publish-aur:
+    name: Publish to AUR
+    needs: [release, update-checksums]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: update-packaging-${{ needs.release.outputs.version }}
+
+      - name: Setup SSH for AUR
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan -t rsa aur.archlinux.org >> ~/.ssh/known_hosts
+          cat > ~/.ssh/config << EOF
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            User aur
+          EOF
+
+      - name: Install AUR tools
+        run: |
+          sudo pacman -Sy --noconfirm base-devel git
+
+      - name: Publish utpm-bin to AUR
+        run: |
+          git clone ssh://aur@aur.archlinux.org/utpm-bin.git /tmp/utpm-bin
+          cd /tmp/utpm-bin
+          cp $GITHUB_WORKSPACE/packaging/aur/utpm-bin/PKGBUILD .
+          makepkg --printsrcinfo > .SRCINFO
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to version ${{ needs.release.outputs.version }}"
+          git push
+
+      - name: Publish utpm-git to AUR
+        run: |
+          git clone ssh://aur@aur.archlinux.org/utpm-git.git /tmp/utpm-git
+          cd /tmp/utpm-git
+          cp $GITHUB_WORKSPACE/packaging/aur/utpm-git/PKGBUILD .
+          makepkg --printsrcinfo > .SRCINFO
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to version ${{ needs.release.outputs.version }}"
+          git push
+
+  publish-homebrew:
+    name: Publish to Homebrew Tap
+    needs: [release, update-checksums]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: update-packaging-${{ needs.release.outputs.version }}
+
+      - name: Clone homebrew-utpm repository
+        run: |
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/typst-community/homebrew-utpm.git /tmp/homebrew-utpm
+
+      - name: Update Homebrew formula
+        run: |
+          cd /tmp/homebrew-utpm
+          mkdir -p Formula
+          cp $GITHUB_WORKSPACE/packaging/homebrew/utpm.rb Formula/
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/utpm.rb
+          git commit -m "Update utpm to version ${{ needs.release.outputs.version }}"
+          git push
+
+  publish-snap:
+    name: Publish to Snap Store
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+
+      - name: Build Snap
+        run: |
+          cd packaging/snap
+          snapcraft
+
+      - name: Publish to Snap Store
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        run: |
+          cd packaging/snap
+          echo "$SNAPCRAFT_STORE_CREDENTIALS" | snapcraft login --with -
+          snapcraft upload --release=stable utpm_*.snap
+
+  publish-flatpak:
+    name: Create Flatpak PR
+    needs: [release, update-checksums]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: update-packaging-${{ needs.release.outputs.version }}
+
+      - name: Create Flatpak PR
+        run: |
+          # Clone Flathub repository for the app
+          git clone https://github.com/flathub/io.github.typst_community.utpm.git /tmp/flatpak
+          cd /tmp/flatpak
+          
+          # Create branch
+          git checkout -b update-${{ needs.release.outputs.version }}
+          
+          # Copy updated manifest
+          cp $GITHUB_WORKSPACE/packaging/flatpak/io.github.typst_community.utpm.yaml .
+          
+          # Commit and push
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add io.github.typst_community.utpm.yaml
+          git commit -m "Update to version ${{ needs.release.outputs.version }}"
+          
+          # Push to fork (requires FLATPAK_TOKEN)
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/typst-community/io.github.typst_community.utpm.git update-${{ needs.release.outputs.version }}
+          
+      - name: Create PR to Flathub
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.FLATPAK_TOKEN }}
+          push-to-fork: typst-community/io.github.typst_community.utpm
+          branch: update-${{ needs.release.outputs.version }}
+          title: "Update utpm to ${{ needs.release.outputs.version }}"
+          body: |
+            Automated update to version ${{ needs.release.outputs.version }}.
+            
+            Release notes: https://github.com/typst-community/utpm/releases/tag/v${{ needs.release.outputs.version }}
