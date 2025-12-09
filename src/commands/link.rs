@@ -19,10 +19,14 @@ use super::LinkArgs;
 
 /// Links the current project to the local package directory, either by copying or symlinking.
 #[instrument(skip(cmd))]
-pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool> {
+pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool> {
     utpm_log!(trace, "executing link command");
     // Determine the source directory for the link operation.
-    let curr = path.unwrap_or(get_current_dir()?);
+    let curr = if let Some(p) = path {
+        PathBuf::from(p)
+    } else {
+        get_current_dir()?
+    };
 
     // Load the manifest and determine the namespace.
     let config = try_find(&curr)?;
@@ -31,38 +35,44 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
     // Construct the destination path for the package.
     let name = config.package.name;
     let version = config.package.version;
-    let path = if namespace != "preview" {
-        format!("{}/{}/{}/{}", d_packages()?, namespace, name, version)
+    let destination = if namespace != "preview" {
+        d_packages()?
+            .join(namespace.as_str())
+            .join(name.as_str())
+            .join(version.to_string())
     } else {
-        format!("{}/{}/{}/{}", c_packages()?, namespace, name, version)
+        c_packages()?
+            .join(namespace.as_str())
+            .join(name.as_str())
+            .join(version.to_string())
     };
-    let path = PathBuf::from(path);
-    let path_str = path.to_str().unwrap();
 
     // Check if the package already exists at the destination.
-    if check_path_dir(&path) && !cmd.force {
+    if check_path_dir(&destination) && !cmd.force {
         utpm_bail!(AlreadyExist, name.to_string(), version, "Info:".to_string());
     }
 
     if !get_dry_run() {
-        fs::create_dir_all(path.parent().unwrap())?
+        fs::create_dir_all(destination.parent().unwrap())?
     };
 
     // If force is used, remove the existing directory.
     if cmd.force && !get_dry_run() {
-        fs::remove_dir_all(&path)?
+        fs::remove_dir_all(&destination)?
     }
 
     // Create a symlink or copy the directory.
     if cmd.no_copy {
         if !get_dry_run() {
-            symlink_all(&curr, &path)?
+            symlink_all(&curr, &destination)?
         };
         if pt {
             utpm_log!(
                 info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                path.to_string_lossy(),
+                <std::option::Option<std::string::String> as Clone>::clone(path)
+                    .unwrap()
+                    .as_str(),
                 namespace,
                 name,
                 version
@@ -107,13 +117,13 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
             for result in wb.build().collect::<std::result::Result<Vec<_>, _>>()? {
                 if let Some(file_type) = result.file_type() {
                     let path: &Path = result.path();
-                    let name: String = path.to_str().unwrap().to_string();
-                    let l: String = name.replace::<&str>(&curr, path_str);
-                    utpm_log!("{}", l);
+                    let relative = path.strip_prefix(&curr).unwrap();
+                    let dest_path = destination.join(relative);
+                    utpm_log!("{}", dest_path.display());
                     if file_type.is_dir() {
-                        create_dir_all(l)?;
+                        create_dir_all(&dest_path)?;
                     } else {
-                        copy(path, l)?;
+                        copy(path, &dest_path)?;
                     }
                 }
             }
@@ -122,7 +132,7 @@ pub async fn run(cmd: &LinkArgs, path: Option<String>, pt: bool) -> Result<bool>
             utpm_log!(
                 info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                path.to_string_lossy(),
+                destination.display(),
                 namespace,
                 name,
                 version

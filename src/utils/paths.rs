@@ -1,43 +1,46 @@
 use std::{
     env::{self, current_dir},
     fs::{self, read, read_dir},
-    path::{self, Path},
+    path::{Path, PathBuf},
     result::Result as R,
 };
 
-use dirs::cache_dir;
-
 use super::state::Result;
-use crate::utpm_bail;
 
 /// The URL for the official typst packages repository.
 pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
 /// The default share directory on Linux for user-specific data files.
-pub const DATA_HOME_SHARE: &str = "/.local/share";
+pub const DATA_HOME_SHARE: &str = ".local/share";
 /// The default cache directory.
-pub const CACHE_HOME: &str = "~/.cache";
+pub const CACHE_HOME: &str = ".cache";
 /// The subdirectory within data and cache directories for typst packages.
-pub const TYPST_PACKAGE_PATH: &str = "/typst/packages";
+pub const TYPST_PACKAGE_PATH: &str = "typst/packages";
 /// The subdirectory for UTPM's own data files.
-pub const UTPM_PATH: &str = "/utpm";
+pub const UTPM_PATH: &str = "utpm";
 /// The name of the manifest file.
-pub const MANIFEST_PATH: &str = "/typst.toml";
+pub const MANIFEST_FILE: &str = "typst.toml";
 /// The subdirectory for locally cloned git packages.
-pub const LOCAL_PACKAGES: &str = "/git-packages";
+pub const LOCAL_PACKAGES: &str = "git-packages";
 
 /// Gets the path to the user's data directory.
 ///
 /// This path can be overridden by setting the `UTPM_DATA_DIR` environment variable.
 /// It is used for storing local packages.
-pub fn get_data_dir() -> Result<String> {
+pub fn get_data_dir() -> Result<PathBuf> {
     match env::var("UTPM_DATA_DIR") {
-        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
+        Ok(str) => Ok(PathBuf::from(str).canonicalize()?),
         _ => match dirs::data_local_dir() {
-            Some(dir) => match dir.to_str() {
-                Some(string) => Ok(String::from(string)),
-                None => Ok(String::from(DATA_HOME_SHARE)), //default on linux
+            Some(dir) => Ok(dir),
+            None => {
+                // Default on Linux: ~/.local/share
+                let home = dirs::home_dir().ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Could not find home directory",
+                    )
+                })?;
+                Ok(home.join(".local/share"))
             },
-            None => Ok(String::from(DATA_HOME_SHARE)),
         },
     }
 }
@@ -46,53 +49,55 @@ pub fn get_data_dir() -> Result<String> {
 ///
 /// This path can be overridden by setting the `UTPM_CACHE_DIR` environment variable.
 /// It is used for storing packages downloaded from the typst registry.
-pub fn get_cache_dir() -> Result<String> {
+pub fn get_cache_dir() -> Result<PathBuf> {
     match env::var("UTPM_CACHE_DIR") {
-        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
-        _ => Ok(cache_dir()
-            .unwrap_or(CACHE_HOME.into())
-            .to_str()
-            .unwrap_or(CACHE_HOME)
-            .into()),
+        Ok(str) => Ok(PathBuf::from(str).canonicalize()?),
+        _ => match dirs::cache_dir() {
+            Some(dir) => Ok(dir),
+            None => {
+                // Default fallback: ~/.cache
+                let home = dirs::home_dir().ok_or_else(|| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Could not find home directory",
+                    )
+                })?;
+                Ok(home.join(".cache"))
+            },
+        },
     }
 }
 
 /// Gets the path to the directory for downloaded packages from the typst registry.
-pub fn c_packages() -> Result<String> {
-    Ok(get_cache_dir()? + TYPST_PACKAGE_PATH)
+pub fn c_packages() -> Result<PathBuf> {
+    Ok(get_cache_dir()?.join("typst/packages"))
 }
 
 /// Gets the path to the directory for local packages.
-pub fn d_packages() -> Result<String> {
-    Ok(get_data_dir()? + TYPST_PACKAGE_PATH)
+pub fn d_packages() -> Result<PathBuf> {
+    Ok(get_data_dir()?.join("typst/packages"))
 }
 
 /// Gets the path to UTPM's data directory.
 ///
 /// Used for storing temporary files.
-pub fn datalocalutpm() -> Result<String> {
-    Ok(get_data_dir()? + UTPM_PATH)
+pub fn datalocalutpm() -> Result<PathBuf> {
+    Ok(get_data_dir()?.join("utpm"))
 }
 
 /// Gets the path to the default directory for cloned git packages.
-pub fn default_typst_packages() -> Result<String> {
-    Ok(datalocalutpm()? + LOCAL_PACKAGES)
+pub fn default_typst_packages() -> Result<PathBuf> {
+    Ok(datalocalutpm()?.join("git-packages"))
 }
 
 /// Gets the current working directory.
 ///
 /// This path can be overridden by setting the `UTPM_CURRENT_DIR` environment variable.
 /// It is used for reading and writing the `typst.toml` manifest.
-pub fn get_current_dir() -> Result<String> {
+pub fn get_current_dir() -> Result<PathBuf> {
     match env::var("UTPM_CURRENT_DIR") {
-        Ok(str) => Ok(path::absolute(str)?.to_str().unwrap().to_string()),
-        _ => match current_dir() {
-            Ok(val) => match val.to_str() {
-                Some(v) => Ok(String::from(v)),
-                None => utpm_bail!(CurrentDir),
-            },
-            Err(_) => utpm_bail!(CurrentDir),
-        },
+        Ok(str) => Ok(PathBuf::from(str).canonicalize()?),
+        _ => Ok(current_dir()?),
     }
 }
 

@@ -9,6 +9,6 @@ use crate::{
 #[instrument]
 pub async fn run() -> Result<bool> {
     utpm_log!(trace, "executing package_path command");
-    utpm_log!("Packages are located at: '{}'", d_packages()?);
+    utpm_log!("Packages are located at: '{}'", d_packages()?.display());
     Ok(true)
 }

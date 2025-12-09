@@ -110,7 +110,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
                 utpm_bail!(PackageNotExist);
             }
         } else {
-            let r = std::fs::read_dir(d_packages()? + format!("/{namespace}/{package}").as_str())?;
+            let r = std::fs::read_dir(d_packages()?.join(namespace).join(package))?;
             let mut list_dir = r
                 .into_iter()
                 .filter_map(|a| a.ok())

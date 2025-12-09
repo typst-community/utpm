@@ -50,7 +50,7 @@ pub async fn run(cmd: &MetadataArgs) -> Result<bool> {
         .path
         .as_ref()
         .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| get_current_dir().unwrap());
+        .unwrap_or_else(|| get_current_dir().unwrap().to_string_lossy().to_string());
 
     // Load the manifest
     let config = try_find(&curr)?;

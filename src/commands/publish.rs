@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::result::Result as R;
 use std::str::FromStr;
 
-use crate::utils::paths::{MANIFEST_PATH, get_current_dir};
+use crate::utils::paths::{MANIFEST_FILE, get_current_dir};
 use crate::utils::paths::{
     TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
 };
@@ -44,7 +44,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let path_curr: &PathBuf = if let Some(path) = &cmd.path {
         path
     } else {
-        &get_current_dir()?.into()
+        &get_current_dir()?
     };
     utpm_log!(info, "Path: {}", path_curr.to_str().unwrap());
 
@@ -60,8 +60,11 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     let path_curr_str: &str = path_curr.to_str().unwrap();
-    let path_packages: String = default_typst_packages()?;
-    let path_packages_new: String = format!("{path_packages}/packages/preview/{name}/{version}");
+    let path_packages = default_typst_packages()?;
+    let path_packages_new: String = format!(
+        "{}/packages/preview/{name}/{version}",
+        path_packages.to_str().unwrap()
+    );
 
     // --- GitHub Handling ---
     let crab = Octocrab::builder()
@@ -119,7 +122,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     match pull_git() {
         Ok(_) => Ok(true),
-        Err(_) => clone_git(&path_packages, fork.as_str()),
+        Err(_) => clone_git(path_packages.to_str().unwrap(), fork.as_str()),
     }?;
     utpm_log!(info, "Path to the new package {}", path_packages_new);
 
@@ -185,8 +188,9 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     if !has_content(&path_packages_new)? {
         utpm_bail!(NoFiles);
     }
-    if !check_path_file(format!("{path_packages_new}{}", MANIFEST_PATH)) {
-        utpm_bail!(OmitedTypstFile, path_packages_new);
+    let manifest_check = PathBuf::from(&path_packages_new).join(MANIFEST_FILE);
+    if !check_path_file(manifest_check) {
+        utpm_bail!(OmitedTypstFile, path_packages_new.clone());
     }
     let entry = config.package.entrypoint;
     let mut entryfile = PathBuf::from_str(&path_packages_new).unwrap();
@@ -215,7 +219,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .clone()
         .unwrap_or(format!("{} using utpm", &name_replaced));
 
-    project().lock().unwrap().0 = path_packages_new;
+    project().lock().unwrap().0 = PathBuf::from(path_packages_new);
 
     add_git(".")?;
     commit_git(&msg)?;

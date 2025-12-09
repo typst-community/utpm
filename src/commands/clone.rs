@@ -1,4 +1,7 @@
-use std::path::PathBuf;
+use std::{
+    borrow::Cow,
+    path::{Path, PathBuf},
+};
 
 use regex::Regex;
 use tracing::instrument;
@@ -62,10 +65,11 @@ impl<'b> RawPck<'b> {
 pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     utpm_log!(trace, "executing clone command");
     // Determine the target path for the clone operation.
-    let path: PathBuf = cmd
-        .path
-        .clone()
-        .unwrap_or_else(|| get_current_dir().unwrap().into());
+    let path: Cow<'_, Path> = if let Some(path) = &cmd.path {
+        Cow::Borrowed(path)
+    } else {
+        Cow::Owned(get_current_dir()?)
+    };
 
     // Check if the target directory already has content.
     if has_content(&path)? {
@@ -98,23 +102,23 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     }
 
     // Determine the local path for the package based on its namespace.
-    let val = format!(
-        "{}/{}/{}/{}",
-        pkg.namespace,
-        pkg.package,
-        pkg.version,
-        if pkg.namespace == "preview" {
-            utpm_log!(info, "preview found, cache dir use");
-            c_packages()?
-        } else {
-            utpm_log!(info, "no preview found, data dir use");
-            d_packages()?
-        }
-    );
+    let val = if pkg.namespace == "preview" {
+        utpm_log!(info, "preview found, cache dir use");
+        c_packages()?
+            .join(pkg.namespace)
+            .join(pkg.package)
+            .join(pkg.version)
+    } else {
+        utpm_log!(info, "no preview found, data dir use");
+        d_packages()?
+            .join(pkg.namespace)
+            .join(pkg.package)
+            .join(pkg.version)
+    };
 
     // If the package already exists locally, copy or symlink it.
     if check_path_dir(&val) {
-        utpm_log!(info, "Package found locally at {}", val);
+        utpm_log!(info, "Package found locally at {}", val.to_str().unwrap());
         if cmd.download_only {
             utpm_log!(info, "download only, nothing to do.");
             return Ok(true);
@@ -143,8 +147,8 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     // Prepare to download the package.
     let pkg_sto = PackageStorage::new(
-        Some(c_packages()?.into()),
-        Some(d_packages()?.into()),
+        Some(c_packages()?),
+        Some(d_packages()?),
         Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
     );
     let printer = &mut ProgressPrint {};

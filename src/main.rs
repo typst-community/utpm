@@ -92,7 +92,7 @@ async fn main() {
     let res = async move {
         match &x.command {
             Commands::Project(w) => match w {
-                ProjectArgs::Link(cmd) => commands::link::run(cmd, None, true).await,
+                ProjectArgs::Link(cmd) => commands::link::run(cmd, &None, true).await,
 
                 ProjectArgs::Init(cmd) => commands::init::run(&mut cmd.clone()).await,
 

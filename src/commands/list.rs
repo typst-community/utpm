@@ -128,12 +128,12 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
     if cmd.tree && get_output_format() == OutputFormat::Text {
         return run_tree(cmd);
     }
-    let typ: String = d_packages()?;
+    let typ = d_packages()?;
     // If `--all` is specified, list packages from both data and cache directories.
     if cmd.all {
-        let preview: String = c_packages()?;
-        let data1 = read(typ)?;
-        let data2 = read(preview)?;
+        let preview = c_packages()?;
+        let data1 = read(typ.as_path().to_str().unwrap().into())?;
+        let data2 = read(preview.as_path().to_str().unwrap().into())?;
         utpm_log!(data1);
         utpm_log!(data2);
         return Ok(true);
@@ -141,18 +141,23 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
 
     // If specific packages/namespaces are included, list only those.
     if let Some(list) = &cmd.include {
-        let preview: String = c_packages()?;
+        let preview = c_packages()?;
         for e in list {
             if e == "preview" {
-                let data = read(preview)?;
+                let data = read(preview.as_path().to_str().unwrap().into())?;
                 utpm_log!(data);
                 return Ok(true);
             }
-            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
-
+            let pkg = package_read(
+                &format!("{}/local/{}", typ.as_path().to_str().unwrap(), e),
+                e.to_string(),
+            );
             match pkg {
                 Err(_) => {
-                    utpm_log!(namespace_read(&format!("{}/{}", typ, e), e.to_string())?);
+                    utpm_log!(namespace_read(
+                        &format!("{}/{}", typ.as_path().to_str().unwrap(), e),
+                        e.to_string()
+                    )?);
                 },
                 Ok(data) => {
                     utpm_log!(data)
@@ -162,7 +167,7 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
         Ok(true)
     } else {
         // By default, list packages from the data directory.
-        let data = read(typ)?;
+        let data = read(typ.as_path().to_str().unwrap().into())?;
         utpm_log!(data);
         return Ok(true);
     }
@@ -214,33 +219,39 @@ pub fn namespace_read(typ: &String, name: String) -> Result<Namespace> {
 #[instrument(skip(cmd))]
 pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
     utpm_log!(trace, "executing list command with tree format");
-    let typ: String = d_packages()?;
+    let typ = d_packages()?;
     if cmd.all {
-        let preview: String = c_packages()?;
-        let data1 = read(typ)?;
-        let data2 = read(preview)?;
+        let preview = c_packages()?;
+        let data1 = read(typ.as_path().to_str().unwrap().into())?;
+        let data2 = read(preview.as_path().to_str().unwrap().into())?;
         print_tree(&data1)?;
         print_tree(&data2)?;
         return Ok(true);
     }
 
     if let Some(list) = &cmd.include {
-        let preview: String = c_packages()?;
+        let preview = c_packages()?;
         for e in list {
             if e == "preview" {
-                let data = read(preview)?;
+                let data = read(preview.as_path().to_str().unwrap().into())?;
                 print_tree(&data)?;
                 return Ok(true);
             }
-            let pkg = package_read(&format!("{}/local/{}", typ, e), e.to_string());
+            let pkg = package_read(
+                &format!("{}/local/{}", typ.as_path().to_str().unwrap(), e),
+                e.to_string(),
+            );
             match pkg {
-                Err(_) => print_tree(&namespace_read(&format!("{}/{}", typ, e), e.to_string())?),
+                Err(_) => print_tree(&namespace_read(
+                    &format!("{}/{}", typ.as_path().to_str().unwrap(), e),
+                    e.to_string(),
+                )?),
                 Ok(data) => print_tree(&data),
             }?;
         }
         Ok(true)
     } else {
-        let data = read(typ)?;
+        let data = read(typ.as_path().to_str().unwrap().into())?;
         print_tree(&data)?;
         return Ok(true);
     }

@@ -7,13 +7,14 @@ use crate::{
 };
 use std::{
     io,
+    path::PathBuf,
     process::Command,
     sync::{Mutex, OnceLock},
 };
 
 /// Shared project state.
 /// Currently holds only the current working directory (String).
-pub struct State(pub String);
+pub struct State(pub PathBuf);
 
 impl Default for State {
     fn default() -> Self {
@@ -59,7 +60,7 @@ pub fn exist_git() -> Result<bool> {
 /// Returns Ok(true) if the process launches; bubbles categorized errors otherwise.
 pub fn push_git() -> Result<bool> {
     match Command::new("git")
-        .current_dir(project().lock().unwrap().0.as_str())
+        .current_dir(&project().lock().unwrap().0)
         .arg("push")
         .arg("origin")
         .arg("main")
@@ -77,7 +78,7 @@ pub fn push_git() -> Result<bool> {
 /// Returns Ok(true) if the process launches; bubbles errors otherwise.
 pub fn pull_git() -> Result<bool> {
     match Command::new("git")
-        .current_dir(project().lock().unwrap().0.as_str())
+        .current_dir(&project().lock().unwrap().0)
         .arg("pull")
         .arg("origin")
         .arg("main")
@@ -99,7 +100,7 @@ pub fn pull_git() -> Result<bool> {
 /// Returns Ok(true) if the process launches; categorized errors otherwise.
 pub fn clone_git(string: &str, path: &str) -> Result<bool> {
     match Command::new("git")
-        .current_dir(project().lock().unwrap().0.as_str())
+        .current_dir(&project().lock().unwrap().0)
         .arg("clone")
         .arg(string)
         .arg(path)
@@ -117,7 +118,7 @@ pub fn clone_git(string: &str, path: &str) -> Result<bool> {
 /// Returns Ok(true) if the process launches; categorized errors otherwise.
 pub fn add_git(path: &str) -> Result<bool> {
     match Command::new("git")
-        .current_dir(project().lock().unwrap().0.as_str())
+        .current_dir(&project().lock().unwrap().0)
         .arg("add")
         .arg(path)
         .status()
@@ -134,7 +135,7 @@ pub fn add_git(path: &str) -> Result<bool> {
 /// Returns Ok(true) if the process launches; categorized errors otherwise.
 pub fn commit_git(msg: &str) -> Result<bool> {
     match Command::new("git")
-        .current_dir(project().lock().unwrap().0.as_str())
+        .current_dir(&project().lock().unwrap().0)
         .arg("commit")
         .arg("-m")
         .arg(msg)

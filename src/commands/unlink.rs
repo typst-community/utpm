@@ -24,9 +24,9 @@ use super::UnlinkArgs;
 /// The cache directory for "preview" namespace, or the data directory for others.
 fn package_path(namespace: &str) -> Result<String> {
     if namespace == "preview" {
-        c_packages()
+        Ok(c_packages()?.to_string_lossy().to_string())
     } else {
-        d_packages()
+        Ok(d_packages()?.to_string_lossy().to_string())
     }
 }
 

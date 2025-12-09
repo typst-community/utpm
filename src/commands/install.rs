@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::PathBuf;
 
 use crate::{
     commands::LinkArgs,
@@ -6,7 +7,7 @@ use crate::{
         copy_dir_all,
         dryrun::get_dry_run,
         git::{clone_git, exist_git, project},
-        paths::{MANIFEST_PATH, check_path_dir, check_path_file, d_packages, datalocalutpm},
+        paths::{MANIFEST_FILE, check_path_dir, check_path_file, d_packages, datalocalutpm},
         state::Result,
         try_find,
     },
@@ -34,7 +35,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 
     utpm_log!(trace, "executing init command for install");
 
-    let path = format!("{}/tmp", datalocalutpm()?);
+    let path = format!("{}/tmp", datalocalutpm()?.to_str().unwrap());
     if check_path_dir(&path) && !get_dry_run() {
         fs::remove_dir_all(&path)?;
     }
@@ -45,7 +46,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     // If a URL is provided, clone or copy the repository.
     fs::create_dir_all(&path)?;
 
-    project().lock().unwrap().0 = path.clone();
+    project().lock().unwrap().0 = PathBuf::from(path.clone());
 
     let url = &cmd.url;
 
@@ -57,7 +58,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         copy_dir_all(url, &path)?;
     }
     // Check for a manifest file in the source directory.
-    let typstfile = format!("{}{}", path, MANIFEST_PATH);
+    let typstfile = format!("{}{}", path, MANIFEST_FILE);
     if !check_path_file(&typstfile) {
         utpm_log!("{}", format!("x {}", url));
         return Ok(false);
@@ -71,7 +72,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     // Check if the package is already installed.
     if check_path_dir(format!(
         "{}/{}/{}/{}",
-        d_packages()?,
+        d_packages()?.display(),
         namespace,
         &file.package.name,
         &file.package.version
@@ -97,7 +98,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         typst_ignore: false,
     };
 
-    link::run(&lnk, Some(path.clone()), false).await?;
+    link::run(&lnk, &Some(path.clone()), false).await?;
     fs::remove_dir_all(&path)?;
 
     utpm_log!(info, "+ {}:{}", file.package.name, file.package.version);
