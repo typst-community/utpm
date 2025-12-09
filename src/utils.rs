@@ -26,17 +26,29 @@ use self::state::Result;
 /// <https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust>
 /// It has been edited to fit the needs of the CI environment.
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
-    fs::create_dir_all(&dst)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() && entry.file_name() != ".utpm" && entry.file_name() != "install" {
-            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+    fn inner(src: &mut PathBuf, dst: &mut PathBuf) -> io::Result<()> {
+        fs::create_dir_all(&dst)?;
+        for entry in fs::read_dir(&src)? {
+            let entry = entry?;
+            let ty = entry.file_type()?;
+            let name = entry.file_name();
+
+            src.push(&name);
+            dst.push(&name);
+            if ty.is_dir() && name != ".utpm" && name != "install" {
+                inner(src, dst)?;
+            } else {
+                fs::copy(&src, &dst)?;
+            }
+            src.pop();
+            dst.pop();
         }
+        Ok(())
     }
-    Ok(())
+    inner(
+        &mut src.as_ref().to_path_buf(),
+        &mut dst.as_ref().to_path_buf(),
+    )
 }
 
 /// Finds the path to a `typst.toml` manifest file in the given directory.
