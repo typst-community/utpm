@@ -1,9 +1,10 @@
 use std::{
     env::{self, current_dir},
-    fs::{self, read, read_dir},
+    fs::read_dir,
     path::{Path, PathBuf},
-    result::Result as R,
 };
+
+use crate::path;
 
 use super::state::Result;
 
@@ -27,21 +28,19 @@ pub const LOCAL_PACKAGES: &str = "git-packages";
 /// This path can be overridden by setting the `UTPM_DATA_DIR` environment variable.
 /// It is used for storing local packages.
 pub fn get_data_dir() -> Result<PathBuf> {
-    match env::var("UTPM_DATA_DIR") {
-        Ok(str) => Ok(PathBuf::from(str).canonicalize()?),
-        _ => match dirs::data_local_dir() {
-            Some(dir) => Ok(dir),
-            None => {
-                // Default on Linux: ~/.local/share
-                let home = dirs::home_dir().ok_or_else(|| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        "Could not find home directory",
-                    )
-                })?;
-                Ok(home.join(".local/share"))
-            },
-        },
+    if let Ok(str) = env::var("UTPM_DATA_DIR") {
+        Ok(PathBuf::from(str).canonicalize()?)
+    } else if let Some(dir) = dirs::data_local_dir() {
+        Ok(dir)
+    } else {
+        // Default on Linux: ~/.local/share
+        let home = dirs::home_dir().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Could not find home directory",
+            )
+        })?;
+        Ok(path!(home, DATA_HOME_SHARE))
     }
 }
 
@@ -50,44 +49,42 @@ pub fn get_data_dir() -> Result<PathBuf> {
 /// This path can be overridden by setting the `UTPM_CACHE_DIR` environment variable.
 /// It is used for storing packages downloaded from the typst registry.
 pub fn get_cache_dir() -> Result<PathBuf> {
-    match env::var("UTPM_CACHE_DIR") {
-        Ok(str) => Ok(PathBuf::from(str).canonicalize()?),
-        _ => match dirs::cache_dir() {
-            Some(dir) => Ok(dir),
-            None => {
-                // Default fallback: ~/.cache
-                let home = dirs::home_dir().ok_or_else(|| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::NotFound,
-                        "Could not find home directory",
-                    )
-                })?;
-                Ok(home.join(".cache"))
-            },
-        },
+    if let Ok(str) = env::var("UTPM_CACHE_DIR") {
+        Ok(PathBuf::from(str).canonicalize()?)
+    } else if let Some(dir) = dirs::cache_dir() {
+        Ok(dir)
+    } else {
+        // Default fallback: ~/.cache
+        let home = dirs::home_dir().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Could not find home directory",
+            )
+        })?;
+        Ok(path!(home, CACHE_HOME))
     }
 }
 
 /// Gets the path to the directory for downloaded packages from the typst registry.
 pub fn c_packages() -> Result<PathBuf> {
-    Ok(get_cache_dir()?.join("typst/packages"))
+    Ok(path!(get_cache_dir()?, TYPST_PACKAGE_PATH))
 }
 
 /// Gets the path to the directory for local packages.
 pub fn d_packages() -> Result<PathBuf> {
-    Ok(get_data_dir()?.join("typst/packages"))
+    Ok(path!(get_data_dir()?, TYPST_PACKAGE_PATH))
 }
 
 /// Gets the path to UTPM's data directory.
 ///
 /// Used for storing temporary files.
 pub fn datalocalutpm() -> Result<PathBuf> {
-    Ok(get_data_dir()?.join("utpm"))
+    Ok(path!(get_data_dir()?, UTPM_PATH))
 }
 
 /// Gets the path to the default directory for cloned git packages.
 pub fn default_typst_packages() -> Result<PathBuf> {
-    Ok(datalocalutpm()?.join("git-packages"))
+    Ok(path!(datalocalutpm()?, LOCAL_PACKAGES))
 }
 
 /// Gets the current working directory.
@@ -95,23 +92,24 @@ pub fn default_typst_packages() -> Result<PathBuf> {
 /// This path can be overridden by setting the `UTPM_CURRENT_DIR` environment variable.
 /// It is used for reading and writing the `typst.toml` manifest.
 pub fn get_current_dir() -> Result<PathBuf> {
-    match env::var("UTPM_CURRENT_DIR") {
-        Ok(str) => Ok(PathBuf::from(str).canonicalize()?),
-        _ => Ok(current_dir()?),
+    if let Ok(str) = env::var("UTPM_CURRENT_DIR") {
+        Ok(PathBuf::from(str).canonicalize()?)
+    } else {
+        Ok(current_dir()?)
     }
 }
 
 /// Checks if a directory at the given path is not empty.
 pub fn has_content(path: impl AsRef<Path>) -> Result<bool> {
-    Ok(!fs::read_dir(path)?.collect::<R<Vec<_>, _>>()?.is_empty())
+    Ok(read_dir(path)?.next().is_some())
 }
 
 /// Checks if a directory exists at the given path.
 pub fn check_path_dir(path: impl AsRef<Path>) -> bool {
-    read_dir(path).is_ok()
+    path.as_ref().is_dir()
 }
 
 /// Checks if a file exists at the given path.
 pub fn check_path_file(path: impl AsRef<Path>) -> bool {
-    read(path).is_ok()
+    path.as_ref().is_file()
 }
