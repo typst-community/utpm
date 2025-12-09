@@ -164,13 +164,14 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     // Add custom ignore file if specified.
     if let Some(custom_ignore) = &cmd.custom_ignore
-        && let Some(filename) = custom_ignore.file_name().and_then(|f| f.to_str()) {
-            utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
-            if check_path_file(custom_ignore) {
-                utpm_log!(info, "File exist, adding it", "custom_ignore" => filename);
-                wb.add_custom_ignore_filename(filename);
-            }
+        && let Some(filename) = custom_ignore.file_name().and_then(|f| f.to_str())
+    {
+        utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
+        if check_path_file(custom_ignore) {
+            utpm_log!(info, "File exist, adding it", "custom_ignore" => filename);
+            wb.add_custom_ignore_filename(filename);
         }
+    }
 
     // --- Copy Files ---
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
