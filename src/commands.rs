@@ -16,13 +16,22 @@ pub mod sync;
 pub mod unlink;
 
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 use clap_complete::Shell;
 use tracing::Level;
+use typst_syntax::package::{PackageVersion, VersionBound};
 
 use crate::build;
 use crate::utils::output::OutputFormat;
+
+fn parse_eco<T>(s: &str) -> Result<T, String>
+where
+    T: FromStr<Err = ecow::EcoString>,
+{
+    T::from_str(s).map_err(Into::into)
+}
 
 /// Arguments for the `init` command.
 /// This command initializes a new `typst.toml` manifest file in the current directory.
@@ -41,8 +50,8 @@ pub struct InitArgs {
     name: Option<String>,
 
     /// Version of the project.
-    #[arg(short = 'V', long, default_value_t=semver::Version::parse("1.0.0").unwrap())]
-    version: semver::Version,
+    #[arg(short = 'V', long, default_value_t=PackageVersion::from_str("1.0.0").unwrap(), value_parser=parse_eco::<PackageVersion>)]
+    version: PackageVersion,
 
     /// Path to the main file of the project.
     #[arg(short, long, default_value_t=String::from("main.typ"))]
@@ -75,8 +84,8 @@ pub struct InitArgs {
     keywords: Option<Vec<String>>,
 
     /// Minimum compiler version required.
-    #[arg(short, long)]
-    compiler: Option<semver::Version>,
+    #[arg(short, long, value_parser=parse_eco::<VersionBound>)]
+    compiler: Option<VersionBound>,
 
     /// Files to exclude from the package.
     #[arg(short = 'x', long)]

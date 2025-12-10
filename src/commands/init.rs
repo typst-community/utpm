@@ -190,11 +190,7 @@ fn cmd_pkg_info(cmd: &InitArgs) -> Result<PackageInfo> {
         name: <std::option::Option<std::string::String> as Clone>::clone(&cmd.name)
             .unwrap()
             .into(),
-        version: PackageVersion {
-            major: cmd.version.major as u32,
-            minor: cmd.version.minor as u32,
-            patch: cmd.version.patch as u32,
-        },
+        version: cmd.version,
         entrypoint: cmd.entrypoint.to_owned().into(),
         authors: if let Some(yes) = &cmd.authors {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
@@ -210,11 +206,7 @@ fn cmd_pkg_info(cmd: &InitArgs) -> Result<PackageInfo> {
         } else {
             vec![]
         },
-        compiler: cmd.compiler.as_ref().map(|yes| VersionBound {
-            major: yes.major as u32,
-            minor: Some(yes.minor as u32),
-            patch: Some(yes.patch as u32),
-        }),
+        compiler: cmd.compiler,
         exclude: if let Some(yes) = &cmd.exclude {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
         } else {
