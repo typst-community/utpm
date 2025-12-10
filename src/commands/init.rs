@@ -260,7 +260,7 @@ fn populate_project_files(project_dir: impl AsRef<Path>, pkg: &PackageInfo) -> R
     file = File::create(examples.join("tests.typ"))?; // examples/tests.typ
     write!(
         file,
-        "#import \"@local/{}:{}\":\n Do...",
+        "#import \"@local/{}:{}\":\nDo...",
         pkg.name, pkg.version
     )?;
     file = File::create(project_dir.join(pkg.entrypoint.as_ref()))?; // main.typ
@@ -280,14 +280,14 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     utpm_log!(trace, "executing init command");
     let project_dir = get_current_dir()?;
     utpm_log!(info, "Current dir: {}", project_dir.display());
-    let typ = project_dir.join(crate::utils::paths::MANIFEST_FILE);
-    utpm_log!(info, "Current typst file: {}", typ.display());
+    let manifest = project_dir.join(crate::utils::paths::MANIFEST_FILE);
+    utpm_log!(info, "Current typst manifest file: {}", manifest.display());
 
     // TODO: Implement template handling.
     //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
 
     // Check if manifest already exists.
-    if check_path_file(&typ) && !cmd.force {
+    if check_path_file(&manifest) && !cmd.force {
         utpm_log!(
             error,
             "typst.toml already exists. Use --force to overwrite it."
@@ -304,13 +304,13 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     }
 
     // Create the `[tool.utpm]` table.
-    let mut keys: BTreeMap<_, Table> = BTreeMap::new();
-    keys.insert("utpm".into(), Table::try_from(Extra::default())?);
+    let mut tools: BTreeMap<_, Table> = BTreeMap::new();
+    tools.insert("utpm".into(), Table::try_from(Extra::default())?);
 
     // Construct the final manifest.
     let manif = PackageManifest {
         package: pkg,
-        tool: ToolInfo { sections: keys },
+        tool: ToolInfo { sections: tools },
         template: None,
         unknown_fields: BTreeMap::new(),
     };
