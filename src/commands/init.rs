@@ -7,7 +7,6 @@ use std::{
 };
 
 use inquire::{Select, Text, required, validator::Validation};
-use semver::Version;
 use toml::Table;
 use tracing::instrument;
 use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
@@ -60,7 +59,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
     let version = PackageVersion::from_str(
         &Text::new("Version: ")
             .with_validator(required!("This field is required"))
-            .with_validator(|obj: &str| match Version::parse(obj) {
+            .with_validator(|obj: &str| match PackageVersion::from_str(obj) {
                 Ok(_) => Ok(Validation::Valid),
                 Err(_) => Ok(Validation::Invalid(
                     "A correct version must be typed (check semVer)".into(),
@@ -159,10 +158,10 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                 if obj.is_empty() {
                     Ok(Validation::Valid)
                 } else {
-                    match Version::parse(obj) {
+                    match VersionBound::from_str(obj) {
                         Ok(_) => Ok(Validation::Valid),
                         Err(_) => Ok(Validation::Invalid(
-                            "A correct version must be typed (check semVer)".into(),
+                            "A correct version bound must be typed (check semVer)".into(),
                         )),
                     }
                 }

@@ -13,10 +13,6 @@ use typst_syntax::package::PackageVersion;
 /// providing a single, consistent error handling mechanism.
 #[derive(Debug, TError)]
 pub enum UtpmError {
-    /// A semantic versioning error.
-    #[error("Semantic version error: {0}")]
-    SemVer(#[from] semver::Error),
-
     /// A git-related error.
 
     #[error("Git error: {0}")]
@@ -159,8 +155,6 @@ impl UtpmError {
     fn variant_name(&self) -> &'static str {
         use UtpmError::*;
         match self {
-            SemVer(_) => "SemVer",
-
             Git(_) => "Git",
 
             Questions(_) => "Questions",
