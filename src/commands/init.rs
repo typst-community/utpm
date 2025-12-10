@@ -55,7 +55,6 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. my_example")
         .prompt()?
-        .as_str()
         .into();
 
     let version = PackageVersion::from_str(
@@ -64,7 +63,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
             .with_validator(|obj: &str| match Version::parse(obj) {
                 Ok(_) => Ok(Validation::Valid),
                 Err(_) => Ok(Validation::Invalid(
-                    "A correct version must be types (check semVer)".into(),
+                    "A correct version must be typed (check semVer)".into(),
                 )),
             })
             .with_help_message("e.g. 1.0.0 (SemVer)")
@@ -124,7 +123,6 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                     Err(_) => Ok(Validation::Invalid("Can't parse your expression".into())),
                 })
                 .prompt()?
-                .as_str()
                 .into(),
         );
 
@@ -149,10 +147,11 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                 .into(),
         );
         pkg.keywords = Text::new("Keywords: ")
-            .with_help_message("e.g. touying,slide,theme,...")
+            .with_help_message("e.g. touying, slide, theme, ...")
             .prompt()?
             .split(",")
-            .map(|f| f.into())
+            .filter(|f| !f.trim().is_empty())
+            .map(|f| f.trim().into())
             .collect::<Vec<_>>();
 
         let compiler_version = Text::new("Min Compiler Version (leave empty to skip): ")
@@ -163,7 +162,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                     match Version::parse(obj) {
                         Ok(_) => Ok(Validation::Valid),
                         Err(_) => Ok(Validation::Invalid(
-                            "A correct version must be types (check semVer)".into(),
+                            "A correct version must be typed (check semVer)".into(),
                         )),
                     }
                 }
@@ -175,11 +174,11 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         }
 
         pkg.exclude = Text::new("Exclude: ")
-            .with_help_message("e.g. backup/mypassword.txt,.env")
+            .with_help_message("e.g. backup/mypassword.txt, .env")
             .prompt()?
             .split(",")
-            .filter(|f| !f.is_empty())
-            .map(|f| f.into())
+            .filter(|f| !f.trim().is_empty())
+            .map(|f| f.trim().into())
             .collect::<Vec<_>>();
     }
 
