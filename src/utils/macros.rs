@@ -89,3 +89,58 @@ macro_rules! utpm_log {
         $crate::utpm_log!(info, "{}", $data)
     };
 }
+
+/// A macro for joining path segments without creating an extra allocated `PathBuf` on every join
+/// operation. If the first argument is itself a `PathBuf`, no extra allocation is done at all
+/// (except for reallocations when resizing the PathBuf).
+// based on https://stackoverflow.com/a/40567215/371191
+#[macro_export]
+macro_rules! path {
+    ($base:expr, $($segment:expr),+) => {{
+        let mut base: ::std::path::PathBuf = $base.into();
+        $(
+            base.push($segment);
+        )*
+        base
+    }}
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn path() {
+        // simple path joining
+        let p = path!("a", "b", "c");
+        #[cfg(unix)]
+        assert_eq!(p, Path::new("a/b/c"));
+        #[cfg(windows)]
+        assert_eq!(p, Path::new("a\\b\\c"));
+
+        // mixed type path joining
+        let p = path!("a", "b", Path::new("c"));
+        #[cfg(unix)]
+        assert_eq!(p, Path::new("a/b/c"));
+        #[cfg(windows)]
+        assert_eq!(p, Path::new("a\\b\\c"));
+
+        // cloning when given an initial PathBuf reference
+        let pb = PathBuf::from("a");
+        let p = path!(&pb, "b", Path::new("c"));
+        #[cfg(unix)]
+        assert_eq!(p, Path::new("a/b/c"));
+        #[cfg(windows)]
+        assert_eq!(p, Path::new("a\\b\\c"));
+        drop(pb); // was not consumed, so we can drop it
+
+        // consuming and reusing when given an initial owned PathBuf
+        let pb = PathBuf::from("a");
+        let p = path!(pb, "b", Path::new("c"));
+        #[cfg(unix)]
+        assert_eq!(p, Path::new("a/b/c"));
+        #[cfg(windows)]
+        assert_eq!(p, Path::new("a\\b\\c"));
+        // drop(pb); // was consumed, so we can't drop it
+    }
+}
