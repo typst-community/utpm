@@ -7,7 +7,6 @@ use std::{
 };
 
 use inquire::{Select, Text, required, validator::Validation};
-use semver::Version;
 use toml::Table;
 use tracing::instrument;
 use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
@@ -55,16 +54,15 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         .with_validator(required!("This field is required"))
         .with_help_message("e.g. my_example")
         .prompt()?
-        .as_str()
         .into();
 
     let version = PackageVersion::from_str(
         &Text::new("Version: ")
             .with_validator(required!("This field is required"))
-            .with_validator(|obj: &str| match Version::parse(obj) {
+            .with_validator(|obj: &str| match PackageVersion::from_str(obj) {
                 Ok(_) => Ok(Validation::Valid),
                 Err(_) => Ok(Validation::Invalid(
-                    "A correct version must be types (check semVer)".into(),
+                    "A correct version must be typed (check semVer)".into(),
                 )),
             })
             .with_help_message("e.g. 1.0.0 (SemVer)")
@@ -124,7 +122,6 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                     Err(_) => Ok(Validation::Invalid("Can't parse your expression".into())),
                 })
                 .prompt()?
-                .as_str()
                 .into(),
         );
 
@@ -149,10 +146,11 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                 .into(),
         );
         pkg.keywords = Text::new("Keywords: ")
-            .with_help_message("e.g. touying,slide,theme,...")
+            .with_help_message("e.g. touying, slide, theme, ...")
             .prompt()?
             .split(",")
-            .map(|f| f.into())
+            .filter(|f| !f.trim().is_empty())
+            .map(|f| f.trim().into())
             .collect::<Vec<_>>();
 
         let compiler_version = Text::new("Min Compiler Version (leave empty to skip): ")
@@ -160,10 +158,10 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                 if obj.is_empty() {
                     Ok(Validation::Valid)
                 } else {
-                    match Version::parse(obj) {
+                    match VersionBound::from_str(obj) {
                         Ok(_) => Ok(Validation::Valid),
                         Err(_) => Ok(Validation::Invalid(
-                            "A correct version must be types (check semVer)".into(),
+                            "A correct version bound must be typed (check semVer)".into(),
                         )),
                     }
                 }
@@ -175,11 +173,11 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         }
 
         pkg.exclude = Text::new("Exclude: ")
-            .with_help_message("e.g. backup/mypassword.txt,.env")
+            .with_help_message("e.g. backup/mypassword.txt, .env")
             .prompt()?
             .split(",")
-            .filter(|f| !f.is_empty())
-            .map(|f| f.into())
+            .filter(|f| !f.trim().is_empty())
+            .map(|f| f.trim().into())
             .collect::<Vec<_>>();
     }
 
@@ -192,11 +190,7 @@ fn cmd_pkg_info(cmd: &InitArgs) -> Result<PackageInfo> {
         name: <std::option::Option<std::string::String> as Clone>::clone(&cmd.name)
             .unwrap()
             .into(),
-        version: PackageVersion {
-            major: cmd.version.major as u32,
-            minor: cmd.version.minor as u32,
-            patch: cmd.version.patch as u32,
-        },
+        version: cmd.version,
         entrypoint: cmd.entrypoint.to_owned().into(),
         authors: if let Some(yes) = &cmd.authors {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
@@ -212,11 +206,7 @@ fn cmd_pkg_info(cmd: &InitArgs) -> Result<PackageInfo> {
         } else {
             vec![]
         },
-        compiler: cmd.compiler.as_ref().map(|yes| VersionBound {
-            major: yes.major as u32,
-            minor: Some(yes.minor as u32),
-            patch: Some(yes.patch as u32),
-        }),
+        compiler: cmd.compiler,
         exclude: if let Some(yes) = &cmd.exclude {
             yes.iter().map(|f| f.into()).collect::<Vec<_>>()
         } else {

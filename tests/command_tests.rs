@@ -244,6 +244,10 @@ mod unlink_command_tests {
 
 #[cfg(test)]
 mod bump_command_tests {
+    use std::str::FromStr;
+
+    use typst_syntax::package::PackageVersion;
+
     use super::*;
 
     #[test]
@@ -273,8 +277,8 @@ mod bump_command_tests {
         for (old, new) in versions {
             assert_ne!(old, new);
             // Verify semver parsing would work
-            assert!(semver::Version::parse(old).is_ok());
-            assert!(semver::Version::parse(new).is_ok());
+            assert!(PackageVersion::from_str(old).is_ok());
+            assert!(PackageVersion::from_str(new).is_ok());
         }
     }
 }
