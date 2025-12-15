@@ -32,6 +32,27 @@ struct RawPkg<'a> {
 }
 
 impl<'b> RawPkg<'b> {
+    pub async fn from_str<'a: 'b>(s: &'a str) -> Result<Self> {
+        // Use regex to parse the package specification string.
+        let re_all = Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap();
+        let re_name = Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap();
+        let re_namespace = Regex::new(r"^(\w+)$").unwrap();
+
+        if let Some(cap) = re_all.captures(s) {
+            let (_, [namespace, package, version]) = cap.extract();
+
+            Ok(Self::all(namespace, package, version))
+        } else if let Some(cap) = re_name.captures(s) {
+            let (_, [package, version]) = cap.extract();
+            Ok(Self::pkg(package, version))
+        } else if let Some(cap) = re_namespace.captures(s) {
+            let (_, [package]) = cap.extract();
+            Ok(Self::name(package).await?)
+        } else {
+            utpm_bail!(PackageNotValid);
+        }
+    }
+
     pub fn all<'a: 'b>(namespace: &'a str, package: &'a str, version: &'a str) -> Self {
         Self {
             namespace,
@@ -82,25 +103,8 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
         }
     }
 
-    // Use regex to parse the package specification string.
-    let package: &String = &cmd.package;
-    let pkg: RawPkg;
-    let re_all = Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap();
-    let re_name = Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap();
-    let re_namespace = Regex::new(r"^(\w+)$").unwrap();
-
-    if let Some(cap) = re_all.captures(package.as_str()) {
-        let (_, [namespace, packaged, version]) = cap.extract();
-        pkg = RawPkg::all(namespace, packaged, version)
-    } else if let Some(cap) = re_name.captures(package.as_str()) {
-        let (_, [packaged, version]) = cap.extract();
-        pkg = RawPkg::pkg(packaged, version);
-    } else if let Some(cap) = re_namespace.captures(package.as_str()) {
-        let (_, [packaged]) = cap.extract();
-        pkg = RawPkg::name(packaged).await?;
-    } else {
-        utpm_bail!(PackageNotValid);
-    }
+    let package = &cmd.package;
+    let pkg = RawPkg::from_str(package).await?;
 
     // Determine the local path for the package based on its namespace.
     let local_path = if pkg.namespace == "preview" {
