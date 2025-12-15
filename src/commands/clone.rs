@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 use regex::Regex;
@@ -60,6 +61,7 @@ impl<'b> RawPkg<'b> {
             version,
         }
     }
+
     pub fn pkg<'a: 'b>(package: &'a str, version: &'a str) -> Self {
         Self {
             namespace: "preview",
@@ -67,6 +69,7 @@ impl<'b> RawPkg<'b> {
             version,
         }
     }
+
     pub async fn name<'a: 'b>(package: &'a str) -> Result<Self> {
         let packages = get_packages_name_version().await?;
         let version = match packages.get(package) {
@@ -79,6 +82,10 @@ impl<'b> RawPkg<'b> {
             package,
             version,
         })
+    }
+
+    pub fn parse_version(&self) -> std::result::Result<PackageVersion, ecow::EcoString> {
+        PackageVersion::from_str(self.version)
     }
 }
 
@@ -150,23 +157,13 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     );
     let printer = &mut ProgressPrint {};
 
-    let (_, [major, minor, patch]) = Regex::new(r"^(\d+)\.(\d+)\.(\d+)$")
-        .unwrap()
-        .captures(pkg.version)
-        .unwrap()
-        .extract();
-
     // Download the package.
     let cloned_path = if !get_dry_run() {
         pkg_sto.prepare_package(
             &PackageSpec {
                 namespace: pkg.namespace.into(),
                 name: package.into(),
-                version: PackageVersion {
-                    major: major.parse::<u32>().unwrap(),
-                    minor: minor.parse::<u32>().unwrap(),
-                    patch: patch.parse::<u32>().unwrap(),
-                },
+                version: pkg.parse_version().unwrap(),
             },
             printer,
         )
