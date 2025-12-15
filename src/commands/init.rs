@@ -44,11 +44,11 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         utpm_bail!(Unknown, "Template creation is not implemented yet.".into());
     }
 
-    let popu = select_yes_no(
+    let populate = select_yes_no(
         "Do you want to populate your package? Files like index.typ will be created",
     )?;
 
-    if popu {
+    if populate {
         cmd.populate = true;
     }
 
