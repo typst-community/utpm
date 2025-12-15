@@ -25,13 +25,13 @@ use typst_syntax::package::{PackageSpec, PackageVersion};
 
 use super::CloneArgs;
 
-struct RawPck<'a> {
+struct RawPkg<'a> {
     pub namespace: &'a str,
     pub package: &'a str,
     pub version: &'a str,
 }
 
-impl<'b> RawPck<'b> {
+impl<'b> RawPkg<'b> {
     pub fn all<'a: 'b>(namespace: &'a str, package: &'a str, version: &'a str) -> Self {
         Self {
             namespace,
@@ -84,20 +84,20 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     // Use regex to parse the package specification string.
     let package: &String = &cmd.package;
-    let pkg: RawPck;
+    let pkg: RawPkg;
     let re_all = Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap();
     let re_name = Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap();
     let re_namespace = Regex::new(r"^(\w+)$").unwrap();
 
     if let Some(cap) = re_all.captures(package.as_str()) {
         let (_, [namespace, packaged, version]) = cap.extract();
-        pkg = RawPck::all(namespace, packaged, version)
+        pkg = RawPkg::all(namespace, packaged, version)
     } else if let Some(cap) = re_name.captures(package.as_str()) {
         let (_, [packaged, version]) = cap.extract();
-        pkg = RawPck::pkg(packaged, version);
+        pkg = RawPkg::pkg(packaged, version);
     } else if let Some(cap) = re_namespace.captures(package.as_str()) {
         let (_, [packaged]) = cap.extract();
-        pkg = RawPck::name(packaged).await?;
+        pkg = RawPkg::name(packaged).await?;
     } else {
         utpm_bail!(PackageNotValid);
     }
