@@ -26,27 +26,29 @@ use super::InitArgs;
 
 /// Build the package metadata through an interactive prompt
 fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
-    let choice = vec!["yes", "no"];
-    let public = Select::new(
-        "Do you want to make your package public? Questions are on authors, license, description",
-        choice.clone(),
-    )
-    .prompt()?;
-    let more = Select::new("Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines", choice.clone()).prompt()?;
-    let template = Select::new("Do you want to create a template?", choice.clone()).prompt()?;
+    fn select_yes_no(message: &str) -> Result<bool> {
+        let choice = Select::new(message, vec!["yes", "no"]).prompt()?;
+        Ok(choice == "yes")
+    }
 
-    if template == "yes" {
+    let public = select_yes_no(
+        "Do you want to make your package public? Questions are on authors, license, description",
+    )?;
+    let more = select_yes_no(
+        "Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines",
+    )?;
+    let template = select_yes_no("Do you want to create a template?")?;
+
+    if template {
         //TODO: Implement template creation.
         utpm_bail!(Unknown, "Template creation is not implemented yet.".into());
     }
 
-    let popu = Select::new(
+    let popu = select_yes_no(
         "Do you want to populate your package? Files like index.typ will be created",
-        choice,
-    )
-    .prompt()?;
+    )?;
 
-    if popu == "yes" {
+    if popu {
         cmd.populate = true;
     }
 
@@ -95,7 +97,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         unknown_fields: BTreeMap::new(),
     };
 
-    if public == "yes" {
+    if public {
         pkg.authors = Text::new("Authors: ")
             .with_help_message("e.g. Thumus,Somebody,Somebody Else")
             .prompt()?
@@ -132,7 +134,7 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
                 .into(),
         )
     }
-    if more == "yes" {
+    if more {
         pkg.repository = Some(
             Text::new("URL of the repository: ")
                 .with_help_message("e.g. https://github.com/typst-community/utpm")
