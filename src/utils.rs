@@ -35,7 +35,7 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
 
             src.push(&name);
             dst.push(&name);
-            if ty.is_dir() && name != ".utpm" && name != "install" {
+            if ty.is_dir() && name != ".utpm" {
                 inner(src, dst)?;
             } else {
                 fs::copy(&src, &dst)?;
