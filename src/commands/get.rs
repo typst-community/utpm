@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use toml::to_string_pretty;
 use tracing::instrument;
 
-use crate::{utils::state::Result, utpm_log};
+use crate::{build, utils::state::Result, utpm_log};
 
 use super::GetArgs;
 
@@ -37,7 +37,15 @@ pub struct RawPackage {
 /// # Errors
 /// Returns an error if the HTTP request fails or the response cannot be parsed.
 pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
-    let packages: Vec<RawPackage> = reqwest::get("https://packages.typst.org/preview/index.json")
+    let client = reqwest::Client::new();
+
+    let packages: Vec<RawPackage> = client
+        .get("https://packages.typst.org/preview/index.json")
+        .header(
+            reqwest::header::USER_AGENT,
+            format!("utpm/{}", build::PKG_VERSION),
+        )
+        .send()
         .await?
         .json::<Vec<RawPackage>>()
         .await?;
