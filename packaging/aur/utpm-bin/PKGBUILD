@@ -1,6 +1,6 @@
 # Maintainer: Typst Community <https://github.com/typst-community>
 pkgname=utpm-bin
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Unofficial Typst Package Manager (binary release)"
 arch=('x86_64' 'aarch64')
@@ -9,24 +9,42 @@ license=('MIT')
 depends=('gcc-libs')
 provides=('utpm')
 conflicts=('utpm' 'utpm-git')
-source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/typst-community/utpm/releases/download/v${pkgver}/utpm-x86_64-unknown-linux-gnu.tar.gz"
-               "https://raw.githubusercontent.com/typst-community/utpm/v${pkgver}/docs/GUIDE.md")
-source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/typst-community/utpm/releases/download/v${pkgver}/utpm-aarch64-unknown-linux-gnu.tar.gz"
-                "https://raw.githubusercontent.com/typst-community/utpm/v${pkgver}/docs/GUIDE.md")
-sha256sums_x86_64=('SKIP' 'SKIP')
-sha256sums_aarch64=('SKIP' 'SKIP')
+
+_u="https://github.com/typst-community/utpm"
+source=("LICENSE::${_u}/raw/v${pkgver}/LICENSE"
+        "README.md::${_u}/raw/v${pkgver}/README.md"
+        "GUIDE.md::${_u}/raw/v${pkgver}/docs/GUIDE.md")
+source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::${_u}/releases/download/v${pkgver}/utpm-x86_64-unknown-linux-gnu.tar.gz")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::${_u}/releases/download/v${pkgver}/utpm-aarch64-unknown-linux-gnu.tar.gz")
+
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+build() {
+    cd "${srcdir}"
+    # Ensure binary is executable
+    chmod +x utpm
+    
+    # Generate shell completions using the binary itself
+    ./utpm generate bash > utpm.bash
+    ./utpm generate fish > utpm.fish
+    ./utpm generate zsh > _utpm
+}
 
 package() {
+    cd "${srcdir}"
+
     # Install binary
-    install -Dm755 "${srcdir}/utpm" "${pkgdir}/usr/bin/utpm"
+    install -Dm755 "utpm" "${pkgdir}/usr/bin/utpm"
     
     # Install shell completions
-    install -Dm644 "${srcdir}/utpm.bash" "${pkgdir}/usr/share/bash-completion/completions/utpm"
-    install -Dm644 "${srcdir}/utpm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/utpm.fish"
-    install -Dm644 "${srcdir}/_utpm" "${pkgdir}/usr/share/zsh/site-functions/_utpm"
+    install -Dm644 "utpm.bash" "${pkgdir}/usr/share/bash-completion/completions/utpm"
+    install -Dm644 "utpm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/utpm.fish"
+    install -Dm644 "_utpm" "${pkgdir}/usr/share/zsh/site-functions/_utpm"
     
-    # Install documentation
-    install -Dm644 "${srcdir}/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
-    install -Dm644 "${srcdir}/docs/GUIDE.md" "${pkgdir}/usr/share/doc/${pkgname}/GUIDE.md"
-    install -Dm644 "${srcdir}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    # Install documentation and license
+    install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+    install -Dm644 "GUIDE.md" "${pkgdir}/usr/share/doc/${pkgname}/GUIDE.md"
+    install -Dm644 "LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
