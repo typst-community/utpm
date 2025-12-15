@@ -8,6 +8,7 @@ use std::fs::{copy, create_dir_all};
 use std::path::PathBuf;
 use std::result::Result as R;
 
+use crate::path;
 use crate::utils::paths::{MANIFEST_FILE, get_current_dir};
 use crate::utils::paths::{
     TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
@@ -59,11 +60,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     let path_packages = default_typst_packages()?;
-    let path_packages_new = path_packages
-        .join("packages")
-        .join("preview")
-        .join(&name)
-        .join(&version);
+    let path_packages_new = path!(&path_packages, "packages", "preview", &name, &version);
 
     // --- GitHub Handling ---
     let crab = Octocrab::builder()
@@ -153,13 +150,9 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     );
 
     // Add .typstignore if it exists and is enabled.
-    if cmd.typst_ignore {
-        let mut path_check = path_curr.clone().into_os_string();
-        path_check.push("/.typstignore");
-        if check_path_file(path_check) {
-            utpm_log!(info, "Added .typstignore");
-            wb.add_custom_ignore_filename(".typstignore");
-        }
+    if cmd.typst_ignore && check_path_file(path!(path_curr, ".typstignore")) {
+        utpm_log!(info, "Added .typstignore");
+        wb.add_custom_ignore_filename(".typstignore");
     }
 
     // Add custom ignore file if specified.
@@ -180,7 +173,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             let relative = path
                 .strip_prefix(path_curr)
                 .map_err(|e| anyhow::anyhow!("Failed to strip prefix: {}", e))?;
-            let dest_path = path_packages_new.join(relative);
+            let dest_path = path!(&path_packages_new, relative);
             utpm_log!("{}", dest_path.display());
             if file_type.is_dir() {
                 create_dir_all(&dest_path)?;
@@ -194,12 +187,12 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     if !has_content(&path_packages_new)? {
         utpm_bail!(NoFiles);
     }
-    let manifest_check = path_packages_new.join(MANIFEST_FILE);
+    let manifest_check = path!(&path_packages_new, MANIFEST_FILE);
     if !check_path_file(&manifest_check) {
         utpm_bail!(OmitedTypstFile, path_packages_new.display().to_string());
     }
     let entry = config.package.entrypoint;
-    let entryfile = path_packages_new.join(entry.as_str());
+    let entryfile = path!(&path_packages_new, entry.as_str());
     let entrystr = entry.to_string();
     utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(&entryfile) {

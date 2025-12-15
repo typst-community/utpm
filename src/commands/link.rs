@@ -5,6 +5,7 @@ use std::{fs, path::Path};
 use tracing::instrument;
 
 use crate::{
+    path,
     utils::{
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, check_path_file, d_packages, get_current_dir},
@@ -36,15 +37,19 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
     let name = config.package.name;
     let version = config.package.version;
     let destination = if namespace != "preview" {
-        d_packages()?
-            .join(namespace.as_str())
-            .join(name.as_str())
-            .join(version.to_string())
+        path!(
+            d_packages()?,
+            &namespace,
+            name.as_ref(),
+            version.to_string()
+        )
     } else {
-        c_packages()?
-            .join(namespace.as_str())
-            .join(name.as_str())
-            .join(version.to_string())
+        path!(
+            c_packages()?,
+            &namespace,
+            name.as_ref(),
+            version.to_string()
+        )
     };
 
     // Check if the package already exists at the destination.
@@ -105,8 +110,7 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
 
             // Add .typstignore if it exists and is enabled.
             if cmd.typst_ignore {
-                let path_check = Path::new(&curr);
-                let pathbuf = path_check.join(".typstignore");
+                let pathbuf = curr.join(".typstignore");
                 if check_path_file(pathbuf) {
                     utpm_log!(info, "Added .typstignore");
                     wb.add_custom_ignore_filename(".typstignore");

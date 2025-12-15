@@ -4,6 +4,7 @@ use std::fs;
 use tracing::instrument;
 
 use crate::{
+    path,
     utils::{
         dryrun::get_dry_run,
         paths::{c_packages, check_path_dir, d_packages},
@@ -48,28 +49,24 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let re_all = regex_package();
     let re_name = Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap();
     let re_namespace = Regex::new(r"^@([a-zA-Z]+)$").unwrap();
-    let path: String;
 
-    if let Some(cap) = re_all.captures(packages.as_str()) {
+    let path = if let Some(cap) = re_all.captures(packages.as_str()) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
-        path = format!(
-            "{}/{}/{}/{}.{}.{}",
+        path!(
             package_path(namespace)?,
             namespace,
             package,
-            major,
-            minor,
-            patch
-        );
+            format!("{major}.{minor}.{patch}")
+        )
     } else if let Some(cap) = re_name.captures(packages.as_str()) {
         let (_, [namespace, package]) = cap.extract();
-        path = format!("{}/{}/{}", package_path(namespace)?, namespace, package);
+        path!(package_path(namespace)?, namespace, package)
     } else if let Some(cap) = re_namespace.captures(packages.as_str()) {
         let (_, [namespace]) = cap.extract();
-        path = format!("{}/{}", package_path(namespace)?, namespace);
+        path!(package_path(namespace)?, namespace)
     } else {
         utpm_bail!(PackageNotValid);
-    }
+    };
 
     // Check if the package directory exists.
     if !check_path_dir(&path) {
@@ -83,7 +80,7 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
             .prompt()
         {
             Ok(_) => {
-                utpm_log!(info, "Deleting {}", path);
+                utpm_log!(info, "Deleting {}", path.display());
                 if !get_dry_run() {
                     fs::remove_dir_all(path)?;
                 }
@@ -92,7 +89,7 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
             Err(_) => Ok(false),
         }
     } else {
-        utpm_log!(info, "Deleting {}", path);
+        utpm_log!(info, "Deleting {}", path.display());
         if !get_dry_run() {
             fs::remove_dir_all(path)?;
         }

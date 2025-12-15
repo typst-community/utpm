@@ -8,6 +8,7 @@ use std::result::Result as R;
 
 use crate::{
     commands::get::get_packages_name_version,
+    path,
     utils::{
         dryrun::get_dry_run,
         paths::{d_packages, get_current_dir},
@@ -40,8 +41,7 @@ pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
 /// # Arguments
 /// * `cmd` - If true, only checks for updates without modifying files
 async fn default_run(cmd: bool) -> Result<bool> {
-    let dir = &get_current_dir()?;
-    let path = Path::new(dir);
+    let path = &get_current_dir()?;
     let wb: WalkBuilder = WalkBuilder::new(path);
     let mut overr: OverrideBuilder = OverrideBuilder::new(path);
     overr.add("*.typ")?;
@@ -57,7 +57,8 @@ async fn default_run(cmd: bool) -> Result<bool> {
 }
 
 // TODO: Comments using utpm_log
-async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
+async fn file_run(path: impl AsRef<Path>, comment_only: bool) -> Result<bool> {
+    let path = path.as_ref();
     let re = Regex::new(
         r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#,
     )
@@ -110,7 +111,7 @@ async fn file_run(path: &Path, comment_only: bool) -> Result<bool> {
                 utpm_bail!(PackageNotExist);
             }
         } else {
-            let r = std::fs::read_dir(d_packages()?.join(namespace).join(package))?;
+            let r = std::fs::read_dir(path!(d_packages()?, namespace, package))?;
             let mut list_dir = r
                 .into_iter()
                 .filter_map(|a| a.ok())

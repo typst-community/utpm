@@ -4,7 +4,7 @@ use std::{fs, path::Path};
 
 use regex::Regex;
 
-use std::{io, result::Result as R};
+use std::io;
 use typst_kit::download::{DownloadState, Progress};
 use typst_syntax::package::PackageManifest;
 
@@ -26,17 +26,29 @@ use self::state::Result;
 /// <https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust>
 /// It has been edited to fit the needs of the CI environment.
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
-    fs::create_dir_all(&dst)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() && entry.file_name() != ".utpm" && entry.file_name() != "install" {
-            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+    fn inner(src: &mut PathBuf, dst: &mut PathBuf) -> io::Result<()> {
+        fs::create_dir_all(&dst)?;
+        for entry in fs::read_dir(&src)? {
+            let entry = entry?;
+            let ty = entry.file_type()?;
+            let name = entry.file_name();
+
+            src.push(&name);
+            dst.push(&name);
+            if ty.is_dir() && name != ".utpm" {
+                inner(src, dst)?;
+            } else {
+                fs::copy(&src, &dst)?;
+            }
+            src.pop();
+            dst.pop();
         }
+        Ok(())
     }
-    Ok(())
+    inner(
+        &mut src.as_ref().to_path_buf(),
+        &mut dst.as_ref().to_path_buf(),
+    )
 }
 
 /// Finds the path to a `typst.toml` manifest file in the given directory.
@@ -79,7 +91,7 @@ pub fn try_find(s: impl AsRef<Path>) -> Result<PackageManifest> {
 ///
 /// On Unix systems, it creates a standard symbolic link.
 #[cfg(not(windows))]
-pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
+pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> io::Result<()> {
     use std::os::unix::fs::symlink;
     symlink(origin, new_path)
 }
@@ -88,7 +100,7 @@ pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<()
 ///
 /// On Windows, it creates a directory symlink.
 #[cfg(windows)]
-pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> R<(), std::io::Error> {
+pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> io::Result<()> {
     use std::os::windows::fs::symlink_dir;
     symlink_dir(origin, new_path)
 }

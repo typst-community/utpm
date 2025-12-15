@@ -46,11 +46,11 @@ pub async fn run(cmd: &MetadataArgs) -> Result<bool> {
     utpm_log!(trace, "executing metadata command");
 
     // Get the current directory or use provided path
-    let curr = cmd
-        .path
-        .as_ref()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| get_current_dir().unwrap().to_string_lossy().to_string());
+    let curr = if let Some(path) = &cmd.path {
+        path.to_string_lossy().to_string()
+    } else {
+        get_current_dir()?.to_string_lossy().to_string()
+    };
 
     // Load the manifest
     let config = try_find(&curr)?;
