@@ -75,9 +75,7 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
             utpm_log!(
                 info,
                 "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                <std::option::Option<std::string::String> as Clone>::clone(path)
-                    .unwrap()
-                    .as_str(),
+                destination.display(),
                 namespace,
                 name,
                 version
