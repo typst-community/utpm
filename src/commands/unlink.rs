@@ -75,7 +75,7 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
 
     // Confirm with the user before deleting, unless `--yes` is provided.
     if !cmd.yes {
-        match Confirm::new("Are you sure to delete this? This is irreversible.")
+        match Confirm::new("This is irreversible. Are you sure to delete this?")
             .with_help_message(format!("You want to delete {packages}").as_str())
             .prompt()
         {
