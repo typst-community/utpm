@@ -9,7 +9,7 @@ use tracing::instrument;
 use crate::{
     utils::{
         output::{OutputFormat, get_output_format},
-        paths::{c_packages, d_packages},
+        paths::{package_cache_path, package_path},
         state::Result,
     },
     utpm_log,
@@ -129,10 +129,10 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
     if cmd.tree && get_output_format() == OutputFormat::Text {
         return run_tree(cmd);
     }
-    let typ = d_packages()?;
+    let typ = package_path()?;
     // If `--all` is specified, list packages from both data and cache directories.
     if cmd.all {
-        let preview = c_packages()?;
+        let preview = package_cache_path()?;
         let data1 = read(&typ)?;
         let data2 = read(&preview)?;
         utpm_log!(data1);
@@ -142,7 +142,7 @@ pub async fn run(cmd: &ListTreeArgs) -> Result<bool> {
 
     // If specific packages/namespaces are included, list only those.
     if let Some(list) = &cmd.include {
-        let preview = c_packages()?;
+        let preview = package_cache_path()?;
         for e in list {
             if e == "preview" {
                 let data = read(&preview)?;
@@ -209,9 +209,9 @@ pub fn namespace_read(typ: impl AsRef<Path>, name: String) -> Result<Namespace> 
 #[instrument(skip(cmd))]
 pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
     utpm_log!(trace, "executing list command with tree format");
-    let typ = d_packages()?;
+    let typ = package_path()?;
     if cmd.all {
-        let preview = c_packages()?;
+        let preview = package_cache_path()?;
         let data1 = read(&typ)?;
         let data2 = read(&preview)?;
         print_tree(&data1)?;
@@ -220,7 +220,7 @@ pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
     }
 
     if let Some(list) = &cmd.include {
-        let preview = c_packages()?;
+        let preview = package_cache_path()?;
         for e in list {
             if e == "preview" {
                 let data = read(&preview)?;

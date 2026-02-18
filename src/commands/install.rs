@@ -6,7 +6,7 @@ use crate::{
         copy_dir_all,
         dryrun::get_dry_run,
         git::{clone_git, exist_git, project},
-        paths::{MANIFEST_FILE, check_path_dir, check_path_file, d_packages, datalocalutpm},
+        paths::{MANIFEST_FILE, check_path_dir, check_path_file, package_path, utpm_data_path},
         state::Result,
         try_find,
     },
@@ -34,7 +34,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 
     utpm_log!(trace, "executing init command for install");
 
-    let path = datalocalutpm()?.join("tmp");
+    let path = utpm_data_path()?.join("tmp");
     if check_path_dir(&path) && !get_dry_run() {
         fs::remove_dir_all(&path)?;
     }
@@ -76,7 +76,7 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
     // Check if the package is already installed.
     if check_path_dir(format!(
         "{}/{}/{}/{}",
-        d_packages()?.display(),
+        package_path()?.display(),
         namespace,
         &file.package.name,
         &file.package.version

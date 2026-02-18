@@ -15,7 +15,7 @@ use crate::{
     utils::{
         ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
-        paths::{c_packages, check_path_dir, d_packages, get_current_dir, has_content},
+        paths::{check_path_dir, get_current_dir, has_content, package_cache_path, package_path},
         state::{Result, UtpmError},
         symlink_all,
     },
@@ -116,10 +116,15 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
     // Determine the local path for the package based on its namespace.
     let local_path = if pkg.namespace == "preview" {
         utpm_log!(info, "preview found, cache dir use");
-        path!(c_packages()?, pkg.namespace, pkg.package, pkg.version)
+        path!(
+            package_cache_path()?,
+            pkg.namespace,
+            pkg.package,
+            pkg.version
+        )
     } else {
         utpm_log!(info, "no preview found, data dir use");
-        path!(d_packages()?, pkg.namespace, pkg.package, pkg.version)
+        path!(package_path()?, pkg.namespace, pkg.package, pkg.version)
     };
 
     // If the package already exists locally, copy or symlink it.
@@ -151,8 +156,8 @@ pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
 
     // Prepare to download the package.
     let pkg_sto = PackageStorage::new(
-        Some(c_packages()?),
-        Some(d_packages()?),
+        Some(package_cache_path()?),
+        Some(package_path()?),
         Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
     );
     let printer = &mut ProgressPrint {};

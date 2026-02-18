@@ -29,7 +29,7 @@ fn not_found(message: &str) -> UtpmError {
 ///
 /// This path can be overridden by setting the `TYPST_PACKAGE_CACHE_PATH` environment variable.
 /// It is used for storing packages downloaded from the typst registry.
-pub fn c_packages() -> Result<PathBuf> {
+pub fn package_cache_path() -> Result<PathBuf> {
     env_path("TYPST_PACKAGE_CACHE_PATH")
         .or_else(typst_kit::package::default_package_cache_path)
         .ok_or_else(|| not_found("Could not find package cache directory"))
@@ -39,7 +39,7 @@ pub fn c_packages() -> Result<PathBuf> {
 ///
 /// This path can be overridden by setting the `TYPST_PACKAGE_PATH` environment variable.
 /// It is used for storing local packages.
-pub fn d_packages() -> Result<PathBuf> {
+pub fn package_path() -> Result<PathBuf> {
     env_path("TYPST_PACKAGE_PATH")
         .or_else(typst_kit::package::default_package_path)
         .ok_or_else(|| not_found("Could not find package directory"))
@@ -51,15 +51,15 @@ pub fn d_packages() -> Result<PathBuf> {
 ///
 /// This path can be overridden by setting the `UTPM_DATA_PATH` environment variable.
 /// It is used for storing local packages.
-pub fn datalocalutpm() -> Result<PathBuf> {
+pub fn utpm_data_path() -> Result<PathBuf> {
     env_path("UTPM_DATA_PATH")
         .or_else(|| dirs::data_dir().map(|data_dir| path!(data_dir, UTPM_SUBDIR)))
         .ok_or_else(|| not_found("Could not find utpm data directory"))
 }
 
 /// Gets the path to the default directory for cloned git packages.
-pub fn default_typst_packages() -> Result<PathBuf> {
-    Ok(path!(datalocalutpm()?, LOCAL_PACKAGES))
+pub fn local_package_path() -> Result<PathBuf> {
+    Ok(path!(utpm_data_path()?, LOCAL_PACKAGES))
 }
 
 /// Gets the current working directory.

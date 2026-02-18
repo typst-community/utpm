@@ -10,9 +10,7 @@ use std::result::Result as R;
 
 use crate::path;
 use crate::utils::paths::{MANIFEST_FILE, get_current_dir};
-use crate::utils::paths::{
-    TYPST_PACKAGE_URL, check_path_file, default_typst_packages, has_content,
-};
+use crate::utils::paths::{TYPST_PACKAGE_URL, check_path_file, has_content, local_package_path};
 use crate::utpm_bail;
 use ignore::overrides::OverrideBuilder;
 use octocrab::Octocrab;
@@ -59,7 +57,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         utpm_bail!(PackageFormatError); // TODO: Improve error handling.
     }
 
-    let path_packages = default_typst_packages()?;
+    let path_packages = local_package_path()?;
     let path_packages_new = path!(&path_packages, "packages", "preview", &name, &version);
 
     // --- GitHub Handling ---
