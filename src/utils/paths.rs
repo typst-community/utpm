@@ -6,7 +6,7 @@ use std::{
 
 use crate::path;
 
-use super::state::Result;
+use super::state::{Result, UtpmError};
 
 /// The URL for the official typst packages repository.
 pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
@@ -17,22 +17,22 @@ pub const MANIFEST_FILE: &str = "typst.toml";
 /// The subdirectory for locally cloned git packages.
 pub const LOCAL_PACKAGES: &str = "git-packages";
 
+fn env_path(key: &str) -> Option<PathBuf> {
+    env::var(key).ok().map(PathBuf::from)
+}
+
+fn not_found(message: &str) -> UtpmError {
+    std::io::Error::new(std::io::ErrorKind::NotFound, message).into()
+}
+
 /// Gets the path to the directory for downloaded packages from the typst registry.
 ///
 /// This path can be overridden by setting the `TYPST_PACKAGE_CACHE_PATH` environment variable.
 /// It is used for storing packages downloaded from the typst registry.
 pub fn c_packages() -> Result<PathBuf> {
-    let package_cache_path = env::var("TYPST_PACKAGE_CACHE_PATH")
-        .ok()
-        .map(PathBuf::from)
-        .or_else(typst_kit::package::default_package_cache_path);
-    let package_cache_path = package_cache_path.ok_or_else(|| {
-        std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "Could not find package cache directory",
-        )
-    })?;
-    Ok(package_cache_path)
+    env_path("TYPST_PACKAGE_CACHE_PATH")
+        .or_else(typst_kit::package::default_package_cache_path)
+        .ok_or_else(|| not_found("Could not find package cache directory"))
 }
 
 /// Gets the path to the directory for local packages.
@@ -40,17 +40,9 @@ pub fn c_packages() -> Result<PathBuf> {
 /// This path can be overridden by setting the `TYPST_PACKAGE_PATH` environment variable.
 /// It is used for storing local packages.
 pub fn d_packages() -> Result<PathBuf> {
-    let package_path = env::var("TYPST_PACKAGE_PATH")
-        .ok()
-        .map(PathBuf::from)
-        .or_else(typst_kit::package::default_package_path);
-    let package_path = package_path.ok_or_else(|| {
-        std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "Could not find package directory",
-        )
-    })?;
-    Ok(package_path)
+    env_path("TYPST_PACKAGE_PATH")
+        .or_else(typst_kit::package::default_package_path)
+        .ok_or_else(|| not_found("Could not find package directory"))
 }
 
 /// Gets the path to UTPM's data directory.
@@ -60,17 +52,9 @@ pub fn d_packages() -> Result<PathBuf> {
 /// This path can be overridden by setting the `UTPM_DATA_PATH` environment variable.
 /// It is used for storing local packages.
 pub fn datalocalutpm() -> Result<PathBuf> {
-    let utpm_data_path = env::var("UTPM_DATA_PATH")
-        .ok()
-        .map(PathBuf::from)
-        .or_else(|| dirs::data_dir().map(|data_dir| data_dir.join(UTPM_SUBDIR)));
-    let utpm_data_path = utpm_data_path.ok_or_else(|| {
-        std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "Could not find utpm data directory",
-        )
-    })?;
-    Ok(utpm_data_path)
+    env_path("UTPM_DATA_PATH")
+        .or_else(|| dirs::data_dir().map(|data_dir| path!(data_dir, UTPM_SUBDIR)))
+        .ok_or_else(|| not_found("Could not find utpm data directory"))
 }
 
 /// Gets the path to the default directory for cloned git packages.
