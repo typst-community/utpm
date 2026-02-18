@@ -209,17 +209,14 @@ pub fn namespace_read(typ: impl AsRef<Path>, name: String) -> Result<Namespace> 
 #[instrument(skip(cmd))]
 pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
     utpm_log!(trace, "executing list command with tree format");
-    let typ = package_path()?;
+    let packages = package_path()?;
     if cmd.all {
-        let preview = package_cache_path()?;
-        let data1 = read(&typ)?;
-        let data2 = read(&preview)?;
-        print_tree(&data1)?;
-        print_tree(&data2)?;
-        return Ok(true);
-    }
-
-    if let Some(list) = &cmd.include {
+        let cache = package_cache_path()?;
+        let packages_data = read(&packages)?;
+        let cache_data = read(&cache)?;
+        print_tree(&packages_data)?;
+        print_tree(&cache_data)?;
+    } else if let Some(list) = &cmd.include {
         let preview = package_cache_path()?;
         for e in list {
             if e == "preview" {
@@ -227,16 +224,15 @@ pub fn run_tree(cmd: &ListTreeArgs) -> Result<bool> {
                 print_tree(&data)?;
                 return Ok(true);
             }
-            let pkg = package_read(typ.join("local").join(e), e.to_string());
+            let pkg = package_read(packages.join("local").join(e), e.to_string());
             match pkg {
-                Err(_) => print_tree(&namespace_read(typ.join(e), e.to_string())?),
+                Err(_) => print_tree(&namespace_read(packages.join(e), e.to_string())?),
                 Ok(data) => print_tree(&data),
             }?;
         }
-        Ok(true)
     } else {
-        let data = read(&typ)?;
+        let data = read(&packages)?;
         print_tree(&data)?;
-        return Ok(true);
     }
+    Ok(true)
 }

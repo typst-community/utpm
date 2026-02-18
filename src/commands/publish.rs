@@ -57,8 +57,8 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         utpm_bail!(PackageFormatError); // TODO: Improve error handling.
     }
 
-    let path_packages = local_package_path()?;
-    let path_packages_new = path!(&path_packages, "packages", "preview", &name, &version);
+    let packages_path = local_package_path()?;
+    let new_package_path = path!(&packages_path, "packages", "preview", &name, &version);
 
     // --- GitHub Handling ---
     let crab = Octocrab::builder()
@@ -109,19 +109,19 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         };
     }
 
-    project().lock().unwrap().0 = path_packages.clone();
+    project().lock().unwrap().0 = packages_path.clone();
 
     // --- File Preparation ---
     // Download or update the typst/packages repository.
 
     match pull_git() {
         Ok(_) => Ok(true),
-        Err(_) => clone_git(&path_packages.to_string_lossy(), fork.as_str()),
+        Err(_) => clone_git(&packages_path.to_string_lossy(), fork.as_str()),
     }?;
     utpm_log!(
         info,
         "Path to the new package {}",
-        path_packages_new.display()
+        new_package_path.display()
     );
 
     // Use WalkBuilder to respect ignore files.
@@ -171,7 +171,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
             let relative = path
                 .strip_prefix(path_curr)
                 .map_err(|e| anyhow::anyhow!("Failed to strip prefix: {}", e))?;
-            let dest_path = path!(&path_packages_new, relative);
+            let dest_path = path!(&new_package_path, relative);
             utpm_log!("{}", dest_path.display());
             if file_type.is_dir() {
                 create_dir_all(&dest_path)?;
@@ -182,25 +182,25 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     // --- Validation ---
-    if !has_content(&path_packages_new)? {
+    if !has_content(&new_package_path)? {
         utpm_bail!(NoFiles);
     }
-    let manifest_check = path!(&path_packages_new, MANIFEST_FILE);
+    let manifest_check = path!(&new_package_path, MANIFEST_FILE);
     if !check_path_file(&manifest_check) {
-        utpm_bail!(OmitedTypstFile, path_packages_new.display().to_string());
+        utpm_bail!(OmitedTypstFile, new_package_path.display().to_string());
     }
     let entry = config.package.entrypoint;
-    let entryfile = path!(&path_packages_new, entry.as_str());
+    let entryfile = path!(&new_package_path, entry.as_str());
     let entrystr = entry.to_string();
     utpm_log!(trace, "entryfile" => entrystr);
     if !check_path_file(&entryfile) {
         utpm_bail!(
             OmitedEntryfile,
             entrystr,
-            path_packages_new.display().to_string()
+            new_package_path.display().to_string()
         );
     }
-    utpm_log!(info, "files copied to {}", path_packages_new.display());
+    utpm_log!(info, "files copied to {}", new_package_path.display());
 
     // --- Git Push ---
     utpm_log!(info, "Getting information from github");
@@ -219,7 +219,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
         .clone()
         .unwrap_or(format!("{} using utpm", &name_replaced));
 
-    project().lock().unwrap().0 = path_packages_new;
+    project().lock().unwrap().0 = new_package_path;
 
     add_git(".")?;
     commit_git(&msg)?;
