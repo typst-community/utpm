@@ -15,7 +15,7 @@ pub const DATA_HOME_SHARE: &str = ".local/share";
 /// The default cache directory.
 pub const CACHE_HOME: &str = ".cache";
 /// The subdirectory within data and cache directories for typst packages.
-pub const TYPST_PACKAGE_PATH: &str = "typst/packages";
+pub const TYPST_PACKAGE_PATH: &str = typst_kit::package::DEFAULT_PACKAGES_SUBDIR;
 /// The subdirectory for UTPM's own data files.
 pub const UTPM_PATH: &str = "utpm";
 /// The name of the manifest file.
