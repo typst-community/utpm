@@ -439,8 +439,15 @@ pub struct Cli {
     ///
     /// Levels: error, warn, info (default), debug, trace
     /// Example: utpm -v trace prj link
-    #[arg(short = 'v', long, global = true, value_enum)]
-    pub verbose: Option<Level>,
+    #[arg(
+        default_value = "info",
+        short = 'v',
+        long,
+        global = true,
+        env = "UTPM_DEBUG",
+        value_enum
+    )]
+    pub verbose: Level,
 
     /// The output format for command results.
     ///

@@ -1,9 +1,6 @@
-use std::env;
-use std::str::FromStr;
-
 use anyhow::Result;
 use clap::Parser;
-use tracing::{Level, error, instrument, level_filters::LevelFilter};
+use tracing::{error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 use utpm::{
@@ -28,18 +25,6 @@ async fn main() {
     ARGS.set(Cli::parse()).expect("ARGS should still be empty");
     let x = get_args();
 
-    // Set up logging level from `UTPM_DEBUG` env var or default to `info`.
-    let debug_str: String = match env::var("UTPM_DEBUG") {
-        Err(_) => "info".into(),
-        Ok(val) => val,
-    };
-
-    // Convert the log level string to a `LevelFilter`.
-    let level_filter = match Level::from_str(debug_str.as_str()) {
-        Ok(val) => val,
-        Err(_) => Level::INFO,
-    };
-
     if get_dry_run() {
         utpm_log!(info, "Using dry-run")
     }
@@ -51,25 +36,13 @@ async fn main() {
             .with(
                 tracing_subscriber::fmt::layer()
                     .json()
-                    .with_filter(LevelFilter::from_level(if let Some(debug) = x.verbose {
-                        debug
-                    } else {
-                        level_filter
-                    })),
+                    .with_filter(LevelFilter::from_level(x.verbose)),
             )
             .init();
     } else {
         // Use standard format for text output.
         tracing_subscriber::registry()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(LevelFilter::from_level(
-                    if let Some(debug) = x.verbose {
-                        debug
-                    } else {
-                        level_filter
-                    },
-                )),
-            )
+            .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::from_level(x.verbose)))
             .init();
     }
 
