@@ -7,6 +7,7 @@ use tracing::{Level, error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 use utpm::{
+    args::{ARGS, get_args},
     commands::{self, Cli, Commands, PackagesArgs, ProjectArgs},
     utils::{
         dryrun::{DRYRUN, get_dry_run},
@@ -24,7 +25,8 @@ use utpm::{
 #[tokio::main]
 async fn main() {
     // Parse command-line arguments.
-    let x = Cli::parse();
+    ARGS.set(Cli::parse()).expect("ARGS should still be empty");
+    let x = get_args();
 
     // Set up logging level from `UTPM_DEBUG` env var or default to `info`.
     let debug_str: String = match env::var("UTPM_DEBUG") {
