@@ -5,6 +5,7 @@
 use shadow_rs::shadow;
 shadow!(build);
 
+pub mod args;
 pub mod commands;
 pub mod utils;
 

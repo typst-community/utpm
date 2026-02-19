@@ -1,5 +1,6 @@
 use clap::ValueEnum;
-use once_cell::sync::OnceCell;
+
+use crate::args::get_args;
 
 /// Defines the supported output formats for command results.
 #[derive(Copy, Clone, PartialEq, Eq, shadow_rs::Debug, ValueEnum)]
@@ -19,14 +20,9 @@ pub enum OutputFormat {
     Hjson,
 }
 
-/// A global static variable to hold the configured output format.
-/// This allows the output format to be set once and accessed from anywhere
-/// in the application.
-pub static OUTPUT_FORMAT: OnceCell<OutputFormat> = OnceCell::new();
-
 /// Returns the currently configured output format.
 ///
 /// Defaults to `OutputFormat::Text` if not explicitly set.
 pub fn get_output_format() -> OutputFormat {
-    *OUTPUT_FORMAT.get().unwrap_or(&OutputFormat::Text)
+    get_args().output_format
 }

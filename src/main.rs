@@ -1,28 +1,17 @@
 use anyhow::Result;
-use shadow_rs::shadow;
-shadow!(build);
-
-pub mod commands;
-pub mod utils;
-
-use std::{env, str::FromStr};
-
-use utils::output::OUTPUT_FORMAT;
-
 use clap::Parser;
-
-use commands::PackagesArgs;
-use commands::ProjectArgs;
-use commands::{Cli, Commands};
-
-use utils::state::UtpmError;
-
-use tracing::{Level, error, instrument, level_filters::LevelFilter};
+use tracing::{error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::utils::{
-    dryrun::{DRYRUN, get_dry_run},
-    output::{OutputFormat, get_output_format},
+use utpm::{
+    args::{ARGS, get_args},
+    commands::{self, Cli, Commands, PackagesArgs, ProjectArgs},
+    utils::{
+        dryrun::get_dry_run,
+        output::{OutputFormat, get_output_format},
+        state::UtpmError,
+    },
+    utpm_log,
 };
 
 /// The main entry point of the UTPM application.
@@ -33,27 +22,8 @@ use crate::utils::{
 #[tokio::main]
 async fn main() {
     // Parse command-line arguments.
-    let x = Cli::parse();
-
-    // Set up logging level from `UTPM_DEBUG` env var or default to `info`.
-    let debug_str: String = match env::var("UTPM_DEBUG") {
-        Err(_) => "info".into(),
-        Ok(val) => val,
-    };
-
-    // Convert the log level string to a `LevelFilter`.
-    let level_filter = match Level::from_str(debug_str.as_str()) {
-        Ok(val) => val,
-        Err(_) => Level::INFO,
-    };
-
-    // Set the global output format.
-    OUTPUT_FORMAT
-        .set(x.output_format.unwrap_or(OutputFormat::Text))
-        .unwrap();
-
-    // Set the dry-run boolean
-    DRYRUN.set(x.dry_run).unwrap();
+    ARGS.set(Cli::parse()).expect("ARGS should still be empty");
+    let x = get_args();
 
     if get_dry_run() {
         utpm_log!(info, "Using dry-run")
@@ -66,25 +36,13 @@ async fn main() {
             .with(
                 tracing_subscriber::fmt::layer()
                     .json()
-                    .with_filter(LevelFilter::from_level(if let Some(debug) = x.verbose {
-                        debug
-                    } else {
-                        level_filter
-                    })),
+                    .with_filter(LevelFilter::from_level(x.verbose)),
             )
             .init();
     } else {
         // Use standard format for text output.
         tracing_subscriber::registry()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(LevelFilter::from_level(
-                    if let Some(debug) = x.verbose {
-                        debug
-                    } else {
-                        level_filter
-                    },
-                )),
-            )
+            .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::from_level(x.verbose)))
             .init();
     }
 
