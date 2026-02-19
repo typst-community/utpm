@@ -446,13 +446,13 @@ pub struct Cli {
     ///
     /// Formats: text (default), json, yaml, toml, hjson
     /// Example: utpm -o json pkg list
-    #[arg(short = 'o', long, global = true, value_enum)]
-    pub output_format: Option<OutputFormat>,
+    #[arg(default_value_t = OutputFormat::Text, short = 'o', long, global = true, value_enum)]
+    pub output_format: OutputFormat,
 
     /// Preview changes without writing to disk (dry-run mode).
     ///
     /// Useful for testing commands before execution.
     /// Example: utpm --dry-run prj link
-    #[arg(default_value_t = false, global = true, long, short = 'D')]
+    #[arg(default_value_t = false, short = 'D', long, global = true)]
     pub dry_run: bool,
 }

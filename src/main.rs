@@ -10,8 +10,8 @@ use utpm::{
     args::{ARGS, get_args},
     commands::{self, Cli, Commands, PackagesArgs, ProjectArgs},
     utils::{
-        dryrun::{DRYRUN, get_dry_run},
-        output::{OUTPUT_FORMAT, OutputFormat, get_output_format},
+        dryrun::get_dry_run,
+        output::{OutputFormat, get_output_format},
         state::UtpmError,
     },
     utpm_log,
@@ -39,14 +39,6 @@ async fn main() {
         Ok(val) => val,
         Err(_) => Level::INFO,
     };
-
-    // Set the global output format.
-    OUTPUT_FORMAT
-        .set(x.output_format.unwrap_or(OutputFormat::Text))
-        .unwrap();
-
-    // Set the dry-run boolean
-    DRYRUN.set(x.dry_run).unwrap();
 
     if get_dry_run() {
         utpm_log!(info, "Using dry-run")
