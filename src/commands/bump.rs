@@ -65,10 +65,12 @@ pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
         .chain(files.iter().map(AsRef::<str>::as_ref))
         .join(", ");
 
-    config["package"]["version"] = value(new_version);
-    let mut file = File::create(manifest_path)?;
-    write!(file, "{}", config)?;
-    file.sync_all()?;
+    if !get_dry_run() {
+        config["package"]["version"] = value(new_version);
+        let mut file = File::create(manifest_path)?;
+        write!(file, "{}", config)?;
+        file.sync_all()?;
+    }
 
     utpm_log!(info, format!("New version: {new_version}"), "version" => new_version, "files" => files);
     Ok(true)
