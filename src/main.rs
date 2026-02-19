@@ -1,28 +1,19 @@
+use std::env;
+use std::str::FromStr;
+
 use anyhow::Result;
-use shadow_rs::shadow;
-shadow!(build);
-
-pub mod commands;
-pub mod utils;
-
-use std::{env, str::FromStr};
-
-use utils::output::OUTPUT_FORMAT;
-
 use clap::Parser;
-
-use commands::PackagesArgs;
-use commands::ProjectArgs;
-use commands::{Cli, Commands};
-
-use utils::state::UtpmError;
-
 use tracing::{Level, error, instrument, level_filters::LevelFilter};
 use tracing_subscriber::{self, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::utils::{
-    dryrun::{DRYRUN, get_dry_run},
-    output::{OutputFormat, get_output_format},
+use utpm::{
+    commands::{self, Cli, Commands, PackagesArgs, ProjectArgs},
+    utils::{
+        dryrun::{DRYRUN, get_dry_run},
+        output::{OUTPUT_FORMAT, OutputFormat, get_output_format},
+        state::UtpmError,
+    },
+    utpm_log,
 };
 
 /// The main entry point of the UTPM application.
