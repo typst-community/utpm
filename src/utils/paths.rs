@@ -67,11 +67,10 @@ pub fn local_package_path() -> Result<PathBuf> {
 /// This path can be overridden by setting the `UTPM_CURRENT_DIR` environment variable.
 /// It is used for reading and writing the `typst.toml` manifest.
 pub fn get_current_dir() -> Result<PathBuf> {
-    if let Ok(str) = env::var("UTPM_CURRENT_DIR") {
-        Ok(PathBuf::from(str).canonicalize()?)
-    } else {
-        Ok(current_dir()?)
-    }
+    env_path("UTPM_CURRENT_DIR")
+        .ok_or(())
+        .or_else(|()| current_dir())
+        .map_err(Into::into)
 }
 
 /// Checks if a directory at the given path is not empty.
