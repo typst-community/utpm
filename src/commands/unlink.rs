@@ -7,7 +7,7 @@ use crate::{
     path,
     utils::{
         dryrun::get_dry_run,
-        paths::{c_packages, check_path_dir, d_packages},
+        paths::{self, check_path_dir},
         regex_package,
         state::Result,
     },
@@ -25,9 +25,9 @@ use super::UnlinkArgs;
 /// The cache directory for "preview" namespace, or the data directory for others.
 fn package_path(namespace: &str) -> Result<String> {
     if namespace == "preview" {
-        Ok(c_packages()?.to_string_lossy().to_string())
+        Ok(paths::package_cache_path()?.to_string_lossy().to_string())
     } else {
-        Ok(d_packages()?.to_string_lossy().to_string())
+        Ok(paths::package_path()?.to_string_lossy().to_string())
     }
 }
 

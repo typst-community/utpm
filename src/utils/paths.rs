@@ -6,85 +6,60 @@ use std::{
 
 use crate::path;
 
-use super::state::Result;
+use super::state::{Result, UtpmError};
 
 /// The URL for the official typst packages repository.
 pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
-/// The default share directory on Linux for user-specific data files.
-pub const DATA_HOME_SHARE: &str = ".local/share";
-/// The default cache directory.
-pub const CACHE_HOME: &str = ".cache";
-/// The subdirectory within data and cache directories for typst packages.
-pub const TYPST_PACKAGE_PATH: &str = "typst/packages";
 /// The subdirectory for UTPM's own data files.
-pub const UTPM_PATH: &str = "utpm";
+pub const UTPM_SUBDIR: &str = "utpm";
 /// The name of the manifest file.
 pub const MANIFEST_FILE: &str = "typst.toml";
 /// The subdirectory for locally cloned git packages.
 pub const LOCAL_PACKAGES: &str = "git-packages";
 
-/// Gets the path to the user's data directory.
-///
-/// This path can be overridden by setting the `UTPM_DATA_DIR` environment variable.
-/// It is used for storing local packages.
-pub fn get_data_dir() -> Result<PathBuf> {
-    if let Ok(str) = env::var("UTPM_DATA_DIR") {
-        Ok(PathBuf::from(str).canonicalize()?)
-    } else if let Some(dir) = dirs::data_local_dir() {
-        Ok(dir)
-    } else {
-        // Default on Linux: ~/.local/share
-        let home = dirs::home_dir().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Could not find home directory",
-            )
-        })?;
-        Ok(path!(home, DATA_HOME_SHARE))
-    }
+fn env_path(key: &str) -> Option<PathBuf> {
+    env::var(key).ok().map(PathBuf::from)
 }
 
-/// Gets the path to the user's cache directory.
-///
-/// This path can be overridden by setting the `UTPM_CACHE_DIR` environment variable.
-/// It is used for storing packages downloaded from the typst registry.
-pub fn get_cache_dir() -> Result<PathBuf> {
-    if let Ok(str) = env::var("UTPM_CACHE_DIR") {
-        Ok(PathBuf::from(str).canonicalize()?)
-    } else if let Some(dir) = dirs::cache_dir() {
-        Ok(dir)
-    } else {
-        // Default fallback: ~/.cache
-        let home = dirs::home_dir().ok_or_else(|| {
-            std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Could not find home directory",
-            )
-        })?;
-        Ok(path!(home, CACHE_HOME))
-    }
+fn not_found(message: &str) -> UtpmError {
+    std::io::Error::new(std::io::ErrorKind::NotFound, message).into()
 }
 
 /// Gets the path to the directory for downloaded packages from the typst registry.
-pub fn c_packages() -> Result<PathBuf> {
-    Ok(path!(get_cache_dir()?, TYPST_PACKAGE_PATH))
+///
+/// This path can be overridden by setting the `TYPST_PACKAGE_CACHE_PATH` environment variable.
+/// It is used for storing packages downloaded from the typst registry.
+pub fn package_cache_path() -> Result<PathBuf> {
+    env_path("TYPST_PACKAGE_CACHE_PATH")
+        .or_else(typst_kit::package::default_package_cache_path)
+        .ok_or_else(|| not_found("Could not find package cache directory"))
 }
 
 /// Gets the path to the directory for local packages.
-pub fn d_packages() -> Result<PathBuf> {
-    Ok(path!(get_data_dir()?, TYPST_PACKAGE_PATH))
+///
+/// This path can be overridden by setting the `TYPST_PACKAGE_PATH` environment variable.
+/// It is used for storing local packages.
+pub fn package_path() -> Result<PathBuf> {
+    env_path("TYPST_PACKAGE_PATH")
+        .or_else(typst_kit::package::default_package_path)
+        .ok_or_else(|| not_found("Could not find package directory"))
 }
 
 /// Gets the path to UTPM's data directory.
 ///
 /// Used for storing temporary files.
-pub fn datalocalutpm() -> Result<PathBuf> {
-    Ok(path!(get_data_dir()?, UTPM_PATH))
+///
+/// This path can be overridden by setting the `UTPM_DATA_PATH` environment variable.
+/// It is used for storing local packages.
+pub fn utpm_data_path() -> Result<PathBuf> {
+    env_path("UTPM_DATA_PATH")
+        .or_else(|| dirs::data_dir().map(|data_dir| path!(data_dir, UTPM_SUBDIR)))
+        .ok_or_else(|| not_found("Could not find utpm data directory"))
 }
 
 /// Gets the path to the default directory for cloned git packages.
-pub fn default_typst_packages() -> Result<PathBuf> {
-    Ok(path!(datalocalutpm()?, LOCAL_PACKAGES))
+pub fn local_package_path() -> Result<PathBuf> {
+    Ok(path!(utpm_data_path()?, LOCAL_PACKAGES))
 }
 
 /// Gets the current working directory.
@@ -92,11 +67,10 @@ pub fn default_typst_packages() -> Result<PathBuf> {
 /// This path can be overridden by setting the `UTPM_CURRENT_DIR` environment variable.
 /// It is used for reading and writing the `typst.toml` manifest.
 pub fn get_current_dir() -> Result<PathBuf> {
-    if let Ok(str) = env::var("UTPM_CURRENT_DIR") {
-        Ok(PathBuf::from(str).canonicalize()?)
-    } else {
-        Ok(current_dir()?)
-    }
+    env_path("UTPM_CURRENT_DIR")
+        .ok_or(())
+        .or_else(|()| current_dir())
+        .map_err(Into::into)
 }
 
 /// Checks if a directory at the given path is not empty.

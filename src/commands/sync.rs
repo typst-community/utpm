@@ -11,7 +11,7 @@ use crate::{
     path,
     utils::{
         dryrun::get_dry_run,
-        paths::{d_packages, get_current_dir},
+        paths::{get_current_dir, package_path},
         state::{Result, UtpmError},
     },
     utpm_bail, utpm_log,
@@ -111,7 +111,7 @@ async fn file_run(path: impl AsRef<Path>, comment_only: bool) -> Result<bool> {
                 utpm_bail!(PackageNotExist);
             }
         } else {
-            let r = std::fs::read_dir(path!(d_packages()?, namespace, package))?;
+            let r = std::fs::read_dir(path!(package_path()?, namespace, package))?;
             let mut list_dir = r
                 .into_iter()
                 .filter_map(|a| a.ok())
