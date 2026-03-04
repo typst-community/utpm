@@ -21,8 +21,8 @@ tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.20", features = ["fmt", "std", "json"] }
 clap_complete = { version = "4.5.51" }
 shadow-rs = "1.1.1"
-typst-kit = "0.13.1"
-typst-syntax = { version = "0.13.1" }
+typst-kit = "0.14.2"
+typst-syntax = "0.14.2"
 regex = { version = "1.11.1" }
 ignore = { version = "0.4.23" }
 octocrab = { version = "0.44.1" }

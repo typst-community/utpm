@@ -8,7 +8,9 @@ use crate::{
     path,
     utils::{
         dryrun::get_dry_run,
-        paths::{c_packages, check_path_dir, check_path_file, d_packages, get_current_dir},
+        paths::{
+            check_path_dir, check_path_file, get_current_dir, package_cache_path, package_path,
+        },
         specs::Extra,
         state::Result,
         symlink_all, try_find,
@@ -38,14 +40,14 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
     let version = config.package.version;
     let destination = if namespace != "preview" {
         path!(
-            d_packages()?,
+            package_path()?,
             &namespace,
             name.as_ref(),
             version.to_string()
         )
     } else {
         path!(
-            c_packages()?,
+            package_cache_path()?,
             &namespace,
             name.as_ref(),
             version.to_string()
