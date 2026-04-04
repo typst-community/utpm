@@ -79,24 +79,30 @@ jobs:
         run: cargo build --release --all-features --target ${{ matrix.target }}
 
       - name: Strip binary
+        if: matrix.os != 'windows-latest'
+        shell: bash
         run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
 
       - name: Generate shell completions
+        shell: bash
         run: |
           mkdir -p completions
-          target/${{ matrix.target }}/release/utpm generate bash > completions/utpm.bash
-          target/${{ matrix.target }}/release/utpm generate fish > completions/utpm.fish
-          target/${{ matrix.target }}/release/utpm generate zsh > completions/_utpm
+          BIN="target/${{ matrix.target }}/release/${{ matrix.artifact_name }}"
+          "$BIN" generate bash > completions/utpm.bash
+          "$BIN" generate fish > completions/utpm.fish
+          "$BIN" generate zsh > completions/_utpm
 
       - name: Create tarball
+        shell: bash
         run: |
-          mkdir -p dist docs
-          cp docs/GUIDE.md dist/
-          tar czf dist/${{ matrix.asset_name }}.tar.gz \
-            -C target/${{ matrix.target }}/release ${{ matrix.artifact_name }} \
-            -C ../../../completions utpm.bash utpm.fish _utpm \
-            -C ../../../ README.md LICENSE \
-            -C dist GUIDE.md
+          set -euo pipefail
+          mkdir -p dist pkg
+          cp "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}" pkg/
+          cp completions/utpm.bash completions/utpm.fish completions/_utpm pkg/
+          cp README.md LICENSE docs/GUIDE.md pkg/
+          tar czf "dist/${{ matrix.asset_name }}.tar.gz" \
+            -C pkg \
+            "${{ matrix.artifact_name }}" utpm.bash utpm.fish _utpm README.md LICENSE GUIDE.md
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
