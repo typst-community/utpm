@@ -4406,6 +4406,7 @@ dependencies = [
  "clap_complete",
  "dirs",
  "ecow",
+ "flate2",
  "fmt-derive",
  "ignore",
  "inquire",
