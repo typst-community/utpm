@@ -41,8 +41,8 @@ reqwest = { version = "0.12.22", optional = false, features = ["json"] }
 itertools = "0.14.0"
 toml_edit = "0.23.3"
 ecow = "0.2"
-# to bypass error for windows users
-flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+# Work around a Windows packaging regression in libz-sys 1.1.26.
+libz-sys = "=1.1.25"
 
 [dev-dependencies]
 tempfile = "3.15"
