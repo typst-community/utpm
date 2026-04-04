@@ -1,6 +1,6 @@
 # Maintainer: Typst Community <https://github.com/typst-community>
 pkgname=utpm-git
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Unofficial Typst Package Manager (git version)"
 arch=('x86_64' 'aarch64')

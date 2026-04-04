@@ -4,8 +4,9 @@ Upstream-Contact: Typst Community <https://github.com/typst-community>
 Source: https://github.com/typst-community/utpm
 
 Files: *
-Copyright: 2025 Typst Community
-License: MIT
+Copyright:
+  2023-2024 Thumuss (Thomas Daniel Guy QUEMIN) <thomas.quemin@tuta.io>
+  2025-2026 typst-community & Thumuss (Thomas Daniel Guy QUEMIN) <thomas.quemin@tuta.io>
 
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining a copy

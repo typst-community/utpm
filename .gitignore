@@ -1,6 +1,11 @@
-/target
+#ides
 .vscode
+.idea
 
 #nix
 .direnv
 result
+
+#rust specific
+/coverage
+/target

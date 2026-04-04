@@ -82,7 +82,7 @@ pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> 
 /// If specific packages are requested, displays only those packages.
 /// Otherwise, displays all available packages.
 #[instrument(skip(cmd))]
-pub async fn run<'a>(cmd: &'a GetArgs) -> Result<bool> {
+pub async fn run(cmd: &GetArgs) -> Result<bool> {
     utpm_log!(trace, "executing get command");
     if !cmd.packages.is_empty() {
         let packages: HashMap<String, RawPackage> = get_packages_name_version().await?;

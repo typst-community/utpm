@@ -67,7 +67,7 @@ check:
 
 # Run all checks (format, clippy, tests)
 ci: fmt-check clippy test
-    @echo "✓ All checks passed!"
+    @echo "All checks passed!"
 
 # Clean build artifacts
 clean:
@@ -103,21 +103,21 @@ setup-hooks:
     # Check formatting
     echo "→ Checking code formatting..."
     if ! cargo fmt -- --check; then
-        echo "❌ Code is not formatted. Run 'cargo fmt' or 'just fmt' to fix."
+        echo "Code is not formatted. Run 'cargo fmt' or 'just fmt' to fix."
         exit 1
     fi
     
     # Run Clippy
     echo "→ Running Clippy..."
     if ! cargo clippy --all-targets --all-features -- -D warnings; then
-        echo "❌ Clippy found issues. Run 'cargo clippy --fix' or 'just clippy-fix' to fix."
+        echo "Clippy found issues. Run 'cargo clippy --fix' or 'just clippy-fix' to fix."
         exit 1
     fi
     
     # Run tests
     echo "→ Running tests..."
     if ! cargo test --all-features; then
-        echo "❌ Tests failed."
+        echo "Tests failed."
         exit 1
     fi
     
@@ -129,21 +129,17 @@ setup-hooks:
 # Remove git hooks
 remove-hooks:
     rm -f .git/hooks/pre-commit
-    @echo "✓ Git hooks removed"
+    @echo "Git hooks removed"
 
 # Fix all auto-fixable issues
 fix:
     cargo fmt --all
     cargo clippy --all-targets --all-features --fix --allow-dirty --allow-staged
-    @echo "✓ Auto-fixes applied. Review changes and commit."
+    @echo "Auto-fixes applied. Review changes and commit."
 
 # Run benchmarks (if any)
 bench:
     cargo bench
-
-# Check for security vulnerabilities
-audit:
-    cargo audit
 
 # Watch for changes and run checks (fast, skips shadow-rs)
 watch:

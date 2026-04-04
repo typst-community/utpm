@@ -1,7 +1,7 @@
 class Utpm < Formula
   desc "Unofficial Typst Package Manager"
   homepage "https://github.com/typst-community/utpm"
-  url "https://github.com/typst-community/utpm/archive/refs/tags/v0.2.0.tar.gz"
+  url "https://github.com/typst-community/utpm/archive/refs/tags/v0.3.0.tar.gz"
   sha256 "SKIP"
   license "MIT"
 
