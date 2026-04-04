@@ -12,12 +12,11 @@ After creating a release with `git tag vX.Y.Z && git push --tags`, the GitHub Ac
 4. Updates package configuration files
 5. Creates a Pull Request with updated checksums
 6. **Publishes to AUR** (utpm-bin and utpm-git)
-7. **Publishes to Homebrew Tap** (typst-community/utpm)
-8. **Publishes to Snap Store** (stable channel)
-9. **Creates PR to Flathub** (requires manual merge)
+<!-- 7. **Publishes to Homebrew Tap** (typst-community/utpm) -->
+7. **Publishes to Snap Store** (stable channel)
+8. **Creates PR to Flathub** (requires manual merge)
 
-**Fully automated:** AUR, Homebrew Tap, Snap Store
-**Semi-automated:** Flatpak (PR created, manual review required)
+**Fully automated:** AUR, Snap Store
 **Manual only:** Homebrew Core, Debian PPA, Fedora COPR
 
 ---
@@ -94,7 +93,7 @@ makepkg -si
 namcap PKGBUILD
 ```
 
-### Homebrew Tap - ✅ Fully Automated
+<!-- ### Homebrew Tap - ✅ Fully Automated
 
 The formula is automatically updated in `typst-community/homebrew-utpm`.
 
@@ -105,7 +104,7 @@ The formula is automatically updated in `typst-community/homebrew-utpm`.
 **Users install with:**
 ```bash
 brew install typst-community/utpm/utpm
-```
+``` -->
 
 ### Snap Store - ✅ Fully Automated
 
@@ -121,7 +120,7 @@ The snap is automatically built and published to the stable channel.
 sudo snap install utpm
 ```
 
-### Flatpak (Flathub) - 🔄 Semi-Automated
+<!-- ### Flatpak (Flathub) - 🔄 Semi-Automated
 
 A PR is automatically created on Flathub, but requires manual review.
 
@@ -130,7 +129,7 @@ A PR is automatically created on Flathub, but requires manual review.
 2. Creates PR to Flathub repository
 
 **Manual step required:**
-- Review and merge the PR on Flathub
+- Review and merge the PR on Flathub -->
 
 ---
 
@@ -209,9 +208,9 @@ copr-cli build utpm packaging/fedora/utpm.spec
 - [ ] Verify Actions completed successfully:
   - [ ] AUR utpm-bin published (automated ✅)
   - [ ] AUR utpm-git updated (automated ✅)
-  - [ ] Homebrew tap updated (automated ✅)
+  <!-- - [ ] Homebrew tap updated (automated ✅) -->
   - [ ] Snap published to Snap Store (automated ✅)
-  - [ ] Flatpak PR created (automated 🔄, manual merge required)
+  <!-- - [ ] Flatpak PR created (automated 🔄, manual merge required) -->
 - [ ] Optional manual publishing:
   - [ ] Homebrew Core (if desired)
   - [ ] Debian/Ubuntu PPA (if setup)

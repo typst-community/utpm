@@ -103,7 +103,7 @@ jobs:
         with:
           name: ${{ matrix.asset_name }}
           path: dist/*
-          retention-days: 1
+          retention-days: 30
 
   release:
     name: Create Release
@@ -297,32 +297,32 @@ jobs:
           git commit -m "Update to version ${{ needs.release.outputs.version }}"
           git push
 
-  publish-homebrew:
-    name: Publish to Homebrew Tap
-    needs: [release, update-checksums]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+  # publish-homebrew:
+  #   name: Publish to Homebrew Tap
+  #   needs: [release, update-checksums]
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: update-packaging-${{ needs.release.outputs.version }}
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: update-packaging-${{ needs.release.outputs.version }}
 
-      - name: Clone homebrew-utpm repository
-        run: |
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/typst-community/homebrew-utpm.git /tmp/homebrew-utpm
+  #     - name: Clone homebrew-utpm repository
+  #       run: |
+  #         git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/typst-community/homebrew-utpm.git /tmp/homebrew-utpm
 
-      - name: Update Homebrew formula
-        run: |
-          cd /tmp/homebrew-utpm
-          mkdir -p Formula
-          cp $GITHUB_WORKSPACE/packaging/homebrew/utpm.rb Formula/
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add Formula/utpm.rb
-          git commit -m "Update utpm to version ${{ needs.release.outputs.version }}"
-          git push
+  #     - name: Update Homebrew formula
+  #       run: |
+  #         cd /tmp/homebrew-utpm
+  #         mkdir -p Formula
+  #         cp $GITHUB_WORKSPACE/packaging/homebrew/utpm.rb Formula/
+  #         git config user.name "GitHub Actions"
+  #         git config user.email "actions@github.com"
+  #         git add Formula/utpm.rb
+  #         git commit -m "Update utpm to version ${{ needs.release.outputs.version }}"
+  #         git push
 
   publish-snap:
     name: Publish to Snap Store
@@ -351,47 +351,47 @@ jobs:
           echo "$SNAPCRAFT_STORE_CREDENTIALS" | snapcraft login --with -
           snapcraft upload --release=stable utpm_*.snap
 
-  publish-flatpak:
-    name: Create Flatpak PR
-    needs: [release, update-checksums]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+  # publish-flatpak:
+  #   name: Create Flatpak PR
+  #   needs: [release, update-checksums]
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: update-packaging-${{ needs.release.outputs.version }}
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: update-packaging-${{ needs.release.outputs.version }}
 
-      - name: Create Flatpak PR
-        run: |
-          # Clone Flathub repository for the app
-          git clone https://github.com/flathub/io.github.typst_community.utpm.git /tmp/flatpak
-          cd /tmp/flatpak
+  #     - name: Create Flatpak PR
+  #       run: |
+  #         # Clone Flathub repository for the app
+  #         git clone https://github.com/flathub/io.github.typst_community.utpm.git /tmp/flatpak
+  #         cd /tmp/flatpak
           
-          # Create branch
-          git checkout -b update-${{ needs.release.outputs.version }}
+  #         # Create branch
+  #         git checkout -b update-${{ needs.release.outputs.version }}
           
-          # Copy updated manifest
-          cp $GITHUB_WORKSPACE/packaging/flatpak/io.github.typst_community.utpm.yaml .
+  #         # Copy updated manifest
+  #         cp $GITHUB_WORKSPACE/packaging/flatpak/io.github.typst_community.utpm.yaml .
           
-          # Commit and push
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add io.github.typst_community.utpm.yaml
-          git commit -m "Update to version ${{ needs.release.outputs.version }}"
+  #         # Commit and push
+  #         git config user.name "GitHub Actions"
+  #         git config user.email "actions@github.com"
+  #         git add io.github.typst_community.utpm.yaml
+  #         git commit -m "Update to version ${{ needs.release.outputs.version }}"
           
-          # Push to fork (requires FLATPAK_TOKEN)
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/typst-community/io.github.typst_community.utpm.git update-${{ needs.release.outputs.version }}
+  #         # Push to fork (requires FLATPAK_TOKEN)
+  #         git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/typst-community/io.github.typst_community.utpm.git update-${{ needs.release.outputs.version }}
           
-      - name: Create PR to Flathub
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.FLATPAK_TOKEN }}
-          push-to-fork: typst-community/io.github.typst_community.utpm
-          branch: update-${{ needs.release.outputs.version }}
-          title: "Update utpm to ${{ needs.release.outputs.version }}"
-          body: |
-            Automated update to version ${{ needs.release.outputs.version }}.
+  #     - name: Create PR to Flathub
+  #       uses: peter-evans/create-pull-request@v5
+  #       with:
+  #         token: ${{ secrets.FLATPAK_TOKEN }}
+  #         push-to-fork: typst-community/io.github.typst_community.utpm
+  #         branch: update-${{ needs.release.outputs.version }}
+  #         title: "Update utpm to ${{ needs.release.outputs.version }}"
+  #         body: |
+  #           Automated update to version ${{ needs.release.outputs.version }}.
             
-            Release notes: https://github.com/typst-community/utpm/releases/tag/v${{ needs.release.outputs.version }}
+  #           Release notes: https://github.com/typst-community/utpm/releases/tag/v${{ needs.release.outputs.version }}
