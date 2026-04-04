@@ -152,6 +152,10 @@ UTPM is being packaged for multiple package managers:
 - 📦 **Flatpak** - Available on Flathub (semi-automated)
 - 📦 **Debian/Ubuntu** - `.deb` packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
 - 📦 **Fedora/RHEL** - RPM packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
+- 📦 **Arch/AUR** - AUR packages (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md))
+<!-- - 📦 **Homebrew (mac)** -  (manual, see [docs/PUBLISHING.md](docs/PUBLISHING.md)) 
+For now I don't want to publish on it but it will comes 
+ -->
 
 **For maintainers:** See [docs/PACKAGING.md](docs/PACKAGING.md) for technical details and [docs/SECRETS.md](docs/SECRETS.md) for automation setup.
 

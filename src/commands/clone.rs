@@ -91,7 +91,7 @@ impl<'b> RawPkg<'b> {
 
 /// Clones a typst package from the official repository or a local path.
 #[instrument(skip(cmd))]
-pub async fn run<'a>(cmd: &'a CloneArgs) -> Result<bool> {
+pub async fn run(cmd: &CloneArgs) -> Result<bool> {
     utpm_log!(trace, "executing clone command");
     // Determine the target path for the clone operation.
     let dst: Cow<'_, Path> = if let Some(path) = &cmd.path {

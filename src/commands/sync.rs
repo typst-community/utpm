@@ -24,7 +24,7 @@ use super::SyncArgs;
 /// Can either sync all `.typ` files in the current directory, or only specified files.
 /// When in check-only mode, reports available updates without modifying files.
 #[instrument(skip(cmd))]
-pub async fn run<'a>(cmd: &'a SyncArgs) -> Result<bool> {
+pub async fn run(cmd: &SyncArgs) -> Result<bool> {
     if cmd.files.is_empty() {
         utpm_log!(trace, "Running default check...");
         default_run(cmd.check_only).await?;

@@ -37,7 +37,7 @@ fn tag_change<'a>(tag: Option<&str>, value: &'a str) -> Cow<'a, str> {
 /// in specified files, replacing it with the new version. Supports wrapping
 /// versions in HTML-like tags for special file formats.
 #[instrument(skip(cmd))]
-pub async fn run<'a>(cmd: &'a BumpArgs) -> Result<bool> {
+pub async fn run(cmd: &BumpArgs) -> Result<bool> {
     utpm_log!(trace, "executing bump command");
     let manifest_path = utils::try_find_path(&utils::paths::get_current_dir()?)?;
     let mut config = read_to_string(&manifest_path)?.parse::<DocumentMut>()?;
