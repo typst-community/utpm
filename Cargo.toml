@@ -47,6 +47,10 @@ libz-sys = "=1.1.25"
 [dev-dependencies]
 tempfile = "3.15"
 
+[target.x86_64-unknown-linux-musl.dependencies]
+# Cross-builds for musl in CI cannot rely on system OpenSSL headers/libs.
+native-tls = { version = "0.2", features = ["vendored"] }
+
 [build-dependencies]
 shadow-rs = "1.1.1"
 
