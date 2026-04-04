@@ -31,6 +31,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      VCPKG_ROOT: ${{ matrix.os == 'windows-latest' && 'C:/vcpkg' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.89
