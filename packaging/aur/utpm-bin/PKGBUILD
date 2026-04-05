@@ -18,8 +18,8 @@ source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::${_u}/releases/download/v${p
 source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::${_u}/releases/download/v${pkgver}/utpm-aarch64-unknown-linux-gnu.tar.gz")
 
 sha256sums=('SKIP' 'SKIP' 'SKIP')
-sha256sums_x86_64=('SKIP')
-sha256sums_aarch64=('SKIP')
+sha256sums_x86_64=('aae307a0f2b359f3f54e4b19adbbc27a494a3a7cc7999cccd0e9bf3d558c4334')
+sha256sums_aarch64=('b9be05231771e934fa9e1d26d1c4f56db24816324769059db8f8adaca31a8aee')
 
 build() {
     cd "${srcdir}"
