@@ -18,11 +18,13 @@ apps:
 
 parts:
   utpm:
-    plugin: rust
+    plugin: nil
     source: https://github.com/typst-community/utpm.git
     source-type: git
-    source-tag: v0.2.0
+    source-tag: v0.3.0
     build-packages:
+      - cargo
+      - rustc
       - pkg-config
       - libssl-dev
     override-build: |
