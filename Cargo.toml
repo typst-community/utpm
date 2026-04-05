@@ -55,6 +55,10 @@ native-tls = { version = "0.2", features = ["vendored"] }
 # Cross-builds for musl in CI cannot rely on system OpenSSL headers/libs.
 native-tls = { version = "0.2", features = ["vendored"] }
 
+[target.aarch64-unknown-linux-gnu.dependencies]
+# Cross-builds for aarch64-gnu in CI cannot rely on system OpenSSL headers/libs.
+native-tls = { version = "0.2", features = ["vendored"] }
+
 [build-dependencies]
 shadow-rs = "1.1.1"
 

@@ -70,10 +70,18 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Install cross-compilation tools (Linux)
-        if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+          case "${{ matrix.target }}" in
+            aarch64-unknown-linux-gnu)
+              sudo apt-get install -y gcc-aarch64-linux-gnu
+              ;;
+            x86_64-unknown-linux-musl)
+              sudo apt-get install -y musl-tools
+              ;;
+          esac
 
       - name: Build binary
         run: cargo build --release --all-features --target ${{ matrix.target }}
@@ -87,10 +95,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p completions
-          BIN="target/${{ matrix.target }}/release/${{ matrix.artifact_name }}"
-          "$BIN" generate bash > completions/utpm.bash
-          "$BIN" generate fish > completions/utpm.fish
-          "$BIN" generate zsh > completions/_utpm
+          cargo run --quiet -- generate bash > completions/utpm.bash
+          cargo run --quiet -- generate fish > completions/utpm.fish
+          cargo run --quiet -- generate zsh > completions/_utpm
 
       - name: Create tarball
         shell: bash
