@@ -251,18 +251,11 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
           commit-message: "chore: update package manager files for v${{ needs.release.outputs.version }}"
           title: "chore: update package manager files for v${{ needs.release.outputs.version }}"
           body: |
             Automated update of package manager configuration files for release v${{ needs.release.outputs.version }}.
-            
-            Updated:
-            - AUR PKGBUILD with new checksums (x86_64 + aarch64)
-            - Homebrew formula with new version and checksum
-            - Debian/RPM version numbers
-            - Snap/Flatpak manifests with new version tags
-            
-            **Note:** Windows builds (Scoop) are handled separately by another maintainer.
             
             Checksums:
             - Linux x86_64 (gnu): `${{ steps.checksums.outputs.linux_x86_64 }}`
@@ -368,7 +361,7 @@ jobs:
       - name: Build Snap
         run: |
           cd packaging/snap
-          snapcraft
+          snapcraft pack --destructive-mode
 
       - name: Publish to Snap Store
         env:
