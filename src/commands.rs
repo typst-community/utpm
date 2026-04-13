@@ -437,10 +437,10 @@ pub struct Cli {
 
     /// Enable verbose logging for debugging purposes.
     ///
-    /// Levels: error, warn, info (default), debug, trace
+    /// Levels: error, warn (default), info, debug, trace
     /// Example: utpm -v trace prj link
     #[arg(
-        default_value = "info",
+        default_value = "warn",
         short = 'v',
         long,
         global = true,
