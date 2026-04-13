@@ -1,5 +1,4 @@
 use crate::utils::git::{add_git, clone_git, commit_git, exist_git, project, pull_git, push_git};
-use crate::utils::specs::Extra;
 use crate::utils::state::Result;
 use crate::utils::{regex_package, try_find};
 use crate::utpm_log;
@@ -129,10 +128,8 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let mut overr: OverrideBuilder = OverrideBuilder::new(path_curr);
 
     // Add excludes from the manifest to the override builder.
-    if let Some(excludes) = Extra::from(config.tool).exclude {
-        for exclude in excludes.iter() {
-            overr.add(&format!("!{}", exclude))?;
-        }
+    for exclude in config.package.exclude.iter() {
+        overr.add(&format!("!{}", exclude))?;
     }
     wb.overrides(overr.build()?);
 

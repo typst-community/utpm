@@ -1,3 +1,4 @@
+use ecow::EcoString;
 use serde::Serialize;
 use tracing::instrument;
 
@@ -36,8 +37,8 @@ pub struct PackageMetadata {
     pub disciplines: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compiler: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub exclude: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub exclude: Vec<EcoString>,
 }
 
 /// Get metadata from typst.toml
@@ -107,9 +108,7 @@ pub async fn run(cmd: &MetadataArgs) -> Result<bool> {
             )
         },
         compiler: config.package.compiler.map(|v| v.to_string()),
-        exclude: crate::utils::specs::Extra::from(config.tool)
-            .exclude
-            .map(|v| v.iter().cloned().collect::<Vec<_>>()),
+        exclude: config.package.exclude,
     };
 
     // Handle specific field request
@@ -127,7 +126,7 @@ pub async fn run(cmd: &MetadataArgs) -> Result<bool> {
             "categories" => metadata.categories.as_ref().map(|c| c.join(", ")),
             "disciplines" => metadata.disciplines.as_ref().map(|d| d.join(", ")),
             "compiler" => metadata.compiler.clone(),
-            "exclude" => metadata.exclude.as_ref().map(|e| e.join(", ")),
+            "exclude" => Some(metadata.exclude.join(", ")),
             _ => {
                 utpm_log!(error, "Unknown field: {}", field);
                 return Ok(false);
@@ -174,9 +173,7 @@ pub async fn run(cmd: &MetadataArgs) -> Result<bool> {
                 if let Some(compiler) = &metadata.compiler {
                     println!("  Compiler: {}", compiler);
                 }
-                if let Some(exclude) = &metadata.exclude {
-                    println!("  Exclude: {}", exclude.join(", "));
-                }
+                println!("  Exclude: {}", metadata.exclude.join(", "));
             },
             #[cfg(feature = "output_json")]
             OutputFormat::Json => {

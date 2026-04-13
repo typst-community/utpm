@@ -149,59 +149,6 @@ mod paths_tests {
 }
 
 #[cfg(test)]
-mod specs_tests {
-    use ecow::eco_vec;
-    use utpm::utils::specs::Extra;
-
-    #[test]
-    fn test_extra_default() {
-        let extra = Extra::default();
-        assert_eq!(extra.exclude, None);
-    }
-
-    #[test]
-    fn test_extra_serialization() {
-        let extra = Extra {
-            exclude: Some(eco_vec![String::from("*.md"), String::from(".git")]),
-        };
-
-        // Test that it can be serialized
-        let serialized = serde_json::to_string(&extra);
-        assert!(serialized.is_ok());
-    }
-
-    #[test]
-    fn test_extra_with_excludes() {
-        let extra = Extra {
-            exclude: Some(eco_vec![
-                String::from(".git"),
-                String::from(".github"),
-                String::from("*.md"),
-                String::from("tests/"),
-            ]),
-        };
-
-        assert!(extra.exclude.is_some());
-        let excludes = extra.exclude.unwrap();
-        assert_eq!(excludes.len(), 4);
-        assert!(excludes.iter().any(|s| s == ".git"));
-        assert!(excludes.iter().any(|s| s == "*.md"));
-    }
-
-    #[test]
-    fn test_extra_new() {
-        let excludes = eco_vec![String::from(".git"), String::from("*.log")];
-        let extra = Extra::new(Some(excludes.clone()));
-
-        assert!(extra.exclude.is_some());
-        let unwrapped = extra.exclude.unwrap();
-        assert_eq!(unwrapped.len(), 2);
-        assert!(unwrapped.iter().any(|s| s == ".git"));
-        assert!(unwrapped.iter().any(|s| s == "*.log"));
-    }
-}
-
-#[cfg(test)]
 mod state_tests {
     use utpm::utils::state::UtpmError;
 

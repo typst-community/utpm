@@ -13,7 +13,6 @@ pub mod git;
 pub mod macros;
 pub mod output;
 pub mod paths;
-pub mod specs;
 pub mod state;
 
 use crate::utpm_bail;

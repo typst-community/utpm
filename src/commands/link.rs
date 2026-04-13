@@ -1,4 +1,4 @@
-use ecow::EcoVec;
+use ecow::EcoString;
 use ignore::{WalkBuilder, overrides::OverrideBuilder};
 use std::fs::{copy, create_dir_all};
 use std::path::PathBuf;
@@ -12,7 +12,6 @@ use crate::{
         paths::{
             check_path_dir, check_path_file, get_current_dir, package_cache_path, package_path,
         },
-        specs::Extra,
         state::Result,
         symlink_all, try_find,
     },
@@ -70,7 +69,7 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
         if cmd.no_copy {
             symlink_all(&curr, &destination)?;
         } else {
-            copy_tree(&curr, &destination, cmd, Extra::from(config.tool).exclude)?;
+            copy_tree(&curr, &destination, cmd, config.package.exclude)?;
         }
     }
 
@@ -92,15 +91,13 @@ fn copy_tree(
     curr: &Path,
     destination: &Path,
     cmd: &LinkArgs,
-    excludes: Option<EcoVec<String>>,
+    excludes: Vec<EcoString>,
 ) -> Result<()> {
     let mut wb: WalkBuilder = WalkBuilder::new(curr);
     let mut overr: OverrideBuilder = OverrideBuilder::new(curr);
 
-    if let Some(excludes) = excludes {
-        for exclude in excludes.iter() {
-            overr.add(&format!("!{}", exclude))?;
-        }
+    for exclude in excludes.iter() {
+        overr.add(&format!("!{}", exclude))?;
     }
     wb.overrides(overr.build()?);
 
@@ -125,14 +122,16 @@ fn copy_tree(
     for result in wb.build().collect::<std::result::Result<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type() {
             let path: &Path = result.path();
+            if file_type.is_dir() {
+                continue;
+            }
             let relative = path.strip_prefix(curr).unwrap();
             let dest_path = destination.join(relative);
             utpm_log!("{}", dest_path.display());
-            if file_type.is_dir() {
-                create_dir_all(&dest_path)?;
-            } else {
-                copy(path, &dest_path)?;
+            if let Some(parent) = dest_path.parent() {
+                create_dir_all(parent)?;
             }
+            copy(path, &dest_path)?;
         }
     }
     Ok(())
