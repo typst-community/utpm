@@ -4,7 +4,7 @@ use clap::{Command, CommandFactory};
 use clap_complete::{Generator, generate};
 use tracing::instrument;
 
-use crate::utils::state::Result;
+use crate::{utils::state::Result, utpm_log};
 
 use super::{Cli, GenerateArgs};
 
@@ -18,7 +18,7 @@ fn print_completions<G: Generator>(gens: G, cmd: &mut Command) {
 pub async fn run(cmd: &GenerateArgs) -> Result<bool> {
     let generator = cmd.generator;
     let mut cmd: Command = Cli::command();
-    eprintln!("Generating completion file for {generator:?}...");
+    utpm_log!(trace, "Generating completion file for {generator:?}...");
     print_completions(generator, &mut cmd);
     Ok(true)
 }
