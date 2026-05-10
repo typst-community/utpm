@@ -1,3 +1,4 @@
+use ecow::EcoString;
 use ignore::{WalkBuilder, overrides::OverrideBuilder};
 use std::fs::{copy, create_dir_all};
 use std::path::PathBuf;
@@ -11,7 +12,6 @@ use crate::{
         paths::{
             check_path_dir, check_path_file, get_current_dir, package_cache_path, package_path,
         },
-        specs::Extra,
         state::Result,
         symlink_all, try_find,
     },
@@ -55,93 +55,84 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
     };
 
     // Check if the package already exists at the destination.
-    if check_path_dir(&destination) && !cmd.force {
+    let exists = check_path_dir(&destination);
+    if exists && !cmd.force {
         utpm_bail!(AlreadyExist, name.to_string(), version, "Info:".to_string());
     }
 
     if !get_dry_run() {
-        fs::create_dir_all(destination.parent().unwrap())?
-    };
+        if exists {
+            fs::remove_dir_all(&destination)?;
+        }
+        fs::create_dir_all(destination.parent().unwrap())?;
 
-    // If force is used, remove the existing directory.
-    if cmd.force && !get_dry_run() {
-        fs::remove_dir_all(&destination)?
+        if cmd.no_copy {
+            symlink_all(&curr, &destination)?;
+        } else {
+            copy_tree(&curr, &destination, cmd, config.package.exclude)?;
+        }
     }
 
-    // Create a symlink or copy the directory.
-    if cmd.no_copy {
-        if !get_dry_run() {
-            symlink_all(&curr, &destination)?
-        };
-        if pt {
-            utpm_log!(
-                info,
-                "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                destination.display(),
-                namespace,
-                name,
-                version
-            );
-        }
-    } else {
-        if !get_dry_run() {
-            // Use WalkBuilder to respect ignore files.
-            let mut wb: WalkBuilder = WalkBuilder::new(&curr);
-            let mut overr: OverrideBuilder = OverrideBuilder::new(&curr);
-
-            // Add excludes from the manifest to the override builder.
-            if let Some(excludes) = Extra::from(config.tool).exclude {
-                for exclude in excludes.iter() {
-                    overr.add(&format!("!{}", exclude))?;
-                }
-            }
-            wb.overrides(overr.build()?);
-
-            // Configure which ignore files to use.
-            wb.ignore(cmd.ignore)
-                .git_ignore(cmd.git_ignore)
-                .git_global(cmd.git_global_ignore)
-                .git_exclude(cmd.git_exclude);
-            utpm_log!(info,
-                "git_ignore" => cmd.git_ignore,
-                "git_global_ignore" => cmd.git_global_ignore,
-                "git_exclude" => cmd.git_exclude
-            );
-
-            // Add .typstignore if it exists and is enabled.
-            if cmd.typst_ignore {
-                let pathbuf = curr.join(".typstignore");
-                if check_path_file(pathbuf) {
-                    utpm_log!(info, "Added .typstignore");
-                    wb.add_custom_ignore_filename(".typstignore");
-                }
-            }
-
-            // --- Copy Files ---
-            for result in wb.build().collect::<std::result::Result<Vec<_>, _>>()? {
-                if let Some(file_type) = result.file_type() {
-                    let path: &Path = result.path();
-                    let relative = path.strip_prefix(&curr).unwrap();
-                    let dest_path = destination.join(relative);
-                    utpm_log!("{}", dest_path.display());
-                    if file_type.is_dir() {
-                        create_dir_all(&dest_path)?;
-                    } else {
-                        copy(path, &dest_path)?;
-                    }
-                }
-            }
-        };
-        if pt {
-            utpm_log!(
-                info,
-                "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
-                destination.display(),
-                namespace,
-                name,
-                version
-            );
-        }
+    if pt {
+        utpm_log!(
+            info,
+            "Project linked to: {}\nTry importing with: \n#import \"@{}/{}:{}\": *",
+            destination.display(),
+            namespace,
+            name,
+            version
+        );
     }
     Ok(true)
+}
+
+/// Copies `curr` into `destination`, honoring ignore files and manifest excludes.
+fn copy_tree(
+    curr: &Path,
+    destination: &Path,
+    cmd: &LinkArgs,
+    excludes: Vec<EcoString>,
+) -> Result<()> {
+    let mut wb: WalkBuilder = WalkBuilder::new(curr);
+    let mut overr: OverrideBuilder = OverrideBuilder::new(curr);
+
+    for exclude in excludes.iter() {
+        overr.add(&format!("!{}", exclude))?;
+    }
+    wb.overrides(overr.build()?);
+
+    wb.ignore(cmd.ignore)
+        .git_ignore(cmd.git_ignore)
+        .git_global(cmd.git_global_ignore)
+        .git_exclude(cmd.git_exclude);
+    utpm_log!(info,
+        "git_ignore" => cmd.git_ignore,
+        "git_global_ignore" => cmd.git_global_ignore,
+        "git_exclude" => cmd.git_exclude
+    );
+
+    if cmd.typst_ignore {
+        let pathbuf = curr.join(".typstignore");
+        if check_path_file(pathbuf) {
+            utpm_log!(info, "Added .typstignore");
+            wb.add_custom_ignore_filename(".typstignore");
+        }
+    }
+
+    for result in wb.build().collect::<std::result::Result<Vec<_>, _>>()? {
+        if let Some(file_type) = result.file_type() {
+            let path: &Path = result.path();
+            if file_type.is_dir() {
+                continue;
+            }
+            let relative = path.strip_prefix(curr).unwrap();
+            let dest_path = destination.join(relative);
+            utpm_log!("{}", dest_path.display());
+            if let Some(parent) = dest_path.parent() {
+                create_dir_all(parent)?;
+            }
+            copy(path, &dest_path)?;
+        }
+    }
+    Ok(())
 }

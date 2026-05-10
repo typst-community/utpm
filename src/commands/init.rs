@@ -7,7 +7,6 @@ use std::{
 };
 
 use inquire::{Select, Text, required, validator::Validation};
-use toml::Table;
 use tracing::instrument;
 use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
 
@@ -15,7 +14,6 @@ use crate::{
     utils::{
         dryrun::get_dry_run,
         paths::{check_path_file, get_current_dir},
-        specs::Extra,
         state::Result,
         write_manifest,
     },
@@ -295,14 +293,10 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         populate_project_files(&project_dir, &pkg)?;
     }
 
-    // Create the `[tool.utpm]` table.
-    let mut tools: BTreeMap<_, Table> = BTreeMap::new();
-    tools.insert("utpm".into(), Table::try_from(Extra::default())?);
-
     // Construct the final manifest.
     let manif = PackageManifest {
         package: pkg,
-        tool: ToolInfo { sections: tools },
+        tool: ToolInfo::default(),
         template: None,
         unknown_fields: BTreeMap::new(),
     };
