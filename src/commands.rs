@@ -440,7 +440,7 @@ pub struct Cli {
     /// Levels: error, warn (default), info, debug, trace
     /// Example: utpm -v trace prj link
     #[arg(
-        default_value = "warn",
+        default_value = "info",
         short = 'v',
         long,
         global = true,
