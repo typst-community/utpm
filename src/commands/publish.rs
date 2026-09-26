@@ -115,7 +115,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     match pull_git() {
         Ok(_) => Ok(true),
-        Err(_) => clone_git(&packages_path.to_string_lossy(), fork.as_str()),
+        Err(_) => clone_git(&packages_path.to_string_lossy(), fork.as_str(), None),
     }?;
     utpm_log!(
         info,

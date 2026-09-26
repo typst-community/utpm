@@ -304,6 +304,14 @@ pub struct InstallArgs {
     #[arg(num_args = 1..)]
     pub url: String,
 
+    /// The branch you want to install a package from.
+    #[arg(short, long)]
+    pub branch: Option<String>,
+
+    /// The subdirectory you want to install a package from.
+    #[arg(short, long)]
+    pub subdir: Option<String>,
+
     /// The namespace you want to put your installed package. Default to local
     #[arg(short, long)]
     pub namespace: Option<String>,

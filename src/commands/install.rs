@@ -5,7 +5,7 @@ use crate::{
     utils::{
         copy_dir_all,
         dryrun::get_dry_run,
-        git::{clone_git, exist_git, project},
+        git::{clone_git, exist_git, project, sparse_checkout_git},
         paths::{MANIFEST_FILE, check_path_dir, check_path_file, package_path, utpm_data_path},
         state::Result,
         try_find,
@@ -49,22 +49,38 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
 
     // If a URL is provided, clone or copy the repository.
     fs::create_dir_all(&path)?;
-
     project().lock().unwrap().0 = path.clone();
 
     let url = &cmd.url;
 
     // Handle git and http(s) URLs.
     if url.starts_with("git") || url.starts_with("http") {
-        clone_git(url, &path.to_string_lossy())?;
+        // If a subdirectory was specified, perform a sparse checkout instead.
+        if let Some(subdir) = &cmd.subdir {
+            sparse_checkout_git(url, &path.to_string_lossy(), subdir, cmd.branch.as_deref())?;
+        } else {
+            clone_git(url, &path.to_string_lossy(), cmd.branch.as_deref())?;
+        }
     } else {
         // Handle local paths.
         copy_dir_all(url, &path)?;
     }
+
+    // Modify path if a subdirectory was specified so that manifest can be found.
+    // Trimming starting slash is necessary otherwise Rust treats it as absolute path.
+    let path = match &cmd.subdir {
+        Some(s) => path.join(s.trim_start_matches('/')),
+        _ => path,
+    };
+
     // Check for a manifest file in the source directory.
     let typstfile = path.join(MANIFEST_FILE);
     if !check_path_file(&typstfile) {
-        utpm_log!("{}", format!("x {}", url));
+        utpm_log!(
+            "{} (no manifest found at {:?})",
+            format!("x {}", url),
+            typstfile
+        );
         return Ok(false);
     }
 
