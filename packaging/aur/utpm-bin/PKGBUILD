@@ -1,6 +1,6 @@
 # Maintainer: Typst Community <https://github.com/typst-community>
 pkgname=utpm-bin
-pkgver=0.3.0
+pkgver=0.4.1
 pkgrel=1
 pkgdesc="Unofficial Typst Package Manager (binary release)"
 arch=('x86_64' 'aarch64')
@@ -18,8 +18,8 @@ source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::${_u}/releases/download/v${p
 source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::${_u}/releases/download/v${pkgver}/utpm-aarch64-unknown-linux-gnu.tar.gz")
 
 sha256sums=('SKIP' 'SKIP' 'SKIP')
-sha256sums_x86_64=('SKIP')
-sha256sums_aarch64=('SKIP')
+sha256sums_x86_64=('f51cbb7eebbc38b684a2ce1f505b44d0c4a0f95ecac81fc3c9c07602883d7f9a')
+sha256sums_aarch64=('0239b7e497cadc08bde282d5f00412e60a8773b8d8dfe04414c2d77cc7053680')
 
 build() {
     cd "${srcdir}"

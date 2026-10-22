@@ -1,5 +1,5 @@
 name: utpm
-version: '0.3.0'
+version: '0.4.1'
 summary: Unofficial Typst Package Manager
 description: |
   UTPM is a powerful command-line package manager for Typst. 
@@ -21,7 +21,7 @@ parts:
     plugin: nil
     source: https://github.com/typst-community/utpm.git
     source-type: git
-    source-tag: v0.3.0
+    source-tag: v0.4.1
     build-packages:
       - cargo
       - rustc

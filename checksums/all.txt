@@ -1,0 +1,7 @@
+utpm-aarch64-apple-darwin.tar.gz=36ee7ac2392510f34f66983df14178d059a2016de26ba882b643d9b5bce10ac2
+utpm-aarch64-pc-windows-msvc.tar.gz=9c1f90f1477b59e8b34ee3b81517489e06b1883cbc0e10d50be56de905be1808
+utpm-aarch64-unknown-linux-gnu.tar.gz=0239b7e497cadc08bde282d5f00412e60a8773b8d8dfe04414c2d77cc7053680
+utpm-x86_64-apple-darwin.tar.gz=ad1421a67c7268ab0a4538515a3f5b305824d8dafd7d99eff90b6baf1e35dbd1
+utpm-x86_64-pc-windows-msvc.tar.gz=003553b7314466a2d1c2cc208c5b99f29adc50bbf17a4c31cd4a196742248cbc
+utpm-x86_64-unknown-linux-gnu.tar.gz=f51cbb7eebbc38b684a2ce1f505b44d0c4a0f95ecac81fc3c9c07602883d7f9a
+utpm-x86_64-unknown-linux-musl.tar.gz=6f877a929e09300d823321b6158ee83a65a0ac97c81e8807aca10eaa2bc8e8ca
