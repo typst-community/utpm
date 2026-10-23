@@ -106,12 +106,12 @@ pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> io::
 
 /// Returns a regex for matching typst package specifications (`@namespace/name:version`).
 pub fn regex_package() -> Regex {
-    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
+    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
 /// Returns a regex for matching typst import statements (`#import "@namespace/name:version"`).
 pub fn regex_import() -> Regex {
-    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#)
+    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*)\:(\d+)\.(\d+)\.(\d+)\""#)
         .unwrap()
 }
 
@@ -158,6 +158,7 @@ mod tests {
         assert!(re.is_match("@local/package-A:2.0.1"));
         assert!(re.is_match("@local/package-a:2.0.1"));
         assert!(re.is_match("@local/AAAAAAAAAAAAAA:2.0.1"));
+        assert!(re.is_match("@local/AAAA-BBBB:2.0.1"));
         assert!(!re.is_match("@local/p:1..1"));
         assert!(re.is_match("@a/p:1.0.1"));
         assert!(!re.is_match("@a/p:v1.0.1"));

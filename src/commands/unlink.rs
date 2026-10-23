@@ -47,7 +47,7 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     // Use regex to parse the package string, which can be a full package spec,
     // a package name, or just a namespace.
     let re_all = regex_package();
-    let re_name = Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)$").unwrap();
+    let re_name: Regex = Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*)$").unwrap();
     let re_namespace = Regex::new(r"^@([a-zA-Z]+)$").unwrap();
 
     let path = if let Some(cap) = re_all.captures(packages.as_str()) {
