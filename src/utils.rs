@@ -115,9 +115,11 @@ pub fn regex_import() -> Regex {
         .unwrap()
 }
 
-/// Writes a `PackageManifest` to `./typst.toml` in pretty TOML format.
+/// Writes a `PackageManifest` to `typst.toml` in the current directory.
 ///
-/// Respects dry-run mode - if dry-run is enabled, the file is not actually written.
+/// The current directory can be overridden with the `UTPM_CURRENT_DIR`
+/// environment variable. Respects dry-run mode - if dry-run is enabled, the
+/// file is not actually written.
 ///
 /// # Arguments
 /// * `data` - The package manifest to write
@@ -129,7 +131,9 @@ pub fn regex_import() -> Regex {
 pub fn write_manifest(data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;
     if !crate::utils::dryrun::get_dry_run() {
-        std::fs::write(Path::new("./typst.toml"), tomlfy)?;
+        let manifest_path =
+            crate::path!(self::paths::get_current_dir()?, self::paths::MANIFEST_FILE);
+        std::fs::write(&manifest_path, tomlfy)?;
     }
     Ok(())
 }

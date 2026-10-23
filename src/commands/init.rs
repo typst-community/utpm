@@ -8,7 +8,9 @@ use std::{
 
 use inquire::{Select, Text, required, validator::Validation};
 use tracing::instrument;
-use typst_syntax::package::{PackageInfo, PackageManifest, PackageVersion, ToolInfo, VersionBound};
+use typst_syntax::package::{
+    PackageInfo, PackageManifest, PackageVersion, TemplateInfo, ToolInfo, VersionBound,
+};
 
 use crate::{
     utils::{
@@ -23,10 +25,18 @@ use crate::{
 use super::InitArgs;
 
 /// Build the package metadata through an interactive prompt
-fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
+fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<(PackageInfo, Option<TemplateInfo>)> {
     fn select_yes_no(message: &str) -> Result<bool> {
         let choice = Select::new(message, vec!["yes", "no"]).prompt()?;
         Ok(choice == "yes")
+    }
+
+    fn split_csv(input: &str) -> Vec<ecow::EcoString> {
+        input
+            .split(",")
+            .filter(|f| !f.trim().is_empty())
+            .map(|f| f.trim().into())
+            .collect()
     }
 
     let public = select_yes_no(
@@ -36,11 +46,6 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
         "Do you want more questions to customise your package? Questions are on repository url, homepage url, keywords, compiler version, excluded files, categories and disciplines",
     )?;
     let template = select_yes_no("Do you want to create a template?")?;
-
-    if template {
-        //TODO: Implement template creation.
-        utpm_bail!(Unknown, "Template creation is not implemented yet.".into());
-    }
 
     let populate = select_yes_no(
         "Do you want to populate your package? Files like index.typ will be created",
@@ -179,9 +184,62 @@ fn interactive_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
             .filter(|f| !f.trim().is_empty())
             .map(|f| f.trim().into())
             .collect::<Vec<_>>();
+
+        pkg.categories = split_csv(
+            &Text::new("Categories: ")
+                .with_help_message("e.g. paper, report (see CATEGORIES.md)")
+                .prompt()?,
+        );
+
+        pkg.disciplines = split_csv(
+            &Text::new("Disciplines: ")
+                .with_help_message(
+                    "e.g. computer-science (see DISCIPLINES.md), leave empty if generally applicable",
+                )
+                .prompt()?,
+        );
     }
 
-    Ok(pkg)
+    // Template configuration: template packages must declare the `[template]`
+    // section with a directory, an entrypoint relative to it and, optionally, a
+    // thumbnail relative to the package root.
+    let template_info = if template {
+        let mut template = TemplateInfo::new(
+            Text::new("Template directory: ")
+                .with_validator(required!("This field is required"))
+                .with_help_message("e.g. template")
+                .with_default("template")
+                .prompt()?,
+            Text::new("Template entrypoint: ")
+                .with_validator(required!("This field is required"))
+                .with_help_message("e.g. main.typ (relative to the template directory)")
+                .with_default("main.typ")
+                .prompt()?,
+        );
+
+        let thumbnail = Text::new("Thumbnail (leave empty to skip): ")
+            .with_help_message("e.g. thumbnail.png (relative to the package root)")
+            .prompt()?;
+        if !thumbnail.is_empty() {
+            template.thumbnail = Some(thumbnail.into());
+        }
+
+        // Template packages must specify at least one category.
+        if pkg.categories.is_empty() {
+            pkg.categories = split_csv(
+                &Text::new("Categories (required for templates): ")
+                    .with_validator(required!("This field is required"))
+                    .with_help_message("e.g. paper (see CATEGORIES.md)")
+                    .prompt()?,
+            );
+        }
+
+        Some(template)
+    } else {
+        None
+    };
+
+    Ok((pkg, template_info))
 }
 
 /// Build the package metadata from command-line arguments.
@@ -226,15 +284,52 @@ fn cmd_pkg_info(cmd: &InitArgs) -> Result<PackageInfo> {
     })
 }
 
-fn create_pkg_info(cmd: &mut InitArgs) -> Result<PackageInfo> {
+/// Builds the package metadata and the optional template configuration.
+///
+/// The interactive mode prompts for every manifest field, including the
+/// `[template]` section; the CLI mode reads them from the command arguments.
+fn create_manifest_parts(cmd: &mut InitArgs) -> Result<(PackageInfo, Option<TemplateInfo>)> {
     if !cmd.cli {
         interactive_pkg_info(cmd)
     } else {
-        cmd_pkg_info(cmd)
+        Ok((cmd_pkg_info(cmd)?, cmd_template(cmd)?))
     }
 }
 
-fn populate_project_files(project_dir: impl AsRef<Path>, pkg: &PackageInfo) -> Result<()> {
+/// Builds the `[template]` section from command-line arguments.
+///
+/// `--template-path` and `--template-entrypoint` are required together;
+/// `--template-thumbnail` is optional.
+fn cmd_template(cmd: &InitArgs) -> Result<Option<TemplateInfo>> {
+    if cmd.template_path.is_none()
+        && cmd.template_entrypoint.is_none()
+        && cmd.template_thumbnail.is_none()
+    {
+        return Ok(None);
+    }
+
+    let (Some(path), Some(entrypoint)) = (&cmd.template_path, &cmd.template_entrypoint) else {
+        utpm_bail!(TemplateIncomplete);
+    };
+
+    let mut template = TemplateInfo::new(path.clone(), entrypoint.clone());
+    if let Some(thumbnail) = &cmd.template_thumbnail {
+        template.thumbnail = Some(thumbnail.clone().into());
+    }
+    Ok(Some(template))
+}
+
+/// Populates the project directory with default files.
+///
+/// Creates a `README.md`, a `LICENSE` (when the license is recognized by
+/// SPDX), an `examples/tests.typ` and the package entrypoint. When a template
+/// is configured, also creates its directory and its entrypoint, which
+/// imports the package and applies it with a show rule.
+pub fn populate_project_files(
+    project_dir: impl AsRef<Path>,
+    pkg: &PackageInfo,
+    template: Option<&TemplateInfo>,
+) -> Result<()> {
     let project_dir = project_dir.as_ref();
     let mut file = File::create(project_dir.join("README.md"))?; // README.md
     write!(file, "# {}", pkg.name)?;
@@ -253,11 +348,35 @@ fn populate_project_files(project_dir: impl AsRef<Path>, pkg: &PackageInfo) -> R
         "#import \"@local/{}:{}\":\nDo...",
         pkg.name, pkg.version
     )?;
-    file = File::create(project_dir.join(pkg.entrypoint.as_ref()))?; // main.typ
+
+    // Package entrypoint, creating parent directories for nested paths.
+    let entrypoint_path = project_dir.join(pkg.entrypoint.as_ref());
+    if let Some(parent) = entrypoint_path.parent() {
+        create_dir_all(parent)?;
+    }
+    file = File::create(&entrypoint_path)?; // main.typ
     write!(
         file,
         "// This file is generated by UTPM (https://github.com/typst-community/utpm)"
     )?;
+
+    // Template directory and its entrypoint. The template files should not
+    // include the styling code: the entrypoint imports the package and
+    // applies it with a show rule.
+    if let Some(template) = template {
+        let template_dir = project_dir.join(template.path.as_ref());
+        create_dir_all(&template_dir)?;
+        let template_entrypoint = template_dir.join(template.entrypoint.as_ref());
+        if let Some(parent) = template_entrypoint.parent() {
+            create_dir_all(parent)?;
+        }
+        file = File::create(&template_entrypoint)?;
+        write!(
+            file,
+            "// This file is generated by UTPM (https://github.com/typst-community/utpm)\n#import \"@local/{}:{}\": *\n\n// Apply your template with a show rule, e.g.:\n// #show: my-template-function\n",
+            pkg.name, pkg.version
+        )?;
+    }
     Ok(())
 }
 
@@ -273,9 +392,6 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     let manifest = project_dir.join(crate::utils::paths::MANIFEST_FILE);
     utpm_log!(info, "Current typst manifest file: {}", manifest.display());
 
-    // TODO: Implement template handling.
-    //let mut tmpl: Template = Template::new(cmd.template, entrypoint, thumbnail)
-
     // Check if manifest already exists.
     if check_path_file(&manifest) && !cmd.force {
         utpm_log!(
@@ -285,25 +401,34 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
         return Ok(false);
     }
 
-    // Build the package metadata from command-line arguments.
-    let pkg = create_pkg_info(cmd)?;
+    // Build the package metadata and template configuration.
+    let (pkg, template) = create_manifest_parts(cmd)?;
+
+    // Template packages must specify at least one category in `[package]`.
+    if template.is_some() && pkg.categories.is_empty() {
+        utpm_bail!(MissingCategory);
+    }
 
     // Populate the project with default files if requested.
     if cmd.populate && !get_dry_run() {
-        populate_project_files(&project_dir, &pkg)?;
+        populate_project_files(&project_dir, &pkg, template.as_ref())?;
     }
 
     // Construct the final manifest.
     let manif = PackageManifest {
         package: pkg,
         tool: ToolInfo::default(),
-        template: None,
+        template,
         unknown_fields: BTreeMap::new(),
     };
 
     // Write the manifest to `typst.toml`.
     write_manifest(&manif)?;
 
-    utpm_log!(info, "File(s) created to {typ}", typ = project_dir.display());
+    utpm_log!(
+        info,
+        "File(s) created to {typ}",
+        typ = project_dir.display()
+    );
     Ok(true)
 }

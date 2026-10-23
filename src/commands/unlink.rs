@@ -1,13 +1,13 @@
 use inquire::Confirm;
 use regex::Regex;
-use std::fs;
+use std::{fs, path::Path};
 use tracing::instrument;
 
 use crate::{
     path,
     utils::{
         dryrun::get_dry_run,
-        paths::{self, check_path_dir},
+        paths::{check_path_dir, has_content, package_cache_path, package_path},
         regex_package,
         state::Result,
     },
@@ -16,21 +16,6 @@ use crate::{
 
 use super::UnlinkArgs;
 
-/// Returns the package directory path for a given namespace.
-///
-/// # Arguments
-/// * `namespace` - The package namespace ("preview" or other)
-///
-/// # Returns
-/// The cache directory for "preview" namespace, or the data directory for others.
-fn package_path(namespace: &str) -> Result<String> {
-    if namespace == "preview" {
-        Ok(paths::package_cache_path()?.to_string_lossy().to_string())
-    } else {
-        Ok(paths::package_path()?.to_string_lossy().to_string())
-    }
-}
-
 /// Unlinks (removes) a package from local storage.
 ///
 /// Supports removing:
@@ -38,11 +23,25 @@ fn package_path(namespace: &str) -> Result<String> {
 /// - All versions of a package: `@namespace/package`
 /// - An entire namespace: `@namespace`
 ///
-/// Prompts for confirmation unless `--yes` flag is used.
+/// By default the local package directory is targeted; pass `--cache` to
+/// remove packages from the package cache shared with the Typst compiler.
+///
+/// When the removal leaves a parent directory empty (no versions left for a
+/// package, or no packages left for a namespace), that parent is removed too,
+/// up to the package directory root. Prompts for confirmation unless the
+/// `--yes` flag is used.
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     utpm_log!(trace, "executing unlink command");
     let packages = &cmd.package;
+
+    // Deprecation notice for --local-only.
+    if cmd.local_only {
+        utpm_log!(
+            warn,
+            "--local-only is deprecated and has no effect: the local package directory is now the default. Pass --cache to target the package cache."
+        );
+    }
 
     // Use regex to parse the package string, which can be a full package spec,
     // a package name, or just a namespace.
@@ -50,20 +49,28 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     let re_name: Regex = Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*)$").unwrap();
     let re_namespace = Regex::new(r"^@([a-zA-Z]+)$").unwrap();
 
+    // Parse the spec and build the target path. The root is the local package
+    // directory by default, or the package cache with --cache.
+    let root = if cmd.cache {
+        package_cache_path()?
+    } else {
+        package_path()?
+    };
+
     let path = if let Some(cap) = re_all.captures(packages.as_str()) {
         let (_, [namespace, package, major, minor, patch]) = cap.extract();
         path!(
-            package_path(namespace)?,
+            root.clone(),
             namespace,
             package,
             format!("{major}.{minor}.{patch}")
         )
     } else if let Some(cap) = re_name.captures(packages.as_str()) {
         let (_, [namespace, package]) = cap.extract();
-        path!(package_path(namespace)?, namespace, package)
+        path!(root.clone(), namespace, package)
     } else if let Some(cap) = re_namespace.captures(packages.as_str()) {
         let (_, [namespace]) = cap.extract();
-        path!(package_path(namespace)?, namespace)
+        path!(root.clone(), namespace)
     } else {
         utpm_bail!(PackageNotValid);
     };
@@ -74,25 +81,46 @@ pub async fn run(cmd: &UnlinkArgs) -> Result<bool> {
     }
 
     // Confirm with the user before deleting, unless `--yes` is provided.
-    if !cmd.yes {
-        match Confirm::new("This is irreversible. Are you sure to delete this?")
+    if !cmd.yes
+        && Confirm::new("This is irreversible. Are you sure to delete this?")
             .with_help_message(format!("You want to delete {packages}").as_str())
             .prompt()
-        {
-            Ok(_) => {
-                utpm_log!(info, "Deleting {}", path.display());
-                if !get_dry_run() {
-                    fs::remove_dir_all(path)?;
-                }
-                Ok(true)
-            },
-            Err(_) => Ok(false),
-        }
-    } else {
-        utpm_log!(info, "Deleting {}", path.display());
-        if !get_dry_run() {
-            fs::remove_dir_all(path)?;
-        }
-        Ok(true)
+            .is_err()
+    {
+        return Ok(false);
     }
+
+    utpm_log!(info, "Deleting {}", path.display());
+    if !get_dry_run() {
+        remove_package_dir(&path, &root)?;
+    }
+    Ok(true)
+}
+
+/// Deletes a package directory and then removes every now-empty parent
+/// directory (package name, then namespace), stopping at `root` (exclusive).
+///
+/// After removing `path`, if its parent directory holds no more entries, that
+/// parent is deleted too, cascading upwards until `root` is reached. `root`
+/// itself is never removed.
+///
+/// # Arguments
+/// * `path` - The package directory (version, package or namespace) to delete
+/// * `root` - The package directory root at which the cleanup must stop
+///
+/// # Errors
+/// Returns an error if a directory cannot be read or removed.
+pub fn remove_package_dir(path: &Path, root: &Path) -> Result<()> {
+    fs::remove_dir_all(path)?;
+
+    let mut current = path.parent();
+    while let Some(dir) = current {
+        if dir == root || !check_path_dir(dir) || has_content(dir)? {
+            break;
+        }
+        utpm_log!(info, "Removing empty directory {}", dir.display());
+        fs::remove_dir(dir)?;
+        current = dir.parent();
+    }
+    Ok(())
 }

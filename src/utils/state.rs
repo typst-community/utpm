@@ -111,6 +111,18 @@ pub enum UtpmError {
     #[error("Can't find {0} file in {1}. Did you omit it in your ignored files?")]
     OmitedEntryfile(String, String),
 
+    /// An error when a template is declared with missing configuration fields.
+    #[error(
+        "Template configuration is incomplete.\n\n`--template-path` and `--template-entrypoint` are both required to create a template.\nExample: utpm prj init --cli -n my-template --template-path template --template-entrypoint main.typ"
+    )]
+    TemplateIncomplete,
+
+    /// An error when a template package is created without a category.
+    #[error(
+        "Template packages must specify at least one category.\nAdd one with the `--categories` flag (e.g. `-C paper`), see:\nhttps://github.com/typst/packages/blob/main/CATEGORIES.md"
+    )]
+    MissingCategory,
+
     /// An error when a specified package does not exist.
     #[error(
         "Package not found.\n\nPossible causes:\n  - Package doesn't exist in your local storage\n  - Package name or version is incorrect\n  - Package is not published yet\n\nCheck available packages:\n  - Local: utpm pkg list\n  - Remote: https://typst.app/universe"
@@ -190,6 +202,8 @@ impl UtpmError {
             NoFiles => "NoFiles",
             OmitedTypstFile(_) => "OmitedTypstFile",
             OmitedEntryfile(_, _) => "OmitedEntryfile",
+            TemplateIncomplete => "TemplateIncomplete",
+            MissingCategory => "MissingCategory",
         }
     }
 }

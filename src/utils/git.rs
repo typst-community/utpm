@@ -57,7 +57,8 @@ pub fn exist_git() -> Result<bool> {
 
 /// Run `git push origin main` in the project directory.
 ///
-/// Returns Ok(true) if the process launches; bubbles categorized errors otherwise.
+/// Returns Ok(true) if the push succeeds (exit code 0); bubbles categorized
+/// errors otherwise (git missing, spawn failure, or non-zero exit code).
 pub fn push_git() -> Result<bool> {
     match Command::new("git")
         .current_dir(&project().lock().unwrap().0)
@@ -66,7 +67,10 @@ pub fn push_git() -> Result<bool> {
         .arg("main")
         .status()
     {
-        Ok(_) => Ok(true),
+        Ok(status) if status.success() => Ok(true),
+        Ok(status) => {
+            utpm_bail!(Git, format!("'git push' failed: {status}", status = status))
+        },
         Err(e) => {
             utpm_bail!(Git, e.to_string())
         },
@@ -75,7 +79,8 @@ pub fn push_git() -> Result<bool> {
 
 /// Run `git pull origin main` in the project directory.
 ///
-/// Returns Ok(true) if the process launches; bubbles errors otherwise.
+/// Returns Ok(true) if the pull succeeds (exit code 0); bubbles categorized
+/// errors otherwise (git missing, spawn failure, or non-zero exit code).
 pub fn pull_git() -> Result<bool> {
     match Command::new("git")
         .current_dir(&project().lock().unwrap().0)
@@ -84,7 +89,10 @@ pub fn pull_git() -> Result<bool> {
         .arg("main")
         .status()
     {
-        Ok(_) => Ok(true),
+        Ok(status) if status.success() => Ok(true),
+        Ok(status) => {
+            utpm_bail!(Git, format!("'git pull' failed: {status}", status = status))
+        },
         Err(e) => {
             utpm_bail!(Git, e.to_string())
         },
@@ -98,7 +106,7 @@ pub fn pull_git() -> Result<bool> {
 /// - `path`: destination path (relative to project dir or absolute).
 /// - `branch`: optional branch to clone from.
 ///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
+/// Returns Ok(true) if the clone succeeds (exit code 0); categorized errors otherwise.
 pub fn clone_git(string: &str, path: &str, branch: Option<&str>) -> Result<bool> {
     let mut command = Command::new("git");
     let mut clone_command = command
@@ -111,7 +119,10 @@ pub fn clone_git(string: &str, path: &str, branch: Option<&str>) -> Result<bool>
     }
 
     match clone_command.arg(string).arg(path).status() {
-        Ok(_) => Ok(true),
+        Ok(status) if status.success() => Ok(true),
+        Ok(status) => {
+            utpm_bail!(Git, format!("'git clone {string}' failed: {status}"))
+        },
         Err(e) => {
             utpm_bail!(Git, e.to_string())
         },
@@ -120,7 +131,7 @@ pub fn clone_git(string: &str, path: &str, branch: Option<&str>) -> Result<bool>
 
 /// Run `git add <path>` in the project directory.
 ///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
+/// Returns Ok(true) if the add succeeds (exit code 0); categorized errors otherwise.
 pub fn add_git(path: &str) -> Result<bool> {
     match Command::new("git")
         .current_dir(&project().lock().unwrap().0)
@@ -128,7 +139,10 @@ pub fn add_git(path: &str) -> Result<bool> {
         .arg(path)
         .status()
     {
-        Ok(_) => Ok(true),
+        Ok(status) if status.success() => Ok(true),
+        Ok(status) => {
+            utpm_bail!(Git, format!("'git add {path}' failed: {status}"))
+        },
         Err(e) => {
             utpm_bail!(Git, e.to_string())
         },
@@ -137,7 +151,7 @@ pub fn add_git(path: &str) -> Result<bool> {
 
 /// Run `git commit -m <msg>` in the project directory.
 ///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
+/// Returns Ok(true) if the commit succeeds (exit code 0); categorized errors otherwise.
 pub fn commit_git(msg: &str) -> Result<bool> {
     match Command::new("git")
         .current_dir(&project().lock().unwrap().0)
@@ -146,7 +160,10 @@ pub fn commit_git(msg: &str) -> Result<bool> {
         .arg(msg)
         .status()
     {
-        Ok(_) => Ok(true),
+        Ok(status) if status.success() => Ok(true),
+        Ok(status) => {
+            utpm_bail!(Git, format!("'git commit' failed: {status}"))
+        },
         Err(e) => {
             utpm_bail!(Git, e.to_string())
         },
@@ -161,7 +178,7 @@ pub fn commit_git(msg: &str) -> Result<bool> {
 /// - `subdir`: subdirectory to clone.
 /// - `branch`: specific branch to checkout from.
 ///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
+/// Returns Ok(true) if all three steps succeed (exit code 0); categorized errors otherwise.
 pub fn sparse_checkout_git(
     string: &str,
     path: &str,
@@ -203,7 +220,13 @@ pub fn sparse_checkout_git(
             .arg("checkout")
             .status()
     }) {
-        Ok(_) => Ok(true),
+        Ok(status) if status.success() => Ok(true),
+        Ok(status) => {
+            utpm_bail!(
+                Git,
+                format!("'git sparse-checkout {subdir}' failed: {status}")
+            )
+        },
         Err(e) => utpm_bail!(Git, e.to_string()),
     }
 }

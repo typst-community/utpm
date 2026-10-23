@@ -22,7 +22,6 @@ Tests for individual utility functions and modules:
 
 - **Regex tests**: Package format validation, import pattern matching
 - **Path tests**: Directory operations, file checks
-- **Specs tests**: `[tool.utpm]` configuration parsing
 - **State tests**: Error handling and error message formatting
 - **Output tests**: Output format handling
 - **Dry-run tests**: Dry-run mode functionality

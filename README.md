@@ -206,6 +206,12 @@ utpm pkg list --tree
 VERSION=$(utpm prj metadata -f version)
 ```
 
+> **Package locations:** every UTPM operation writes to the local package
+> directory (`~/.local/share/typst/packages`, override with
+> `TYPST_PACKAGE_PATH`). The package cache (`~/.cache/typst/packages`) belongs
+> to the Typst compiler: UTPM never writes to it, and only
+> `pkg unlink --cache` can remove packages from it.
+
 ### Command Overview
 
 #### Project Management (`utpm prj`)
@@ -253,7 +259,7 @@ Options:
 
 ## ⚙️ Configuration
 
-UTPM extends the standard `typst.toml` with a `[tool.utpm]` section for package-specific settings.
+UTPM reads the standard `typst.toml` manifest. File exclusion uses the standard `exclude` field of the `[package]` section.
 
 ### Excluding Files
 
@@ -264,8 +270,6 @@ Control which files are included when linking or publishing:
 name = "my-package"
 version = "0.1.0"
 # ... other standard fields
-
-[tool.utpm]
 exclude = [
   ".git",
   ".github",
@@ -286,7 +290,7 @@ exclude = [
 - `.gitignore` (default: enabled)
 - `.typstignore` (default: enabled)
 - `.ignore` (optional, enable with `--ignore`)
-- Custom patterns in `[tool.utpm]`
+- `exclude` patterns in `[package]`
 
 ### Metadata Extraction
 
