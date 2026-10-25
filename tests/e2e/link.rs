@@ -40,3 +40,20 @@ fn link_force_replaces_existing_package() {
         "new"
     );
 }
+
+#[test]
+fn link_without_force_keeps_existing_package() {
+    let sb = Sandbox::new();
+    sb.write("typst.toml", &manifest_toml("my-pkg", "0.1.0"));
+    sb.write("main.typ", "old");
+    sb.utpm(&["prj", "link"]).success();
+
+    sb.write("main.typ", "new");
+    sb.utpm(&["prj", "link"]);
+
+    let linked = sb.packages().join("local/my-pkg/0.1.0");
+    assert_eq!(
+        std::fs::read_to_string(linked.join("main.typ")).unwrap(),
+        "old"
+    );
+}
