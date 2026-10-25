@@ -138,6 +138,18 @@ impl Run {
         self
     }
 
+    /// Asserts that the process exited with a failure status.
+    #[track_caller]
+    pub fn failure(&self) -> &Self {
+        assert!(
+            !self.output.status.success(),
+            "`utpm {}` unexpectedly succeeded\n{}",
+            self.args,
+            self.dump(),
+        );
+        self
+    }
+
     fn dump(&self) -> String {
         format!(
             "--- stdout\n{}\n--- stderr\n{}",

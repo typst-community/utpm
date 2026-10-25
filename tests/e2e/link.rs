@@ -49,7 +49,7 @@ fn link_without_force_keeps_existing_package() {
     sb.utpm(&["prj", "link"]).success();
 
     sb.write("main.typ", "new");
-    sb.utpm(&["prj", "link"]);
+    sb.utpm(&["prj", "link"]).failure();
 
     let linked = sb.packages().join("local/my-pkg/0.1.0");
     assert_eq!(
@@ -97,6 +97,16 @@ fn link_dry_run_writes_nothing() {
     sb.write("main.typ", "");
 
     sb.utpm(&["--dry-run", "prj", "link"]).success();
+
+    assert!(files_in(sb.packages()).is_empty());
+}
+
+#[test]
+fn link_without_manifest_fails() {
+    let sb = Sandbox::new();
+    sb.write("main.typ", "");
+
+    sb.utpm(&["prj", "link"]).failure();
 
     assert!(files_in(sb.packages()).is_empty());
 }
