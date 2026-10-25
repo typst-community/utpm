@@ -26,3 +26,20 @@ fn sync_check_only_leaves_files_unchanged() {
 
     assert_eq!(sb.read("main.typ"), "#import \"@local/dep:0.1.0\": *\n");
 }
+
+#[test]
+fn sync_only_touches_typst_files() {
+    let sb = Sandbox::new();
+    sb.add_package("local", "dep", "0.1.0");
+    sb.add_package("local", "dep", "0.2.0");
+    sb.write("lib/util.typ", "#import \"@local/dep:0.1.0\": *\n");
+    sb.write("README.md", "#import \"@local/dep:0.1.0\": *\n");
+
+    sb.utpm(&["prj", "sync"]).success();
+
+    assert_eq!(
+        sb.read("lib/util.typ"),
+        "#import \"@local/dep:0.2.0\" /* From 0.1.0 */: *\n"
+    );
+    assert_eq!(sb.read("README.md"), "#import \"@local/dep:0.1.0\": *\n");
+}
