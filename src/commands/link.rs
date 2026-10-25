@@ -9,9 +9,7 @@ use crate::{
     path,
     utils::{
         dryrun::get_dry_run,
-        paths::{
-            check_path_dir, check_path_file, get_current_dir, package_cache_path, package_path,
-        },
+        paths::{check_path_dir, check_path_file, get_current_dir, package_path},
         state::Result,
         symlink_all, try_find,
     },
@@ -35,24 +33,23 @@ pub async fn run(cmd: &LinkArgs, path: &Option<String>, pt: bool) -> Result<bool
     let config = try_find(&curr)?;
     let namespace = cmd.namespace.clone().unwrap_or("local".into());
 
-    // Construct the destination path for the package.
+    // Construct the destination path for the package. UTPM only ever writes
+    // to the local package directory; the package cache belongs to the
+    // Typst compiler and is never touched here.
     let name = config.package.name;
     let version = config.package.version;
-    let destination = if namespace != "preview" {
-        path!(
-            package_path()?,
-            &namespace,
-            name.as_ref(),
-            version.to_string()
-        )
-    } else {
-        path!(
-            package_cache_path()?,
-            &namespace,
-            name.as_ref(),
-            version.to_string()
-        )
-    };
+    let package_dir = package_path()?;
+
+    // Warn about shadowing the official registry when targeting @preview.
+    if namespace == "preview" {
+        utpm_log!(
+            warn,
+            "warning: linking to the @preview namespace\n\nThe @preview namespace is reserved for the official Typst Universe registry.\nThis operation writes into the local package directory ({}), which the Typst compiler searches before the package cache.\n\nA version that does not exist on the registry would shadow the official package for every project on this system. Verify the name and version, and audit unexpected packages with `utpm pkg list --all`. UTPM will not overwrite an existing package without --force, which limits but does not eliminate the risk.",
+            package_dir.display()
+        );
+    }
+
+    let destination = path!(package_dir, &namespace, name.as_ref(), version.to_string());
 
     // Check if the package already exists at the destination.
     let exists = check_path_dir(&destination);

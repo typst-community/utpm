@@ -64,6 +64,28 @@ This creates:
 - `examples/` directory - For example files
 - A default entrypoint file (`main.typ`)
 
+#### Creating a Template Package
+
+Template packages additionally contain a set of files that Typst copies into a
+new project. The interactive mode asks whether to create a template; in CLI
+mode, pass `--template-path` and `--template-entrypoint` (plus an optional
+`--template-thumbnail`). Template packages must declare at least one category:
+
+```bash
+utpm prj init --cli \
+  --name organized-ajp \
+  --entrypoint lib.typ \
+  --categories thesis \
+  --template-path template \
+  --template-entrypoint main.typ \
+  --template-thumbnail thumbnail.png \
+  --populate
+```
+
+This creates the `[template]` section in `typst.toml` and scaffolds the
+`template/` directory, whose entrypoint imports your package and applies it
+with a show rule.
+
 #### Linking Your Package for Development
 
 When you're developing a package, you want to test it in Typst without publishing it first.
@@ -79,6 +101,13 @@ utpm prj link preview
 utpm prj link --force
 ```
 
+> **Package locations:** every UTPM operation writes to the local package
+> directory (`~/.local/share/typst/packages`, override with
+> `TYPST_PACKAGE_PATH`). The package cache (`~/.cache/typst/packages`) belongs
+> to the Typst compiler: UTPM never writes to it. Linking to the `@preview`
+> namespace prints a warning, since a version that does not exist on the
+> registry would shadow the official package.
+
 After linking, you can use your package in Typst:
 ```typst
 #import "@local/my-package:0.1.0": *
@@ -87,7 +116,7 @@ After linking, you can use your package in Typst:
 **What gets copied?** By default, UTPM respects:
 - `.gitignore` - Git ignore rules
 - `.typstignore` - Typst-specific ignore rules
-- `[tool.utpm] exclude` in `typst.toml` - Custom exclude patterns
+- `exclude` in `[package]` (`typst.toml`) - Custom exclude patterns
 
 You can control this with flags:
 ```bash
@@ -109,9 +138,6 @@ Edit your `typst.toml` to exclude files when linking or publishing:
 [package]
 name = "my-package"
 version = "0.1.0"
-# ... other package fields ...
-
-[tool.utpm]
 exclude = [
   ".git",           # Git directory
   ".github",        # GitHub workflows
@@ -136,6 +162,9 @@ utpm prj clone @preview/example:1.0.0
 # Clone latest version
 utpm prj clone @preview/example
 ```
+
+Packages from the registry are downloaded into the local package directory;
+the package cache stays untouched.
 
 #### Managing Package Versions
 
@@ -202,8 +231,11 @@ Available fields: `name`, `version`, `entrypoint`, `authors`, `license`, `descri
 #### Unlinking Packages
 
 ```bash
-# Remove a package from local storage
+# Remove a package from the local package directory
 utpm pkg unlink @local/my-package:0.1.0
+
+# Remove a package from the package cache shared with the Typst compiler
+utpm pkg unlink --cache @preview/my-package:0.1.0
 ```
 
 #### Dry-Run Mode
@@ -288,7 +320,10 @@ my-package/
 Add to your `typst.toml`:
 
 ```toml
-[tool.utpm]
+[package]
+name = "my-package"
+version = "0.1.0"
+# ... other standard fields
 exclude = [
   ".git",
   ".github",
@@ -304,7 +339,9 @@ exclude = [
 
 Or keep documentation and examples:
 ```toml
-[tool.utpm]
+[package]
+name = "my-package"
+version = "0.1.0"
 exclude = [
   ".git",
   ".github",
@@ -753,8 +790,8 @@ utpm --dry-run prj link
 
 ```bash
 # Test with custom directories
-UTPM_DATA_DIR=/tmp/test-data utpm prj link
-UTPM_CACHE_DIR=/tmp/test-cache utpm prj link
+TYPST_PACKAGE_PATH=/tmp/test-data utpm prj link
+TYPST_PACKAGE_CACHE_PATH=/tmp/test-cache utpm pkg unlink --cache @preview/example:1.0.0
 ```
 
 #### JSON Output for Debugging
@@ -803,39 +840,43 @@ just remove-hooks
 
 ### Package Locations
 
-UTPM manages packages in two locations:
+UTPM manages packages in two locations. Every UTPM operation writes to the
+local package directory; the package cache belongs to the Typst compiler and
+is only read by `pkg list --all`, and can only be removed from with
+`pkg unlink --cache`.
 
-#### 1. Local Packages (User-Created)
+#### 1. Local Packages
 
-**Path**: `$DATA_DIR/typst/packages/{namespace}/{name}/{version}/`
+**Path**: `{TYPST_PACKAGE_PATH}/{namespace}/{name}/{version}/`
 
 **Default locations:**
 - Linux: `~/.local/share/typst/packages/`
 - macOS: `~/Library/Application Support/typst/packages/`
 - Windows: `%APPDATA%\typst\packages\`
 
-**Override**: Set `UTPM_DATA_DIR` environment variable
+**Override**: Set `TYPST_PACKAGE_PATH` environment variable
 
 **Used for:**
 - Packages created with `utpm prj init`
 - Packages linked with `utpm prj link`
 - Custom namespaces (usually `local`)
+- Packages downloaded by `utpm prj clone` (including `@preview`)
 
-#### 2. Cache Packages (Downloaded)
+#### 2. Cache Packages (Typst compiler)
 
-**Path**: `$CACHE_DIR/typst/packages/{namespace}/{name}/{version}/`
+**Path**: `{TYPST_PACKAGE_CACHE_PATH}/{namespace}/{name}/{version}/`
 
 **Default locations:**
 - Linux: `~/.cache/typst/packages/`
 - macOS: `~/Library/Caches/typst/packages/`
 - Windows: `%LOCALAPPDATA%\typst\packages\`
 
-**Override**: Set `UTPM_CACHE_DIR` environment variable
+**Override**: Set `TYPST_PACKAGE_CACHE_PATH` environment variable
 
 **Used for:**
-- Packages cloned with `utpm prj clone`
-- Packages downloaded by Typst compiler
-- Usually `preview` namespace
+- Packages downloaded by the Typst compiler itself
+- UTPM never writes to this directory; `pkg unlink --cache` is the only
+  command that can remove packages from it
 
 ### File Filtering System
 
@@ -848,7 +889,7 @@ UTPM uses the `ignore` crate to filter files when linking or publishing packages
 3. **`.ignore`** - Generic ignore file (disabled by default, enable with `-i`)
 4. **Global `.gitignore`** - User's global git ignore (enabled by default)
 5. **`.git/info/exclude`** - Git's local exclude file (enabled by default)
-6. **`[tool.utpm] exclude`** - Patterns in `typst.toml`
+6. **`exclude` in `[package]`** - Patterns in `typst.toml`
 
 #### Controlling Ignore Files
 
@@ -898,7 +939,7 @@ The patterns follow standard glob syntax:
 
 When a file matches multiple patterns, UTPM applies them in this order:
 
-1. `[tool.utpm] exclude` patterns in `typst.toml`
+1. `exclude` patterns in `[package]` of `typst.toml`
 2. `.typstignore` (if enabled)
 3. `.gitignore` (if enabled)
 4. `.ignore` (if enabled)
@@ -918,14 +959,16 @@ Later patterns can override earlier ones using `!` negation.
 
 #### Paths
 
-- `UTPM_DATA_DIR` - Override local package directory
+- `TYPST_PACKAGE_PATH` - Override the local package directory (used by every
+  UTPM operation, including `@preview` downloads and links)
   ```bash
-  UTPM_DATA_DIR=/custom/path utpm prj link
+  TYPST_PACKAGE_PATH=/custom/path utpm prj link
   ```
 
-- `UTPM_CACHE_DIR` - Override cache directory
+- `TYPST_PACKAGE_CACHE_PATH` - Override the package cache (the Typst compiler
+  directory; UTPM never writes to it, `pkg unlink --cache` targets it)
   ```bash
-  UTPM_CACHE_DIR=/custom/cache utpm prj clone @preview/example:1.0.0
+  TYPST_PACKAGE_CACHE_PATH=/custom/cache utpm pkg unlink --cache @preview/example:1.0.0
   ```
 
 - `UTPM_CURRENT_DIR` - Override current working directory
@@ -972,7 +1015,7 @@ utpm -o hjson pkg list
 
 ### Package Manifest Format
 
-UTPM uses Typst's standard `typst.toml` format with an optional `[tool.utpm]` section.
+UTPM uses Typst's standard `typst.toml` format. File exclusion uses the standard `exclude` field of the `[package]` section.
 
 #### Minimal Example
 
@@ -1011,7 +1054,6 @@ path = "template"
 entrypoint = "main.typ"
 thumbnail = "thumbnail.png"
 
-[tool.utpm]
 exclude = [
   ".git",
   ".github",
@@ -1047,7 +1089,7 @@ exclude = [
 - `template.thumbnail` - Preview image
 
 **UTPM fields:**
-- `tool.utpm.exclude` - Files to exclude when linking/publishing
+- `exclude` - Files to exclude when linking/publishing (in `[package]`)
 
 ### Semantic Versioning
 
@@ -1101,7 +1143,7 @@ A: Yes! UTPM supports Linux, macOS, and Windows.
 
 **Q: Why are my files not being linked?**
 
-A: Check your `.gitignore`, `.typstignore`, and `[tool.utpm] exclude` patterns. Use `--dry-run` to see what would be copied:
+A: Check your `.gitignore`, `.typstignore`, and `exclude` patterns in `[package]`. Use `--dry-run` to see what would be copied:
 ```bash
 utpm --dry-run prj link
 ```
@@ -1115,7 +1157,7 @@ A: Use `utpm prj link` to link it locally, then import it in a test Typst file:
 
 **Q: Should I include examples and tests in my package?**
 
-A: It depends. Examples can help users understand your package, but they increase package size. Tests should generally be excluded. Configure via `[tool.utpm] exclude`.
+A: It depends. Examples can help users understand your package, but they increase package size. Tests should generally be excluded. Configure via the `exclude` field in `[package]`.
 
 **Q: How do I version my package?**
 
@@ -1165,7 +1207,7 @@ cargo install --path .
 
 **Q: UTPM is linking files I want to exclude**
 
-A: Check your patterns in `[tool.utpm] exclude`. Remember:
+A: Check your patterns in the `exclude` field of `[package]`. Remember:
 - Patterns are relative to package root
 - Use `/` at the end for directories: `tests/`
 - Use `**` for recursive: `**/*.bak`

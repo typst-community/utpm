@@ -293,6 +293,21 @@ pub struct UnlinkArgs {
     /// Confirm the deletion of the package directory without a prompt.
     #[arg(short, long)]
     yes: bool,
+
+    /// Target the package cache instead of the local package directory.
+    ///
+    /// By default, `pkg unlink` only removes packages from the local package
+    /// directory. The package cache is shared with the Typst compiler, so
+    /// removing packages from it requires this explicit opt-in.
+    #[arg(short = 'c', long)]
+    pub cache: bool,
+
+    /// Deprecated: the local package directory is now the default target.
+    ///
+    /// This flag has no effect and will be removed in a future release.
+    /// Pass `--cache` to target the package cache instead.
+    #[arg(short = 'l', long, hide = true)]
+    pub local_only: bool,
 }
 
 /// Arguments for the `install` command.
@@ -436,6 +451,13 @@ pub enum Commands {
 }
 
 /// An unofficial typst package manager for your projects.
+///
+/// Package locations: every UTPM operation writes to the local package
+/// directory (default: ~/.local/share/typst/packages, override:
+/// TYPST_PACKAGE_PATH). The package cache (default:
+/// ~/.cache/typst/packages, override: TYPST_PACKAGE_CACHE_PATH) belongs to the
+/// Typst compiler: UTPM never writes to it, and only `pkg unlink --cache` can
+/// remove packages from it.
 #[derive(Parser, Debug, PartialEq)]
 #[command(author = "Thumuss & typst-community", version = build::PKG_VERSION)]
 pub struct Cli {

@@ -4,6 +4,19 @@ use std::fs::{self, create_dir_all};
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
+use clap::Parser;
+use utpm::args::ARGS;
+use utpm::commands::Cli;
+
+/// Initializes the global CLI args so that code relying on `utpm_log!`
+/// (which reads the output format from `ARGS`) can run in tests.
+///
+/// Idempotent: safe to call from multiple tests in the same binary.
+#[allow(dead_code)]
+pub fn init_test_args() {
+    let _ = ARGS.set(Cli::parse_from(["utpm", "pkg", "path"]));
+}
+
 /// Creates a temporary directory for testing
 #[allow(dead_code)]
 pub fn setup_temp_dir() -> TempDir {
@@ -25,8 +38,6 @@ entrypoint = "main.typ"
 authors = ["Test Author"]
 license = "MIT"
 description = "Test package"
-
-[tool.utpm]
 exclude = []
 "#,
         name, version
@@ -79,8 +90,11 @@ pub fn create_test_package(dir: &Path, name: &str, version: &str) -> PathBuf {
 #[allow(dead_code)]
 pub fn setup_test_env(temp_dir: &Path) {
     unsafe {
-        env::set_var("UTPM_DATA_DIR", temp_dir.join("data"));
-        env::set_var("UTPM_CACHE_DIR", temp_dir.join("cache"));
+        env::set_var("TYPST_PACKAGE_PATH", temp_dir.join("data/typst/packages"));
+        env::set_var(
+            "TYPST_PACKAGE_CACHE_PATH",
+            temp_dir.join("cache/typst/packages"),
+        );
         env::set_var("UTPM_CURRENT_DIR", temp_dir.join("current"));
     }
 
@@ -95,8 +109,8 @@ pub fn setup_test_env(temp_dir: &Path) {
 #[allow(dead_code)]
 pub fn cleanup_test_env() {
     unsafe {
-        env::remove_var("UTPM_DATA_DIR");
-        env::remove_var("UTPM_CACHE_DIR");
+        env::remove_var("TYPST_PACKAGE_PATH");
+        env::remove_var("TYPST_PACKAGE_CACHE_PATH");
         env::remove_var("UTPM_CURRENT_DIR");
         env::remove_var("UTPM_DEBUG");
     }

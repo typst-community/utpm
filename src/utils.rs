@@ -106,18 +106,20 @@ pub fn symlink_all(origin: impl AsRef<Path>, new_path: impl AsRef<Path>) -> io::
 
 /// Returns a regex for matching typst package specifications (`@namespace/name:version`).
 pub fn regex_package() -> Regex {
-    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
+    Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*)\:(\d+)\.(\d+)\.(\d+)$").unwrap()
 }
 
 /// Returns a regex for matching typst import statements (`#import "@namespace/name:version"`).
 pub fn regex_import() -> Regex {
-    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)?)\:(\d+)\.(\d+)\.(\d+)\""#)
+    Regex::new(r#"\#import \"@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*)\:(\d+)\.(\d+)\.(\d+)\""#)
         .unwrap()
 }
 
-/// Writes a `PackageManifest` to `./typst.toml` in pretty TOML format.
+/// Writes a `PackageManifest` to `typst.toml` in the current directory.
 ///
-/// Respects dry-run mode - if dry-run is enabled, the file is not actually written.
+/// The current directory can be overridden with the `UTPM_CURRENT_DIR`
+/// environment variable. Respects dry-run mode - if dry-run is enabled, the
+/// file is not actually written.
 ///
 /// # Arguments
 /// * `data` - The package manifest to write
@@ -129,7 +131,9 @@ pub fn regex_import() -> Regex {
 pub fn write_manifest(data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;
     if !crate::utils::dryrun::get_dry_run() {
-        std::fs::write(Path::new("./typst.toml"), tomlfy)?;
+        let manifest_path =
+            crate::path!(self::paths::get_current_dir()?, self::paths::MANIFEST_FILE);
+        std::fs::write(&manifest_path, tomlfy)?;
     }
     Ok(())
 }
@@ -158,6 +162,7 @@ mod tests {
         assert!(re.is_match("@local/package-A:2.0.1"));
         assert!(re.is_match("@local/package-a:2.0.1"));
         assert!(re.is_match("@local/AAAAAAAAAAAAAA:2.0.1"));
+        assert!(re.is_match("@local/AAAA-BBBB:2.0.1"));
         assert!(!re.is_match("@local/p:1..1"));
         assert!(re.is_match("@a/p:1.0.1"));
         assert!(!re.is_match("@a/p:v1.0.1"));

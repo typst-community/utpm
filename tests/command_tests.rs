@@ -55,7 +55,6 @@ mod init_command_tests {
         assert!(content.contains("name = \"my-package\""));
         assert!(content.contains("version = \"2.1.0\""));
         assert!(content.contains("entrypoint = \"main.typ\""));
-        assert!(content.contains("[tool.utpm]"));
     }
 
     #[test]
@@ -88,6 +87,72 @@ namespace = "local"
         assert_file_exists(&temp_dir.path().join("main.typ"));
         assert_dir_exists(&temp_dir.path().join("src"));
         assert_dir_exists(&temp_dir.path().join("examples"));
+    }
+
+    #[test]
+    fn test_init_populate_creates_template_files() {
+        use std::str::FromStr;
+        use typst_syntax::package::{PackageInfo, PackageVersion, TemplateInfo};
+
+        let temp_dir = setup_temp_dir();
+        let pkg = PackageInfo {
+            name: "organized-ajp".into(),
+            version: PackageVersion::from_str("0.1.0").unwrap(),
+            entrypoint: "lib.typ".into(),
+            authors: vec!["The Typst Project Developers".into()],
+            license: Some("MIT".into()),
+            description: Some("Master's thesis at the Unseen University.".into()),
+            repository: None,
+            homepage: None,
+            keywords: vec![],
+            compiler: None,
+            exclude: vec![],
+            categories: vec!["thesis".into()],
+            disciplines: vec![],
+            unknown_fields: Default::default(),
+        };
+        let mut template = TemplateInfo::new("template", "main.typ");
+        template.thumbnail = Some("thumbnail.png".into());
+
+        utpm::commands::init::populate_project_files(temp_dir.path(), &pkg, Some(&template))
+            .unwrap();
+
+        // Template directory and its entrypoint are created, and the
+        // entrypoint imports the package.
+        let entry = temp_dir.path().join("template").join("main.typ");
+        assert_file_exists(&entry);
+        let content = read_file_string(&entry);
+        assert!(content.contains("#import \"@local/organized-ajp:0.1.0\": *"));
+        assert!(content.contains("#show:"));
+    }
+
+    #[test]
+    fn test_init_populate_nested_entrypoint() {
+        use std::str::FromStr;
+        use typst_syntax::package::{PackageInfo, PackageVersion};
+
+        let temp_dir = setup_temp_dir();
+        let pkg = PackageInfo {
+            name: "nested-pkg".into(),
+            version: PackageVersion::from_str("0.1.0").unwrap(),
+            entrypoint: "src/lib.typ".into(),
+            authors: vec![],
+            license: None,
+            description: None,
+            repository: None,
+            homepage: None,
+            keywords: vec![],
+            compiler: None,
+            exclude: vec![],
+            categories: vec![],
+            disciplines: vec![],
+            unknown_fields: Default::default(),
+        };
+
+        utpm::commands::init::populate_project_files(temp_dir.path(), &pkg, None).unwrap();
+
+        // Parent directories of a nested entrypoint are created.
+        assert_file_exists(&temp_dir.path().join("src").join("lib.typ"));
     }
 }
 
@@ -206,6 +271,7 @@ mod clone_command_tests {
 #[cfg(test)]
 mod unlink_command_tests {
     use super::*;
+    use utpm::commands::unlink::remove_package_dir;
 
     #[test]
     fn test_unlink_removes_package() {
@@ -225,6 +291,54 @@ mod unlink_command_tests {
         // This would require actual command execution
 
         cleanup_test_env();
+    }
+
+    #[test]
+    fn test_unlink_cascades_empty_parents() {
+        init_test_args();
+        let temp_dir = setup_temp_dir();
+        let root = temp_dir.path().join("packages");
+        let version_dir = root.join("local").join("my-pkg").join("1.0.0");
+        fs::create_dir_all(&version_dir).unwrap();
+        fs::write(version_dir.join("typst.toml"), "test").unwrap();
+
+        remove_package_dir(&version_dir, &root).unwrap();
+
+        // Version, package name and namespace directories are all removed.
+        assert_not_exists(&version_dir);
+        assert_not_exists(&root.join("local").join("my-pkg"));
+        assert_not_exists(&root.join("local"));
+        // The package directory root itself is never removed.
+        assert_dir_exists(&root);
+    }
+
+    #[test]
+    fn test_unlink_keeps_parents_with_remaining_packages() {
+        init_test_args();
+        let temp_dir = setup_temp_dir();
+        let root = temp_dir.path().join("packages");
+        let pkg_a_v1 = root.join("local").join("pkg-a").join("1.0.0");
+        let pkg_a_v2 = root.join("local").join("pkg-a").join("2.0.0");
+        let pkg_b = root.join("local").join("pkg-b").join("1.0.0");
+        fs::create_dir_all(&pkg_a_v1).unwrap();
+        fs::create_dir_all(&pkg_a_v2).unwrap();
+        fs::create_dir_all(&pkg_b).unwrap();
+        fs::write(pkg_a_v1.join("typst.toml"), "test").unwrap();
+        fs::write(pkg_a_v2.join("typst.toml"), "test").unwrap();
+        fs::write(pkg_b.join("typst.toml"), "test").unwrap();
+
+        // Remove one version: the package keeps its other version.
+        remove_package_dir(&pkg_a_v1, &root).unwrap();
+        assert_not_exists(&pkg_a_v1);
+        assert_dir_exists(&pkg_a_v2);
+        assert_dir_exists(&root.join("local").join("pkg-a"));
+        assert_dir_exists(&root.join("local"));
+
+        // Remove the last version: the package goes, the namespace stays.
+        remove_package_dir(&pkg_a_v2, &root).unwrap();
+        assert_not_exists(&root.join("local").join("pkg-a"));
+        assert_dir_exists(&root.join("local").join("pkg-b"));
+        assert_dir_exists(&root.join("local"));
     }
 
     #[test]

@@ -15,7 +15,7 @@ use crate::{
     utils::{
         ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
-        paths::{check_path_dir, get_current_dir, has_content, package_cache_path, package_path},
+        paths::{check_path_dir, get_current_dir, has_content, package_path},
         state::{Result, UtpmError},
         symlink_all,
     },
@@ -35,9 +35,12 @@ struct RawPkg<'a> {
 impl<'b> RawPkg<'b> {
     pub async fn from_str<'a: 'b>(s: &'a str) -> Result<Self> {
         // Use regex to parse the package specification string.
-        let re_all = Regex::new(r"^@(\w+)\/(\w+):(\d\.\d\.\d)$").unwrap();
-        let re_name = Regex::new(r"^(\w+):(\d\.\d\.\d)$").unwrap();
-        let re_namespace = Regex::new(r"^(\w+)$").unwrap();
+        // Package names may contain hyphens (e.g. `@preview/my-package:1.0.0`)
+        // and version components may hold multiple digits (e.g. `1.10.0`).
+        let re_all =
+            Regex::new(r"^@([a-zA-Z]+)\/([a-zA-Z]+(?:\-[a-zA-Z]+)*):(\d+\.\d+\.\d+)$").unwrap();
+        let re_name = Regex::new(r"^([a-zA-Z]+(?:\-[a-zA-Z]+)*):(\d+\.\d+\.\d+)$").unwrap();
+        let re_namespace = Regex::new(r"^([a-zA-Z]+(?:\-[a-zA-Z]+)*)$").unwrap();
 
         if let Some(cap) = re_all.captures(s) {
             let (_, [namespace, package, version]) = cap.extract();
@@ -113,19 +116,21 @@ pub async fn run(cmd: &CloneArgs) -> Result<bool> {
     let package = &cmd.package;
     let pkg = RawPkg::from_str(package).await?;
 
-    // Determine the local path for the package based on its namespace.
-    let local_path = if pkg.namespace == "preview" {
-        utpm_log!(info, "preview found, cache dir use");
-        path!(
-            package_cache_path()?,
-            pkg.namespace,
-            pkg.package,
-            pkg.version
-        )
-    } else {
-        utpm_log!(info, "no preview found, data dir use");
-        path!(package_path()?, pkg.namespace, pkg.package, pkg.version)
-    };
+    // Determine the local path for the package. UTPM only ever reads from
+    // and downloads to the local package directory; the package cache
+    // belongs to the Typst compiler and is never touched here.
+    let package_dir = package_path()?;
+
+    // Warn about shadowing the official registry when targeting @preview.
+    if pkg.namespace == "preview" {
+        utpm_log!(
+            warn,
+            "warning: cloning from the @preview namespace\n\nThe @preview namespace is the official Typst Universe registry. This package is downloaded from the registry into the local package directory ({}), which the Typst compiler searches before the package cache.\n\nAny local modification of that copy would take precedence over the official package for every project on this system. Track local packages with `utpm pkg list`.",
+            package_dir.display()
+        );
+    }
+
+    let local_path = path!(package_dir, pkg.namespace, pkg.package, pkg.version);
 
     // If the package already exists locally, copy or symlink it.
     if check_path_dir(&local_path) {
@@ -154,9 +159,11 @@ pub async fn run(cmd: &CloneArgs) -> Result<bool> {
         // TODO: Implement removal of the existing directory for redownload.
     }
 
-    // Prepare to download the package.
+    // Prepare to download the package. Both the package path and the cache
+    // point to the local package directory: downloads from the registry
+    // land there, and the Typst package cache stays untouched.
     let pkg_sto = PackageStorage::new(
-        Some(package_cache_path()?),
+        Some(package_path()?),
         Some(package_path()?),
         Downloader::new(format!("utpm/{}", build::COMMIT_HASH)),
     );
@@ -167,7 +174,7 @@ pub async fn run(cmd: &CloneArgs) -> Result<bool> {
         pkg_sto.prepare_package(
             &PackageSpec {
                 namespace: pkg.namespace.into(),
-                name: package.into(),
+                name: pkg.package.into(),
                 version: pkg.parse_version().unwrap(),
             },
             printer,

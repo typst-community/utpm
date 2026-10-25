@@ -9,3 +9,6 @@ result
 #rust specific
 /coverage
 /target
+
+# AI
+.agents/
