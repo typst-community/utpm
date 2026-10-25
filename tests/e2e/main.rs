@@ -4,6 +4,7 @@ mod bump;
 mod clone;
 mod harness;
 mod init;
+mod install;
 mod link;
 mod list;
 mod sync;
