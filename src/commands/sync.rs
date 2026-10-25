@@ -42,9 +42,10 @@ pub async fn run(cmd: &SyncArgs) -> Result<bool> {
 /// * `cmd` - If true, only checks for updates without modifying files
 async fn default_run(cmd: bool) -> Result<bool> {
     let path = &get_current_dir()?;
-    let wb: WalkBuilder = WalkBuilder::new(path);
+    let mut wb: WalkBuilder = WalkBuilder::new(path);
     let mut overr: OverrideBuilder = OverrideBuilder::new(path);
     overr.add("*.typ")?;
+    wb.overrides(overr.build()?);
     for result in wb.build().collect::<R<Vec<_>, _>>()? {
         if let Some(file_type) = result.file_type()
             && !file_type.is_dir()
