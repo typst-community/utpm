@@ -42,3 +42,14 @@ fn init_without_force_keeps_existing_manifest() {
 
     assert_eq!(sb.read("typst.toml"), manifest_toml("existing", "1.0.0"));
 }
+
+#[test]
+fn init_force_overwrites_existing_manifest() {
+    let sb = Sandbox::new();
+    sb.write("typst.toml", &manifest_toml("existing", "1.0.0"));
+
+    sb.utpm(&["prj", "init", "--cli", "--force", "--name", "my-pkg"])
+        .success();
+
+    assert_eq!(read_manifest(&sb).package.name, "my-pkg");
+}
