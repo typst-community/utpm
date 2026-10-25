@@ -3,6 +3,7 @@ use std::{fs::write, path::Path};
 use ignore::{WalkBuilder, overrides::OverrideBuilder};
 use regex::Regex;
 use tracing::instrument;
+use typst_syntax::package::PackageVersion;
 
 use std::result::Result as R;
 
@@ -112,14 +113,12 @@ async fn file_run(path: impl AsRef<Path>, comment_only: bool) -> Result<bool> {
             }
         } else {
             let r = std::fs::read_dir(path!(package_path()?, namespace, package))?;
-            let mut list_dir = r
-                .into_iter()
+            let latest = r
                 .filter_map(|a| a.ok())
-                .filter_map(|a| a.file_name().into_string().ok())
-                .collect::<Vec<_>>();
-            list_dir.sort();
-            let var = match list_dir.last() {
-                Some(e) => Ok::<std::string::String, UtpmError>(e.clone()),
+                .filter_map(|a| a.file_name().to_str()?.parse::<PackageVersion>().ok())
+                .max();
+            let var = match latest {
+                Some(e) => Ok::<std::string::String, UtpmError>(e.to_string()),
                 None => utpm_bail!(PackageNotExist),
             }?;
             Ok(var)

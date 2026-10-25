@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use std::fs;
 use std::path::Path;
 use tracing::instrument;
+use typst_syntax::package::PackageVersion;
 
 use crate::{
     utils::{
@@ -190,7 +191,11 @@ pub fn package_read(typ: impl AsRef<Path>, name: String) -> Result<Package> {
         pkg.list_version
             .push(dir.file_name().to_string_lossy().to_string());
     }
-    pkg.list_version.sort();
+    // Sort valid versions numerically, followed by any other directories by name.
+    pkg.list_version.sort_by_cached_key(|v| {
+        let version = v.parse::<PackageVersion>().ok();
+        (version.is_none(), version, v.clone())
+    });
     Ok(pkg)
 }
 
