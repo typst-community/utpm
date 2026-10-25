@@ -71,3 +71,21 @@ fn link_respects_typstignore() {
     let linked = sb.packages().join("local/my-pkg/0.1.0");
     assert_eq!(files_in(&linked), ["main.typ", "typst.toml"]);
 }
+
+// Creating directory symlinks on Windows requires developer mode or elevated privileges.
+#[cfg(unix)]
+#[test]
+fn link_no_copy_creates_symlink() {
+    let sb = Sandbox::new();
+    sb.write("typst.toml", &manifest_toml("my-pkg", "0.1.0"));
+    sb.write("main.typ", "");
+
+    sb.utpm(&["prj", "link", "--no-copy"]).success();
+
+    let linked = sb.packages().join("local/my-pkg/0.1.0");
+    assert!(linked.symlink_metadata().unwrap().is_symlink());
+    assert_eq!(
+        linked.canonicalize().unwrap(),
+        sb.project().canonicalize().unwrap()
+    );
+}
