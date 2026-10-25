@@ -89,3 +89,14 @@ fn link_no_copy_creates_symlink() {
         sb.project().canonicalize().unwrap()
     );
 }
+
+#[test]
+fn link_dry_run_writes_nothing() {
+    let sb = Sandbox::new();
+    sb.write("typst.toml", &manifest_toml("my-pkg", "0.1.0"));
+    sb.write("main.typ", "");
+
+    sb.utpm(&["--dry-run", "prj", "link"]).success();
+
+    assert!(files_in(sb.packages()).is_empty());
+}
