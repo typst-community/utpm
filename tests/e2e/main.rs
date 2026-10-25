@@ -2,6 +2,7 @@
 
 mod bump;
 mod clone;
+mod generate;
 mod harness;
 mod init;
 mod install;
