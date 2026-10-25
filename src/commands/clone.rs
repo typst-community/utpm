@@ -100,8 +100,8 @@ pub async fn run(cmd: &CloneArgs) -> Result<bool> {
         Cow::Owned(get_current_dir()?)
     };
 
-    // Check if the target directory already has content.
-    if has_content(&dst)? {
+    // Check if the target directory already has content. A missing directory is created later.
+    if dst.exists() && has_content(&dst)? {
         utpm_log!(debug, "found content");
         if cmd.force {
             utpm_log!(warn, "force used, ignore content");
