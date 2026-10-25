@@ -61,6 +61,11 @@ impl Sandbox {
         fs::write(path, content).expect("failed to write file");
     }
 
+    /// Creates a minimal package at `<namespace>/<name>/<version>` in local package storage.
+    pub fn add_package(&self, namespace: &str, name: &str, version: &str) {
+        create_package(&self.packages(), namespace, name, version);
+    }
+
     /// Returns a `utpm` command running in the project directory with the sandboxed environment.
     fn cmd(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_utpm"));
@@ -169,4 +174,13 @@ entrypoint = "main.typ"
 exclude = ["notes.md"]
 "#
     )
+}
+
+/// Creates a minimal package at `<root>/<namespace>/<name>/<version>`.
+fn create_package(root: &Path, namespace: &str, name: &str, version: &str) {
+    let dir = root.join(namespace).join(name).join(version);
+    fs::create_dir_all(&dir).expect("failed to create package dir");
+    fs::write(dir.join("typst.toml"), manifest_toml(name, version))
+        .expect("failed to write manifest");
+    fs::write(dir.join("main.typ"), "").expect("failed to write entrypoint");
 }
