@@ -32,3 +32,13 @@ fn init_cli_writes_manifest() {
     assert_eq!(manifest.authors, ["Alice", "Bob"]);
     assert_eq!(manifest.license.as_deref(), Some("MIT"));
 }
+
+#[test]
+fn init_without_force_keeps_existing_manifest() {
+    let sb = Sandbox::new();
+    sb.write("typst.toml", &manifest_toml("existing", "1.0.0"));
+
+    sb.utpm(&["prj", "init", "--cli", "--name", "my-pkg"]);
+
+    assert_eq!(sb.read("typst.toml"), manifest_toml("existing", "1.0.0"));
+}
