@@ -29,3 +29,17 @@ fn unlink_removes_all_versions_of_package() {
         ["local/other/1.0.0/main.typ", "local/other/1.0.0/typst.toml"]
     );
 }
+
+#[test]
+fn unlink_removes_namespace() {
+    let sb = Sandbox::new();
+    sb.add_package("local", "dep", "0.1.0");
+    sb.add_package("mine", "other", "1.0.0");
+
+    sb.utpm(&["pkg", "unlink", "--yes", "@local"]).success();
+
+    assert_eq!(
+        files_in(sb.packages()),
+        ["mine/other/1.0.0/main.typ", "mine/other/1.0.0/typst.toml"]
+    );
+}
