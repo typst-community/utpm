@@ -71,6 +71,11 @@ impl Sandbox {
         create_package(&self.packages(), namespace, name, version);
     }
 
+    /// Creates a minimal package at `<namespace>/<name>/<version>` in the package cache.
+    pub fn add_cached_package(&self, namespace: &str, name: &str, version: &str) {
+        create_package(&self.cache(), namespace, name, version);
+    }
+
     /// Returns a `utpm` command running in the project directory with the sandboxed environment.
     fn cmd(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_utpm"));

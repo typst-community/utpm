@@ -4,5 +4,6 @@ mod bump;
 mod harness;
 mod init;
 mod link;
+mod list;
 mod sync;
 mod unlink;
