@@ -1,6 +1,17 @@
 use crate::harness::*;
 
 #[test]
+fn list_sorts_versions_numerically() {
+    let sb = Sandbox::new();
+    sb.add_package("local", "dep", "0.10.0");
+    sb.add_package("local", "dep", "0.9.0");
+
+    let out = sb.utpm(&["pkg", "list"]).success().stdout();
+
+    assert!(out.contains("dep: 0.9.0, 0.10.0"), "{out}");
+}
+
+#[test]
 fn list_shows_local_packages() {
     let sb = Sandbox::new();
     sb.add_package("local", "dep", "0.1.0");
