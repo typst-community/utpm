@@ -7,5 +7,6 @@ mod init;
 mod install;
 mod link;
 mod list;
+mod metadata;
 mod sync;
 mod unlink;
