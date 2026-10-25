@@ -9,13 +9,12 @@ use tracing::instrument;
 use typst_kit::{download::Downloader, package::PackageStorage};
 
 use crate::{
-    build,
-    commands::get::get_packages_name_version,
-    path,
+    build, path,
     utils::{
         ProgressPrint, copy_dir_all,
         dryrun::get_dry_run,
         paths::{check_path_dir, get_current_dir, has_content, package_cache_path, package_path},
+        registry::get_packages_name_version,
         state::{Result, UtpmError},
         symlink_all,
     },
