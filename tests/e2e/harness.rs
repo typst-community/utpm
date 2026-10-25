@@ -98,6 +98,14 @@ impl Sandbox {
     pub fn utpm(&self, args: &[&str]) -> Run {
         Run::new(self.cmd(args))
     }
+
+    /// Runs `utpm` like [`Sandbox::utpm`], after letting `cb` adjust the command, e.g. to set
+    /// environment variables.
+    pub fn utpm_with(&self, args: &[&str], cb: impl FnOnce(&mut Command)) -> Run {
+        let mut cmd = self.cmd(args);
+        cb(&mut cmd);
+        Run::new(cmd)
+    }
 }
 
 /// The captured result of one `utpm` invocation.
