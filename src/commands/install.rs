@@ -94,8 +94,8 @@ pub async fn run(cmd: &InstallArgs) -> Result<bool> {
         "{}/{}/{}/{}",
         package_path()?.display(),
         namespace,
-        &file.package.name,
-        &file.package.version
+        file.package.name,
+        file.package.version
     )) {
         utpm_log!(
             "{}",
