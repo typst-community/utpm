@@ -61,6 +61,11 @@ impl Sandbox {
         fs::write(path, content).expect("failed to write file");
     }
 
+    /// Reads a file relative to the project directory.
+    pub fn read(&self, relative: impl AsRef<Path>) -> String {
+        fs::read_to_string(self.project().join(relative)).expect("failed to read file")
+    }
+
     /// Creates a minimal package at `<namespace>/<name>/<version>` in local package storage.
     pub fn add_package(&self, namespace: &str, name: &str, version: &str) {
         create_package(&self.packages(), namespace, name, version);
