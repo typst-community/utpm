@@ -214,7 +214,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let msg = cmd
         .message
         .clone()
-        .unwrap_or(format!("{} using utpm", &name_replaced));
+        .unwrap_or(format!("{} using utpm", name_replaced));
 
     project().lock().unwrap().0 = new_package_path;
 
