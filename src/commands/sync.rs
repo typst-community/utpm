@@ -13,7 +13,7 @@ use crate::{
     utils::{
         dryrun::get_dry_run,
         paths::{get_current_dir, package_path},
-        state::{Result, UtpmError},
+        state::Result,
     },
     utpm_bail, utpm_log,
 };
@@ -106,23 +106,18 @@ async fn file_run(path: impl AsRef<Path>, comment_only: bool) -> Result<bool> {
         );
         let version = if namespace == "preview" {
             let pkgs = get_packages_name_version().await?;
-            if let Some(pkg) = pkgs.get(package) {
-                Ok::<std::string::String, UtpmError>(pkg.version.clone())
-            } else {
-                utpm_bail!(PackageNotExist);
-            }
+            pkgs.get(package).map(|pkg| pkg.version.clone())
         } else {
             let r = std::fs::read_dir(path!(package_path()?, namespace, package))?;
             let latest = r
                 .filter_map(|a| a.ok())
                 .filter_map(|a| a.file_name().to_str()?.parse::<PackageVersion>().ok())
                 .max();
-            let var = match latest {
-                Some(e) => Ok::<std::string::String, UtpmError>(e.to_string()),
-                None => utpm_bail!(PackageNotExist),
-            }?;
-            Ok(var)
-        }?;
+            latest.map(|version| version.to_string())
+        };
+        let Some(version) = version else {
+            utpm_bail!(PackageNotExist);
+        };
 
         // Replace the import by the new
 
