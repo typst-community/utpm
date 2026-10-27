@@ -1,3 +1,5 @@
+use std::process::ExitCode;
+
 use anyhow::Result;
 use clap::Parser;
 use tracing::{error, instrument, level_filters::LevelFilter};
@@ -20,7 +22,7 @@ use utpm::{
 /// sets up logging, and dispatches to the appropriate command handler.
 #[instrument]
 #[tokio::main]
-async fn main() {
+async fn main() -> ExitCode {
     // Parse command-line arguments.
     ARGS.set(Cli::parse()).expect("ARGS should still be empty");
     let x = get_args();
@@ -86,6 +88,9 @@ async fn main() {
             Ok(_) => (),
             Err(err2) => error!("{err2}"), // If utpm_log errors, it will fallback to that
         };
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
     }
 }
 

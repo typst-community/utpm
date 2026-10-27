@@ -98,6 +98,14 @@ impl Sandbox {
     pub fn utpm(&self, args: &[&str]) -> Run {
         Run::new(self.cmd(args))
     }
+
+    /// Runs `utpm` like [`Sandbox::utpm`], after letting `cb` adjust the command, e.g. to set
+    /// environment variables.
+    pub fn utpm_with(&self, args: &[&str], cb: impl FnOnce(&mut Command)) -> Run {
+        let mut cmd = self.cmd(args);
+        cb(&mut cmd);
+        Run::new(cmd)
+    }
 }
 
 /// The captured result of one `utpm` invocation.
@@ -133,6 +141,18 @@ impl Run {
             "`utpm {}` failed with {}\n{}",
             self.args,
             self.output.status,
+            self.dump(),
+        );
+        self
+    }
+
+    /// Asserts that the process exited with a failure status.
+    #[track_caller]
+    pub fn failure(&self) -> &Self {
+        assert!(
+            !self.output.status.success(),
+            "`utpm {}` unexpectedly succeeded\n{}",
+            self.args,
             self.dump(),
         );
         self

@@ -302,7 +302,7 @@ pub async fn run(cmd: &mut InitArgs) -> Result<bool> {
     };
 
     // Write the manifest to `typst.toml`.
-    write_manifest(&manif)?;
+    write_manifest(&manifest, &manif)?;
 
     utpm_log!(info, "File created to {typ}");
     Ok(true)

@@ -115,21 +115,22 @@ pub fn regex_import() -> Regex {
         .unwrap()
 }
 
-/// Writes a `PackageManifest` to `./typst.toml` in pretty TOML format.
+/// Writes a `PackageManifest` to the given path in pretty TOML format.
 ///
 /// Respects dry-run mode - if dry-run is enabled, the file is not actually written.
 ///
 /// # Arguments
+/// * `path` - The path of the manifest file to write
 /// * `data` - The package manifest to write
 ///
 /// # Errors
 /// Returns an error if:
 /// - The manifest cannot be serialized to TOML
 /// - The file cannot be written (if not in dry-run mode)
-pub fn write_manifest(data: &PackageManifest) -> Result<()> {
+pub fn write_manifest(path: impl AsRef<Path>, data: &PackageManifest) -> Result<()> {
     let tomlfy: String = toml::to_string_pretty(data)?;
     if !crate::utils::dryrun::get_dry_run() {
-        std::fs::write(Path::new("./typst.toml"), tomlfy)?;
+        std::fs::write(path, tomlfy)?;
     }
     Ok(())
 }

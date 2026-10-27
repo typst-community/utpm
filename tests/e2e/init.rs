@@ -53,3 +53,17 @@ fn init_force_overwrites_existing_manifest() {
 
     assert_eq!(read_manifest(&sb).package.name, "my-pkg");
 }
+
+#[test]
+fn init_writes_manifest_to_utpm_current_dir() {
+    let sb = Sandbox::new();
+    let target = sb.project().join("sub");
+    std::fs::create_dir(&target).unwrap();
+
+    sb.utpm_with(&["prj", "init", "--cli", "--name", "my-pkg"], |cmd| {
+        cmd.env("UTPM_CURRENT_DIR", &target);
+    })
+    .success();
+
+    assert_eq!(files_in(sb.project()), ["sub/typst.toml"]);
+}
