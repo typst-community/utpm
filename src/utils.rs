@@ -31,10 +31,13 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<
             let entry = entry?;
             let ty = entry.file_type()?;
             let name = entry.file_name();
+            if ty.is_dir() && name == ".utpm" {
+                continue;
+            }
 
             src.push(&name);
             dst.push(&name);
-            if ty.is_dir() && name != ".utpm" {
+            if ty.is_dir() {
                 inner(src, dst)?;
             } else {
                 fs::copy(&src, &dst)?;
