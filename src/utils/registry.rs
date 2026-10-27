@@ -54,6 +54,8 @@ pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
 
 /// Fetches all packages and creates a hashmap for lookup by name or name:version.
 ///
+/// The index is downloaded at most once per process; later calls return the same map.
+///
 /// # Returns
 /// A hashmap where keys can be either:
 /// - Package name (e.g., "mypackage") - returns the latest version
@@ -61,18 +63,24 @@ pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
 ///
 /// # Errors
 /// Returns an error if the HTTP request fails or the response cannot be parsed.
-pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> {
-    let packages: Vec<RawPackage> = get_all_packages().await?;
-    let mut hashmap: HashMap<String, RawPackage> = HashMap::with_capacity(packages.len() * 2);
+pub async fn get_packages_name_version() -> Result<&'static HashMap<String, RawPackage>> {
+    static PACKAGES: OnceCell<HashMap<String, RawPackage>> = OnceCell::const_new();
+    PACKAGES
+        .get_or_try_init(|| async {
+            let packages: Vec<RawPackage> = get_all_packages().await?;
+            let mut hashmap: HashMap<String, RawPackage> =
+                HashMap::with_capacity(packages.len() * 2);
 
-    for pkg in packages {
-        // Insert by name (latest version)
-        let name = pkg.name.clone();
-        let version_key = format!("{}:{}", pkg.name, pkg.version);
+            for pkg in packages {
+                // Insert by name (latest version)
+                let name = pkg.name.clone();
+                let version_key = format!("{}:{}", pkg.name, pkg.version);
 
-        hashmap.insert(name, pkg.clone());
-        hashmap.insert(version_key, pkg);
-    }
+                hashmap.insert(name, pkg.clone());
+                hashmap.insert(version_key, pkg);
+            }
 
-    Ok(hashmap)
+            Ok(hashmap)
+        })
+        .await
 }
