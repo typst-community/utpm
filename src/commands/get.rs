@@ -1,81 +1,14 @@
-use std::collections::HashMap;
-
-use fmt_derive::Display;
-use serde::{Deserialize, Serialize};
-use toml::to_string_pretty;
 use tracing::instrument;
 
-use crate::{build, utils::state::Result, utpm_log};
+use crate::{
+    utils::{
+        registry::{get_all_packages, get_packages_name_version},
+        state::Result,
+    },
+    utpm_log,
+};
 
 use super::GetArgs;
-
-#[derive(Debug, Deserialize, Serialize, Clone, Display)]
-#[display("{}", to_string_pretty(self).unwrap())]
-pub struct RawPackage {
-    pub name: String,
-    pub version: String,
-    pub entrypoint: String,
-    pub authors: Vec<String>,
-    pub license: String,
-    pub description: String,
-    pub homepage: Option<String>,
-    pub repository: Option<String>,
-    pub keywords: Option<Vec<String>>,
-    pub categories: Option<Vec<String>>,
-    pub disciplines: Option<Vec<String>>,
-    pub compiler: Option<String>,
-    pub exclude: Option<Vec<String>>,
-    #[serde(rename = "updatedAt")]
-    pub updated_at: i64,
-}
-
-/// Fetches all packages from the Typst Universe registry.
-///
-/// # Returns
-/// A vector of all available packages from `packages.typst.org`.
-///
-/// # Errors
-/// Returns an error if the HTTP request fails or the response cannot be parsed.
-pub async fn get_all_packages() -> Result<Vec<RawPackage>> {
-    let client = reqwest::Client::new();
-
-    let packages: Vec<RawPackage> = client
-        .get("https://packages.typst.org/preview/index.json")
-        .header(
-            reqwest::header::USER_AGENT,
-            format!("utpm/{}", build::PKG_VERSION),
-        )
-        .send()
-        .await?
-        .json::<Vec<RawPackage>>()
-        .await?;
-    Ok(packages)
-}
-
-/// Fetches all packages and creates a hashmap for lookup by name or name:version.
-///
-/// # Returns
-/// A hashmap where keys can be either:
-/// - Package name (e.g., "mypackage") - returns the latest version
-/// - Package name with version (e.g., "mypackage:1.0.0") - returns that specific version
-///
-/// # Errors
-/// Returns an error if the HTTP request fails or the response cannot be parsed.
-pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> {
-    let packages: Vec<RawPackage> = get_all_packages().await?;
-    let mut hashmap: HashMap<String, RawPackage> = HashMap::with_capacity(packages.len() * 2);
-
-    for pkg in packages {
-        // Insert by name (latest version)
-        let name = pkg.name.clone();
-        let version_key = format!("{}:{}", pkg.name, pkg.version);
-
-        hashmap.insert(name, pkg.clone());
-        hashmap.insert(version_key, pkg);
-    }
-
-    Ok(hashmap)
-}
 
 /// Retrieves and displays package information from the Typst Universe registry.
 ///
@@ -85,7 +18,7 @@ pub async fn get_packages_name_version() -> Result<HashMap<String, RawPackage>> 
 pub async fn run(cmd: &GetArgs) -> Result<bool> {
     utpm_log!(trace, "executing get command");
     if !cmd.packages.is_empty() {
-        let packages: HashMap<String, RawPackage> = get_packages_name_version().await?;
+        let packages = get_packages_name_version().await?;
         for e in &cmd.packages {
             if !packages.contains_key(e) {
                 utpm_log!(warn, "Package not found", "input" => e);
