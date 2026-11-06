@@ -42,7 +42,10 @@
 
           default = craneLib.buildPackage {
             buildInputs = [ pkgs.openssl ];
-            nativeBuildInputs = [ pkgs.pkg-config  ];
+            nativeBuildInputs = [
+              pkgs.pkg-config
+              pkgs.git
+            ];
             OPENSSL_NO_VENDOR = 1;
             inherit cargoArtifacts src;
             meta = {
