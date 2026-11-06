@@ -8,11 +8,11 @@ use typst_syntax::package::PackageVersion;
 use std::result::Result as R;
 
 use crate::{
-    commands::get::get_packages_name_version,
     path,
     utils::{
         dryrun::get_dry_run,
         paths::{get_current_dir, package_path},
+        registry::get_packages_name_version,
         state::Result,
     },
     utpm_bail, utpm_log,
