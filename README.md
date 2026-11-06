@@ -133,6 +133,12 @@ Permanent installation in `flake.nix`:
 }
 ```
 
+Or add the overlay to get `pkgs.utpm`, built with your own nixpkgs:
+```nix
+nixpkgs.overlays = [ inputs.utpm.overlays.default ];
+environment.systemPackages = [ pkgs.utpm ];
+```
+
 ##### Without Flakes
 
 ```bash
