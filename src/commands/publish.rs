@@ -113,10 +113,12 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     // --- File Preparation ---
     // Download or update the typst/packages repository.
 
-    match pull_git() {
-        Ok(_) => Ok(true),
-        Err(_) => clone_git(&packages_path.to_string_lossy(), fork.as_str(), None),
-    }?;
+    if packages_path.join(".git").exists() {
+        pull_git()?;
+    } else {
+        create_dir_all(&packages_path)?;
+        clone_git(fork.as_str(), &packages_path.to_string_lossy(), None)?;
+    }
     utpm_log!(
         info,
         "Path to the new package {}",
