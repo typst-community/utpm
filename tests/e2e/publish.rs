@@ -140,3 +140,32 @@ fn publish_pushes_package_branch_and_updates_it_on_rerun() {
         "my-pkg:0.1.0"
     );
 }
+
+#[test]
+fn publish_commits_with_the_identity_of_the_package_repository() {
+    let sb = Sandbox::new();
+    write_package(&sb);
+    let fork = fake_fork(&sb);
+    git(&sb.project(), &["init", "-q"]);
+    git(&sb.project(), &["config", "user.name", "Package Author"]);
+    git(
+        &sb.project(),
+        &["config", "user.email", "author@example.com"],
+    );
+
+    sb.utpm_with(
+        &["prj", "publish", "--fork", fork.to_str().unwrap()],
+        |cmd| {
+            cmd.env_remove("UTPM_GITHUB_TOKEN");
+            for (var, _) in GIT_IDENTITY {
+                cmd.env_remove(var);
+            }
+        },
+    )
+    .success();
+
+    assert_eq!(
+        git(&fork, &["log", "-1", "--format=%an <%ae>", "my-pkg-0.1.0"]),
+        "Package Author <author@example.com>"
+    );
+}

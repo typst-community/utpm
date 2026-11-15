@@ -79,10 +79,10 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     git(&checkout, &["add", &package_dir])?;
-    git(
-        &checkout,
-        &["commit", "-m", cmd.message.as_deref().unwrap_or(&title)],
-    )?;
+    let identity = commit_identity(&project_dir);
+    let mut commit: Vec<&str> = identity.iter().map(String::as_str).collect();
+    commit.extend(["commit", "-m", cmd.message.as_deref().unwrap_or(&title)]);
+    git(&checkout, &commit)?;
     // Each run rebuilds the branch, so a later run replaces the earlier commit.
     git(
         &checkout,
@@ -233,6 +233,21 @@ fn prepare_branch(checkout: &Path, fork: &str, package_dir: &str, branch: &str) 
         checkout,
         &["checkout", "--force", "-B", branch, "origin/main"],
     )
+}
+
+/// `-c` options that commit as the git identity configured for `project_dir`.
+///
+/// The checkout lives in UTPM's data directory, where directory-based git
+/// config (`includeIf "gitdir:..."`) of the user may not apply.
+fn commit_identity(project_dir: &Path) -> Vec<String> {
+    ["user.name", "user.email"]
+        .into_iter()
+        .filter_map(|key| {
+            let value = git_output(project_dir, &["config", key]).ok()?;
+            Some(["-c".to_string(), format!("{key}={value}")])
+        })
+        .flatten()
+        .collect()
 }
 
 /// Opens the pull request, or returns the open one for `head`.
