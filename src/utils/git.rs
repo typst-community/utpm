@@ -1,5 +1,5 @@
-//! Git integration helpers (detect, clone/pull/push, add/commit) built on
-//! shelling out to the `git` CLI. A global state holds the project directory.
+//! Git integration helpers built on shelling out to the `git` CLI. A global
+//! state holds the project directory.
 
 use crate::{
     utils::{paths::get_current_dir, state::Result},
@@ -7,8 +7,8 @@ use crate::{
 };
 use std::{
     io,
-    path::PathBuf,
-    process::Command,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
     sync::{Mutex, OnceLock},
 };
 
@@ -55,44 +55,29 @@ pub fn exist_git() -> Result<bool> {
     }
 }
 
-/// Run `git push origin main` in the project directory.
-///
-/// Returns Ok(true) if the process launches; bubbles categorized errors otherwise.
-pub fn push_git() -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("push")
-        .arg("origin")
-        .arg("main")
-        .status()
-    {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
+/// Runs `git <args>` in `dir`, failing unless git exits successfully.
+pub fn git(dir: &Path, args: &[&str]) -> Result<()> {
+    git_output(dir, args).map(drop)
 }
 
-/// Run `git pull origin main` in the project directory.
-///
-/// Returns Ok(true) if git exits successfully; a categorized error if git
-/// cannot be launched or exits with a non-zero status.
-pub fn pull_git() -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("pull")
-        .arg("origin")
-        .arg("main")
-        .status()
+/// Like [`git`], but returns git's trimmed standard output.
+pub fn git_output(dir: &Path, args: &[&str]) -> Result<String> {
+    let output = match Command::new("git")
+        .current_dir(dir)
+        .args(args)
+        .stderr(Stdio::inherit())
+        .output()
     {
-        Ok(status) if status.success() => Ok(true),
-        Ok(status) => {
-            utpm_bail!(Git, format!("'git pull' failed with status: {status}"))
-        },
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
+        Ok(output) => output,
+        Err(e) => utpm_bail!(Git, e.to_string()),
+    };
+    if !output.status.success() {
+        utpm_bail!(
+            Git,
+            format!("'git {}' failed: {}", args.join(" "), output.status)
+        );
     }
+    Ok(String::from_utf8(output.stdout)?.trim().to_string())
 }
 
 /// Run `git clone [-b <branch>] <url> <path>` in the project directory.
@@ -120,41 +105,6 @@ pub fn clone_git(repository: &str, path: &str, branch: Option<&str>) -> Result<b
         Ok(status) => {
             utpm_bail!(Git, format!("'git clone' failed: {status}"))
         },
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
-}
-
-/// Run `git add <path>` in the project directory.
-///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
-pub fn add_git(path: &str) -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("add")
-        .arg(path)
-        .status()
-    {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
-}
-
-/// Run `git commit -m <msg>` in the project directory.
-///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
-pub fn commit_git(msg: &str) -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("commit")
-        .arg("-m")
-        .arg(msg)
-        .status()
-    {
-        Ok(_) => Ok(true),
         Err(e) => {
             utpm_bail!(Git, e.to_string())
         },

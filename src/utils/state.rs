@@ -111,6 +111,17 @@ pub enum UtpmError {
     #[error("Can't find {0} file in {1}. Did you omit it in your ignored files?")]
     OmitedEntryfile(String, String),
 
+    #[error(
+        "No fork of typst/packages found.\nFork https://github.com/typst/packages on GitHub, then run publish again with `--fork <url of your fork>` (needed only once), or set UTPM_GITHUB_TOKEN to let UTPM find or create the fork."
+    )]
+    NoFork,
+
+    #[error("--create-pr needs a GitHub token in UTPM_GITHUB_TOKEN.")]
+    MissingGithubToken,
+
+    #[error("--create-pr needs a fork hosted on github.com, but the fork is {0}.")]
+    ForkNotOnGithub(String),
+
     /// An error when a specified package does not exist.
     #[error(
         "Package not found.\n\nPossible causes:\n  - Package doesn't exist in your local storage\n  - Package name or version is incorrect\n  - Package is not published yet\n\nCheck available packages:\n  - Local: utpm pkg list\n  - Remote: https://typst.app/universe"
@@ -186,6 +197,9 @@ impl UtpmError {
             ReqwestError(_) => "ReqwestError",
             FromUTF8Error(_) => "FromUTF8Error",
             GitNotFound => "GitNotFound",
+            NoFork => "NoFork",
+            MissingGithubToken => "MissingGithubToken",
+            ForkNotOnGithub(_) => "ForkNotOnGithub",
             PackageFormatError => "PackageFormatError",
             NoFiles => "NoFiles",
             OmitedTypstFile(_) => "OmitedTypstFile",

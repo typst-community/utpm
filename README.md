@@ -218,7 +218,7 @@ VERSION=$(utpm prj metadata -f version)
 | `bump` | `b` | Bump package version (supports semantic versioning) |
 | `sync` | `s` | Sync dependencies to latest versions |
 | `metadata` | `m` | Extract metadata for scripts and automation |
-| `publish` | `p` | 🚧 Publish to Typst Universe _(coming soon)_ |
+| `publish` | `p` | Submit to Typst Universe through your fork _(experimental)_ |
 
 #### Package Management (`utpm pkg`)
 

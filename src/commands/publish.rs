@@ -1,252 +1,277 @@
-use crate::utils::git::{add_git, clone_git, commit_git, exist_git, project, pull_git, push_git};
-use crate::utils::state::Result;
-use crate::utils::{regex_package, try_find};
-use crate::utpm_log;
+//! Submits a package to Typst Universe
+
 use std::env;
-use std::fs::{copy, create_dir_all};
-use std::path::PathBuf;
-use std::result::Result as R;
-
-use crate::path;
-use crate::utils::paths::{MANIFEST_FILE, get_current_dir};
-use crate::utils::paths::{TYPST_PACKAGE_URL, check_path_file, has_content, local_package_path};
-use crate::utpm_bail;
-use ignore::overrides::OverrideBuilder;
-use octocrab::Octocrab;
-use octocrab::models::{Author, UserProfile};
-use tracing::instrument;
-use typst_syntax::package::PackageManifest;
-
-use super::PublishArgs;
+use std::fs::{copy, create_dir_all, read_to_string, remove_dir_all};
+use std::io::IsTerminal;
+use std::path::{Component, Path, PathBuf};
+use std::str::FromStr;
 
 use ignore::WalkBuilder;
+use ignore::overrides::OverrideBuilder;
+use octocrab::Octocrab;
+use octocrab::params::State;
+use tracing::instrument;
+use typst_syntax::package::{PackageManifest, PackageSpec};
+use url::Url;
 
-/// Publishes a package to the typst universe.
-///
-/// This involves:
-/// - Forking the `typst/packages` repository if not already forked.
-/// - Cloning or updating the forked repository.
-/// - Copying the package files to the repository.
-/// - Committing and pushing the changes.
-/// - Creating a pull request to the `typst/packages` repository.
+use super::PublishArgs;
+use crate::utils::dryrun::get_dry_run;
+use crate::utils::git::{exist_git, git, git_output};
+use crate::utils::paths::{MANIFEST_FILE, check_path_file, get_current_dir, local_package_path};
+use crate::utils::state::{Result, UtpmError};
+use crate::utils::try_find;
+use crate::{utpm_bail, utpm_log};
+
+const UPSTREAM_OWNER: &str = "typst";
+const UPSTREAM_REPO: &str = "packages";
+
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
-    // TODO: Dry run
-    utpm_log!(trace, "executing publish command");
-    // TODO: Ensure there are files in the package before publishing.
+    let project_dir = match &cmd.path {
+        Some(path) => path.clone(),
+        None => get_current_dir()?,
+    };
+    let manifest: PackageManifest = try_find(&project_dir)?;
+    let spec = PackageSpec::from_str(&format!(
+        "@preview/{}:{}",
+        manifest.package.name, manifest.package.version
+    ))
+    .map_err(|_| UtpmError::PackageFormatError)?;
+
+    let files = package_files(&project_dir, &manifest, cmd)?;
+    check_package(&project_dir, &files, &manifest.package.entrypoint)?;
+
+    if get_dry_run() {
+        utpm_log!(info, "Would submit {} with these files:", spec);
+        for file in &files {
+            utpm_log!(info, "  {}", file.display());
+        }
+        return Ok(true);
+    }
+
     exist_git()?;
-    let config: PackageManifest = try_find(get_current_dir()?)?;
-    utpm_log!(info, "Manifest load");
-
-    let path_curr: &PathBuf = if let Some(path) = &cmd.path {
-        path
-    } else {
-        &get_current_dir()?
-    };
-    utpm_log!(info, "Path: {}", path_curr.display());
-
-    let version: String = config.package.version.to_string();
-    let name: String = config.package.name.into();
-    let re: regex::Regex = regex_package();
-
-    let package_format = format!("@preview/{name}:{version}");
-    utpm_log!(info, "Package: {}", package_format);
-
-    if !re.is_match(package_format.as_str()) {
-        utpm_bail!(PackageFormatError); // TODO: Improve error handling.
+    let token = env::var("UTPM_GITHUB_TOKEN").ok();
+    if cmd.create_pr && token.is_none() {
+        utpm_bail!(MissingGithubToken);
     }
 
-    let packages_path = local_package_path()?;
-    let new_package_path = path!(&packages_path, "packages", "preview", &name, &version);
+    let checkout = local_package_path()?;
+    let fork = resolve_fork(cmd.fork.as_deref(), &checkout, token.as_deref()).await?;
+    let owner = github_owner(&fork);
+    if cmd.create_pr && owner.is_none() {
+        utpm_bail!(ForkNotOnGithub, fork);
+    }
 
-    // --- GitHub Handling ---
-    let crab = Octocrab::builder()
-        .personal_token(
-            env::var("UTPM_GITHUB_TOKEN")
-                .expect("Should have a github token in \"UTPM_GITHUB_TOKEN\""),
+    let title = format!("{}:{}", spec.name, spec.version);
+    let branch = format!("{}-{}", spec.name, spec.version);
+    let package_dir = format!("packages/preview/{}/{}", spec.name, spec.version);
+
+    prepare_branch(&checkout, &fork, &package_dir, &branch)?;
+
+    let target = checkout.join(&package_dir);
+    if target.exists() {
+        remove_dir_all(&target)?;
+    }
+    for file in &files {
+        let dest = target.join(file);
+        create_dir_all(dest.parent().unwrap_or(&target))?;
+        copy(project_dir.join(file), dest)?;
+    }
+
+    git(&checkout, &["add", &package_dir])?;
+    git(
+        &checkout,
+        &["commit", "-m", cmd.message.as_deref().unwrap_or(&title)],
+    )?;
+    // Each run rebuilds the branch, so a later run replaces the earlier commit.
+    git(
+        &checkout,
+        &[
+            "push",
+            "--force-with-lease",
+            "--set-upstream",
+            "origin",
+            &branch,
+        ],
+    )?;
+
+    let Some(owner) = owner else {
+        utpm_log!(
+            info,
+            "Pushed branch {} to {}. Open a pull request from it against typst/packages.",
+            branch,
+            fork
+        );
+        return Ok(true);
+    };
+    let head = format!("{owner}:{branch}");
+
+    if let Some(token) = token.filter(|_| cmd.create_pr) {
+        let body =
+            read_to_string(checkout.join(".github/pull_request_template.md")).unwrap_or_default();
+        let url = create_pull_request(&token, &head, &title, &body).await?;
+        utpm_log!(info, "Pull request: {}", url);
+    } else {
+        let url = Url::parse_with_params(
+            &format!("https://github.com/{UPSTREAM_OWNER}/{UPSTREAM_REPO}/compare/main...{head}"),
+            &[("expand", "1"), ("title", &title)],
         )
-        .build()
-        .unwrap();
-
-    // Check if a fork of typst/packages already exists.
-    let pages = match crab
-        .current()
-        .list_repos_for_authenticated_user()
-        .visibility("public")
-        .send()
-        .await
-    {
-        Ok(a) => a,
-        Err(_) => todo!(), // TODO: Better error handling
-    };
-
-    let repo: Option<&octocrab::models::Repository> = pages.items.iter().find(|f| match &f.forks_url {
-        None=>"",
-        Some(a) => a.as_str()
-    } == TYPST_PACKAGE_URL );
-
-    let fork: String;
-    let name_package = format!("{}-{}", name.clone(), config.package.version);
-
-    if let Some(rep) = repo {
-        fork = rep.url.clone().into();
-    } else {
-        // If no fork exists, create one.
-        // Format into: "mypackage-1.0.0" as GitHub doesn't allow ':' in repo names.
-        match crab
-            .repos("typst", "packages")
-            .create_fork()
-            .name(&name_package)
-            .send()
-            .await
-        {
-            Ok(val) => fork = format!("git@github.com:{}.git", val.full_name.expect("Didn't fork")),
-            Err(err) => {
-                utpm_log!("{:?}", err);
-                utpm_bail!(OctoCrab, err);
-            },
-        };
+        .map_err(anyhow::Error::from)?;
+        utpm_log!(
+            info,
+            "Pushed. Complete the checklist and create the pull request at:\n{}",
+            url
+        );
+        if std::io::stdout().is_terminal() {
+            let _ = open::that_detached(url.as_str());
+        }
     }
 
-    project().lock().unwrap().0 = packages_path.clone();
+    Ok(true)
+}
 
-    // --- File Preparation ---
-    // Download or update the typst/packages repository.
-
-    if packages_path.join(".git").exists() {
-        pull_git()?;
-    } else {
-        create_dir_all(&packages_path)?;
-        clone_git(fork.as_str(), &packages_path.to_string_lossy(), None)?;
+/// Lists the files to submit, relative to `project_dir`.
+fn package_files(
+    project_dir: &Path,
+    manifest: &PackageManifest,
+    cmd: &PublishArgs,
+) -> Result<Vec<PathBuf>> {
+    let mut overrides = OverrideBuilder::new(project_dir);
+    for exclude in manifest.package.exclude.iter() {
+        overrides.add(&format!("!{exclude}"))?;
     }
-    utpm_log!(
-        info,
-        "Path to the new package {}",
-        new_package_path.display()
-    );
 
-    // Use WalkBuilder to respect ignore files.
-    let mut wb: WalkBuilder = WalkBuilder::new(path_curr);
-    let mut overr: OverrideBuilder = OverrideBuilder::new(path_curr);
-
-    // Add excludes from the manifest to the override builder.
-    for exclude in config.package.exclude.iter() {
-        overr.add(&format!("!{}", exclude))?;
-    }
-    wb.overrides(overr.build()?);
-
-    // Configure which ignore files to use.
-    wb.ignore(cmd.ignore)
+    let mut walk = WalkBuilder::new(project_dir);
+    walk.overrides(overrides.build()?)
+        .ignore(cmd.ignore)
         .git_ignore(cmd.git_ignore)
         .git_global(cmd.git_global_ignore)
         .git_exclude(cmd.git_exclude);
-    utpm_log!(info,
-        "git_ignore" => cmd.git_ignore,
-        "git_global_ignore" => cmd.git_global_ignore,
-        "git_exclude" => cmd.git_exclude
-    );
-
-    // Add .typstignore if it exists and is enabled.
-    if cmd.typst_ignore && check_path_file(path!(path_curr, ".typstignore")) {
-        utpm_log!(info, "Added .typstignore");
-        wb.add_custom_ignore_filename(".typstignore");
+    if cmd.typst_ignore {
+        walk.add_custom_ignore_filename(".typstignore");
     }
-
-    // Add custom ignore file if specified.
     if let Some(custom_ignore) = &cmd.custom_ignore
-        && let Some(filename) = custom_ignore.file_name().and_then(|f| f.to_str())
+        && check_path_file(custom_ignore)
+        && let Some(name) = custom_ignore.file_name()
     {
-        utpm_log!(info, "Trying a new ignore file", "custom_ignore" => filename);
-        if check_path_file(custom_ignore) {
-            utpm_log!(info, "File exist, adding it", "custom_ignore" => filename);
-            wb.add_custom_ignore_filename(filename);
-        }
+        walk.add_custom_ignore_filename(name);
     }
 
-    // --- Copy Files ---
-    for result in wb.build().collect::<R<Vec<_>, _>>()? {
-        if let Some(file_type) = result.file_type() {
-            let path = result.path();
-            let relative = path
-                .strip_prefix(path_curr)
-                .map_err(|e| anyhow::anyhow!("Failed to strip prefix: {}", e))?;
-            let dest_path = path!(&new_package_path, relative);
-            utpm_log!("{}", dest_path.display());
-            if file_type.is_dir() {
-                create_dir_all(&dest_path)?;
-            } else {
-                copy(path, &dest_path)?;
-            }
+    let mut files = vec![];
+    for entry in walk.build() {
+        let entry = entry?;
+        if entry.file_type().is_some_and(|t| t.is_file()) {
+            let relative = entry
+                .path()
+                .strip_prefix(project_dir)
+                .map_err(anyhow::Error::from)?;
+            files.push(relative.to_path_buf());
         }
     }
+    files.sort();
+    Ok(files)
+}
 
-    // --- Validation ---
-    if !has_content(&new_package_path)? {
+fn check_package(project_dir: &Path, files: &[PathBuf], entrypoint: &str) -> Result<()> {
+    let dir = project_dir.display().to_string();
+    if files.is_empty() {
         utpm_bail!(NoFiles);
     }
-    let manifest_check = path!(&new_package_path, MANIFEST_FILE);
-    if !check_path_file(&manifest_check) {
-        utpm_bail!(OmitedTypstFile, new_package_path.display().to_string());
+    if !files.iter().any(|file| file == Path::new(MANIFEST_FILE)) {
+        utpm_bail!(OmitedTypstFile, dir);
     }
-    let entry = config.package.entrypoint;
-    let entryfile = path!(&new_package_path, entry.as_str());
-    let entrystr = entry.to_string();
-    utpm_log!(trace, "entryfile" => entrystr);
-    if !check_path_file(&entryfile) {
-        utpm_bail!(
-            OmitedEntryfile,
-            entrystr,
-            new_package_path.display().to_string()
-        );
+    let entrypoint_path: PathBuf = Path::new(entrypoint)
+        .components()
+        .filter(|c| *c != Component::CurDir)
+        .collect();
+    if !files.contains(&entrypoint_path) {
+        utpm_bail!(OmitedEntryfile, entrypoint.to_string(), dir);
     }
-    utpm_log!(info, "files copied to {}", new_package_path.display());
+    Ok(())
+}
 
-    // --- Git Push ---
-    utpm_log!(info, "Getting information from github");
-    let author_user: Author = crab.current().user().await?;
-    let user: UserProfile = crab.users_by_id(author_user.id).profile().await?;
-    let us = &user;
-    utpm_log!(info,
-        "email" => us.email,
-        "id" => us.id.to_string(),
-        "name" => us.name.clone().unwrap()
-    );
-
-    let name_replaced = name_package.replace('-', ":");
-    let msg = cmd
-        .message
-        .clone()
-        .unwrap_or(format!("{} using utpm", name_replaced));
-
-    project().lock().unwrap().0 = new_package_path;
-
-    add_git(".")?;
-    commit_git(&msg)?;
-    push_git()?;
-    utpm_log!(info, "Ended push");
-
-    // --- Pull Request ---
-    crab.pulls("typst", "packages")
-        .create(name_replaced.as_str(), format!("{}:main", us.name.clone().unwrap()), "base")
-        .body(r#"I am submitting
-- [ ] a new package
-- [ ] an update for a package
-
-
-Description: Explain what the package does and why it's useful.
-
-I have read and followed the submission guidelines and, in particular, I
-- [ ] selected a name that isn't the most obvious or canonical name for what the package does
-- [ ] added a `typst.toml` file with all required keys
-- [ ] added a `README.md` with documentation for my package
-- [ ] have chosen a license and added a `LICENSE` file or linked one in my `README.md`
-- [ ] tested my package locally on my system and it worked
-- [ ] `exclude`d PDFs or README images, if any, but not the LICENSE
-
-- [ ] ensured that my package is licensed such that users can use and distribute the contents of its template directory without restriction, after modifying them through normal use.
-"#) // TODO: Improve PR body.
+/// Picks the fork from, in order: `--fork`, the existing checkout, the GitHub API.
+async fn resolve_fork(fork: Option<&str>, checkout: &Path, token: Option<&str>) -> Result<String> {
+    if let Some(fork) = fork {
+        return Ok(fork.to_string());
+    }
+    if checkout.join(".git").exists() {
+        return git_output(checkout, &["remote", "get-url", "origin"]);
+    }
+    let Some(token) = token else {
+        utpm_bail!(NoFork);
+    };
+    let crab = Octocrab::builder()
+        .personal_token(token.to_string())
+        .build()?;
+    let repo = crab
+        .repos(UPSTREAM_OWNER, UPSTREAM_REPO)
+        .create_fork()
         .send()
         .await?;
+    repo.ssh_url.ok_or(UtpmError::NoFork)
+}
 
-    Ok(true)
+/// Checks out a fresh `branch` from the fork's `main` in `checkout`, limited to
+/// `package_dir` and the PR template.
+fn prepare_branch(checkout: &Path, fork: &str, package_dir: &str, branch: &str) -> Result<()> {
+    if checkout.join(".git").exists() {
+        git(checkout, &["remote", "set-url", "origin", fork])?;
+    } else {
+        create_dir_all(checkout)?;
+        git(
+            checkout,
+            &["clone", "--filter=tree:0", "--no-checkout", fork, "."],
+        )?;
+    }
+    git(checkout, &["fetch", "origin"])?;
+    git(
+        checkout,
+        &["sparse-checkout", "set", package_dir, ".github"],
+    )?;
+    git(
+        checkout,
+        &["checkout", "--force", "-B", branch, "origin/main"],
+    )
+}
+
+/// Opens the pull request, or returns the open one for `head`.
+async fn create_pull_request(token: &str, head: &str, title: &str, body: &str) -> Result<String> {
+    let crab = Octocrab::builder()
+        .personal_token(token.to_string())
+        .build()?;
+    let pulls = crab.pulls(UPSTREAM_OWNER, UPSTREAM_REPO);
+    let existing = pulls.list().head(head).state(State::Open).send().await?;
+    let pr = match existing.items.into_iter().next() {
+        Some(pr) => pr,
+        None => pulls.create(title, head, "main").body(body).send().await?,
+    };
+    Ok(pr.html_url.map(String::from).unwrap_or_default())
+}
+
+/// The GitHub account owning `fork`, if it is a github.com URL.
+fn github_owner(fork: &str) -> Option<&str> {
+    let path = fork
+        .strip_prefix("git@github.com:")
+        .or_else(|| fork.strip_prefix("ssh://git@github.com/"))
+        .or_else(|| fork.strip_prefix("https://github.com/"))?;
+    path.split('/').next().filter(|owner| !owner.is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::github_owner;
+
+    #[test]
+    fn github_owner_handles_git_url_notations() {
+        for url in [
+            "git@github.com:you/packages.git",
+            "ssh://git@github.com/you/packages.git",
+            "https://github.com/you/packages",
+        ] {
+            assert_eq!(github_owner(url), Some("you"), "{url}");
+        }
+        assert_eq!(github_owner("/tmp/packages.git"), None);
+        assert_eq!(github_owner("https://gitlab.com/you/packages"), None);
+    }
 }
