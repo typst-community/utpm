@@ -215,9 +215,7 @@ async fn resolve_fork(fork: Option<&str>, checkout: &Path, token: Option<&str>) 
     let Some(token) = token else {
         utpm_bail!(NoFork);
     };
-    let crab = Octocrab::builder()
-        .personal_token(token.to_string())
-        .build()?;
+    let crab = github(token)?;
     let repo = crab
         .repos(UPSTREAM_OWNER, UPSTREAM_REPO)
         .create_fork()
@@ -331,9 +329,7 @@ async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result
             struct MergeUpstream {
                 branch: &'static str,
             }
-            let crab = Octocrab::builder()
-                .personal_token(token.to_string())
-                .build()?;
+            let crab = github(token)?;
             let _: serde::de::IgnoredAny = crab
                 .post(
                     format!("/repos/{owner}/{repo}/merge-upstream"),
@@ -374,9 +370,7 @@ fn commit_identity(project_dir: &Path) -> Vec<String> {
 
 /// Opens the pull request, or returns the open one for `head`.
 async fn create_pull_request(token: &str, head: &str, title: &str, body: &str) -> Result<String> {
-    let crab = Octocrab::builder()
-        .personal_token(token.to_string())
-        .build()?;
+    let crab = github(token)?;
     let pulls = crab.pulls(UPSTREAM_OWNER, UPSTREAM_REPO);
     let existing = pulls.list().head(head).state(State::Open).send().await?;
     let pr = match existing.items.into_iter().next() {
@@ -384,6 +378,13 @@ async fn create_pull_request(token: &str, head: &str, title: &str, body: &str) -
         None => pulls.create(title, head, "main").body(body).send().await?,
     };
     Ok(pr.html_url.map(String::from).unwrap_or_default())
+}
+
+/// A GitHub API client that authenticates with `token`.
+fn github(token: &str) -> Result<Octocrab> {
+    Ok(Octocrab::builder()
+        .personal_token(token.to_string())
+        .build()?)
 }
 
 /// Owner and name of `fork`, if it is a github.com URL.

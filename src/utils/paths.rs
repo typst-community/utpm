@@ -8,8 +8,6 @@ use crate::path;
 
 use super::state::{Result, UtpmError};
 
-/// The URL for the official typst packages repository.
-pub const TYPST_PACKAGE_URL: &str = "https://github.com/typst/packages";
 /// The subdirectory for UTPM's own data files.
 pub const UTPM_SUBDIR: &str = "utpm";
 /// The name of the manifest file.
