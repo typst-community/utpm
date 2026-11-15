@@ -80,6 +80,23 @@ pub fn git_output(dir: &Path, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8(output.stdout)?.trim().to_string())
 }
 
+/// Runs `git <args>` in `dir` without output or prompts, and reports whether
+/// git exited successfully.
+pub fn git_succeeds(dir: &Path, args: &[&str]) -> Result<bool> {
+    match Command::new("git")
+        .current_dir(dir)
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+    {
+        Ok(status) => Ok(status.success()),
+        Err(e) => utpm_bail!(Git, e.to_string()),
+    }
+}
+
 /// Run `git clone [-b <branch>] <url> <path>` in the project directory.
 ///
 /// Arguments:

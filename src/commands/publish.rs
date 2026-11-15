@@ -5,6 +5,7 @@ use std::fs::{copy, create_dir_all, read_to_string, remove_dir_all};
 use std::io::IsTerminal;
 use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
+use std::time::{Duration, Instant};
 
 use ignore::WalkBuilder;
 use ignore::overrides::OverrideBuilder;
@@ -16,7 +17,7 @@ use url::Url;
 
 use super::PublishArgs;
 use crate::utils::dryrun::get_dry_run;
-use crate::utils::git::{exist_git, git, git_output};
+use crate::utils::git::{exist_git, git, git_output, git_succeeds};
 use crate::utils::paths::{MANIFEST_FILE, check_path_file, get_current_dir, local_package_path};
 use crate::utils::state::{Result, UtpmError};
 use crate::utils::try_find;
@@ -26,6 +27,14 @@ const UPSTREAM_OWNER: &str = "typst";
 const UPSTREAM_REPO: &str = "packages";
 const UPSTREAM_URL_ENV: &str = "UTPM_PACKAGES_UPSTREAM";
 const UPSTREAM_URL: &str = "https://github.com/typst/packages.git";
+const TOKEN_ENV: &str = "UTPM_GITHUB_TOKEN";
+const GITHUB_CREDENTIALS: [&str; 4] = [
+    "-c",
+    "credential.https://github.com.helper=",
+    "-c",
+    "credential.https://github.com.helper=!f() { test \"$1\" = get && echo username=x-access-token && echo \"password=$UTPM_GITHUB_TOKEN\"; }; f",
+];
+const FORK_READY_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
@@ -52,7 +61,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     exist_git()?;
-    let token = env::var("UTPM_GITHUB_TOKEN").ok();
+    let token = env::var(TOKEN_ENV).ok();
     if cmd.create_pr && token.is_none() {
         utpm_bail!(MissingGithubToken);
     }
@@ -88,13 +97,16 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     // Each run rebuilds the branch, so a later run replaces the earlier commit.
     git(
         &checkout,
-        &[
-            "push",
-            "--force-with-lease",
-            "--set-upstream",
-            "origin",
-            &branch,
-        ],
+        &with_token(
+            token.as_deref(),
+            &[
+                "push",
+                "--force-with-lease",
+                "--set-upstream",
+                "origin",
+                &branch,
+            ],
+        ),
     )?;
 
     let Some(owner) = owner else {
@@ -211,7 +223,42 @@ async fn resolve_fork(fork: Option<&str>, checkout: &Path, token: Option<&str>) 
         .create_fork()
         .send()
         .await?;
-    repo.ssh_url.ok_or(UtpmError::NoFork)
+    let url = repo.clone_url.ok_or(UtpmError::NoFork)?.to_string();
+    wait_for_fork(&url, token).await?;
+    Ok(url)
+}
+
+/// Waits until `url` serves a `main` branch.
+async fn wait_for_fork(url: &str, token: &str) -> Result<()> {
+    let args = with_token(
+        Some(token),
+        &["ls-remote", "--exit-code", url, "refs/heads/main"],
+    );
+    let dir = env::temp_dir();
+    let deadline = Instant::now() + FORK_READY_TIMEOUT;
+    let mut delay = Duration::from_secs(1);
+    let mut waiting = false;
+    while Instant::now() < deadline {
+        if git_succeeds(&dir, &args)? {
+            return Ok(());
+        }
+        if !waiting {
+            utpm_log!(info, "Waiting for GitHub to create your fork...");
+            waiting = true;
+        }
+        tokio::time::sleep(delay).await;
+        delay = (delay * 2).min(Duration::from_secs(8));
+    }
+    // One last try that shows git error.
+    git(&dir, &args)
+}
+
+/// `args` with the options to log in to github.com with `token`, if there is one.
+fn with_token<'a>(token: Option<&str>, args: &[&'a str]) -> Vec<&'a str> {
+    match token {
+        Some(_) => GITHUB_CREDENTIALS.iter().chain(args).copied().collect(),
+        None => args.to_vec(),
+    }
 }
 
 /// Checks out a fresh `branch` from the fork's `main` in `checkout`, limited to
@@ -229,10 +276,16 @@ async fn prepare_branch(
         create_dir_all(checkout)?;
         git(
             checkout,
-            &["clone", "--filter=tree:0", "--no-checkout", fork, "."],
+            &with_token(
+                token,
+                &["clone", "--filter=tree:0", "--no-checkout", fork, "."],
+            ),
         )?;
     }
-    git(checkout, &["fetch", "--prune", "origin"])?;
+    git(
+        checkout,
+        &with_token(token, &["fetch", "--prune", "origin"]),
+    )?;
     update_fork(checkout, fork, token).await?;
     git(
         checkout,
@@ -288,7 +341,10 @@ async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result
                 )
                 .await?;
             utpm_log!(info, "Synced your fork with typst/packages.");
-            git(checkout, &["fetch", "--prune", "origin"])
+            git(
+                checkout,
+                &with_token(Some(token), &["fetch", "--prune", "origin"]),
+            )
         },
         _ => {
             utpm_log!(
