@@ -232,7 +232,7 @@ async fn prepare_branch(
             &["clone", "--filter=tree:0", "--no-checkout", fork, "."],
         )?;
     }
-    git(checkout, &["fetch", "origin"])?;
+    git(checkout, &["fetch", "--prune", "origin"])?;
     update_fork(checkout, fork, token).await?;
     git(
         checkout,
@@ -288,7 +288,7 @@ async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result
                 )
                 .await?;
             utpm_log!(info, "Synced your fork with typst/packages.");
-            git(checkout, &["fetch", "origin"])
+            git(checkout, &["fetch", "--prune", "origin"])
         },
         _ => {
             utpm_log!(
