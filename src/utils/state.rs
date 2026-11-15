@@ -69,7 +69,7 @@ pub enum UtpmError {
 
     /// An error from the `octocrab` crate for GitHub API interactions.
 
-    #[error("Octocrab error: {0}")]
+    #[error("GitHub API error: {}", github_message(.0))]
     OctoCrab(#[from] octocrab::Error),
 
     /// An unknown or unexpected error.
@@ -115,6 +115,11 @@ pub enum UtpmError {
         "No fork of typst/packages found.\nFork https://github.com/typst/packages on GitHub, then run publish again with `--fork <url of your fork>` (needed only once), or set UTPM_GITHUB_TOKEN to let UTPM find or create the fork."
     )]
     NoFork,
+
+    #[error(
+        "The main branch of your fork has {0} commits that are not in typst/packages, and they would end up in the pull request.\nReset it to the main branch of typst/packages, e.g. with \"Discard commits\" in the \"Sync fork\" menu on GitHub."
+    )]
+    ForkDiverged(usize),
 
     #[error("--create-pr needs a GitHub token in UTPM_GITHUB_TOKEN.")]
     MissingGithubToken,
@@ -198,6 +203,7 @@ impl UtpmError {
             FromUTF8Error(_) => "FromUTF8Error",
             GitNotFound => "GitNotFound",
             NoFork => "NoFork",
+            ForkDiverged(_) => "ForkDiverged",
             MissingGithubToken => "MissingGithubToken",
             ForkNotOnGithub(_) => "ForkNotOnGithub",
             PackageFormatError => "PackageFormatError",
@@ -205,5 +211,13 @@ impl UtpmError {
             OmitedTypstFile(_) => "OmitedTypstFile",
             OmitedEntryfile(_, _) => "OmitedEntryfile",
         }
+    }
+}
+
+/// GitHub's own explanation for a failed API request.
+fn github_message(error: &octocrab::Error) -> String {
+    match error {
+        octocrab::Error::GitHub { source, .. } => source.to_string(),
+        other => other.to_string(),
     }
 }

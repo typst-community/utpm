@@ -25,20 +25,53 @@ fn git(dir: &Path, args: &[&str]) -> String {
     String::from_utf8_lossy(&output.stdout).trim().to_string()
 }
 
-/// Creates a bare repository standing in for the user's fork of typst/packages.
+/// Working copy of the repository standing in for typst/packages.
+fn upstream_seed(sb: &Sandbox) -> PathBuf {
+    sb.home().join("seed")
+}
+
+/// The bare repository standing in for typst/packages, which `publish` reads
+/// through `UTPM_PACKAGES_UPSTREAM`.
+fn upstream(sb: &Sandbox) -> PathBuf {
+    sb.home().join("upstream.git")
+}
+
+/// Commits a file to the upstream stand-in.
+fn commit_upstream(sb: &Sandbox, file: &str) {
+    let seed = upstream_seed(sb);
+    std::fs::write(seed.join(file), file).unwrap();
+    git(&seed, &["add", "."]);
+    git(&seed, &["commit", "-q", "-m", file]);
+    git(&seed, &["push", "-q", "origin", "main"]);
+}
+
+/// Creates the upstream stand-in and a bare repository standing in for the
+/// user's fork of it.
 fn fake_fork(sb: &Sandbox) -> PathBuf {
-    let seed = sb.home().join("seed");
+    let seed = upstream_seed(sb);
     std::fs::create_dir_all(seed.join(".github")).unwrap();
-    std::fs::write(seed.join("README.md"), "packages").unwrap();
     std::fs::write(seed.join(".github/pull_request_template.md"), "checklist").unwrap();
     git(&seed, &["init", "-q", "-b", "main"]);
-    git(&seed, &["add", "."]);
-    git(&seed, &["commit", "-q", "-m", "init"]);
+    git(
+        &sb.home(),
+        &["init", "-q", "--bare", "-b", "main", "upstream.git"],
+    );
+    git(
+        &seed,
+        &["remote", "add", "origin", upstream(sb).to_str().unwrap()],
+    );
+    commit_upstream(sb, "README.md");
 
     let fork = sb.home().join("fork.git");
     git(
         &sb.home(),
-        &["clone", "-q", "--bare", "seed", fork.to_str().unwrap()],
+        &[
+            "clone",
+            "-q",
+            "--bare",
+            "upstream.git",
+            fork.to_str().unwrap(),
+        ],
     );
     fork
 }
@@ -46,6 +79,7 @@ fn fake_fork(sb: &Sandbox) -> PathBuf {
 fn publish(sb: &Sandbox, args: &[&str]) -> Run {
     sb.utpm_with(args, |cmd| {
         cmd.envs(GIT_IDENTITY.iter().copied())
+            .env("UTPM_PACKAGES_UPSTREAM", upstream(sb))
             .env_remove("UTPM_GITHUB_TOKEN");
     })
 }
@@ -156,7 +190,8 @@ fn publish_commits_with_the_identity_of_the_package_repository() {
     sb.utpm_with(
         &["prj", "publish", "--fork", fork.to_str().unwrap()],
         |cmd| {
-            cmd.env_remove("UTPM_GITHUB_TOKEN");
+            cmd.env("UTPM_PACKAGES_UPSTREAM", upstream(&sb))
+                .env_remove("UTPM_GITHUB_TOKEN");
             for (var, _) in GIT_IDENTITY {
                 cmd.env_remove(var);
             }
@@ -168,4 +203,49 @@ fn publish_commits_with_the_identity_of_the_package_repository() {
         git(&fork, &["log", "-1", "--format=%an <%ae>", "my-pkg-0.1.0"]),
         "Package Author <author@example.com>"
     );
+}
+
+#[test]
+fn publish_warns_when_fork_is_behind_without_token() {
+    let sb = Sandbox::new();
+    write_package(&sb);
+    let fork = fake_fork(&sb);
+    commit_upstream(&sb, "newer.md");
+
+    let run = publish(&sb, &["prj", "publish", "--fork", fork.to_str().unwrap()]);
+    run.success();
+    assert!(
+        run.stdout()
+            .contains("Your fork is 1 commits behind typst/packages")
+    );
+}
+
+#[test]
+fn publish_rejects_fork_with_commits_of_its_own() {
+    let sb = Sandbox::new();
+    write_package(&sb);
+    let fork = fake_fork(&sb);
+
+    let clone = sb.home().join("fork-clone");
+    git(
+        &sb.home(),
+        &[
+            "clone",
+            "-q",
+            fork.to_str().unwrap(),
+            clone.to_str().unwrap(),
+        ],
+    );
+    std::fs::write(clone.join("own.md"), "own").unwrap();
+    git(&clone, &["add", "."]);
+    git(&clone, &["commit", "-q", "-m", "own"]);
+    git(&clone, &["push", "-q", "origin", "main"]);
+
+    let run = publish(&sb, &["prj", "publish", "--fork", fork.to_str().unwrap()]);
+    run.failure();
+    assert!(
+        run.stdout()
+            .contains("has 1 commits that are not in typst/packages")
+    );
+    assert_eq!(git(&fork, &["branch", "--list", "my-pkg-0.1.0"]), "");
 }

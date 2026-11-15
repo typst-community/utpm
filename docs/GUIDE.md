@@ -376,7 +376,9 @@ Running it again for the same version updates the branch, and with it the
 pull request.
 
 With a GitHub token in `UTPM_GITHUB_TOKEN`, UTPM can find or create the fork
-itself, and `--create-pr` opens the pull request automatically.
+itself, keeps it in sync with typst/packages, and `--create-pr` opens the pull
+request automatically. The token needs the `repo` and `workflow` scopes, since
+syncing the fork can update the workflow files of typst/packages.
 
 ---
 

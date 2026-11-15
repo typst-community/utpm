@@ -24,6 +24,8 @@ use crate::{utpm_bail, utpm_log};
 
 const UPSTREAM_OWNER: &str = "typst";
 const UPSTREAM_REPO: &str = "packages";
+const UPSTREAM_URL_ENV: &str = "UTPM_PACKAGES_UPSTREAM";
+const UPSTREAM_URL: &str = "https://github.com/typst/packages.git";
 
 #[instrument(skip(cmd))]
 pub async fn run(cmd: &PublishArgs) -> Result<bool> {
@@ -57,7 +59,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
 
     let checkout = local_package_path()?;
     let fork = resolve_fork(cmd.fork.as_deref(), &checkout, token.as_deref()).await?;
-    let owner = github_owner(&fork);
+    let owner = github_repo(&fork).map(|(owner, _)| owner);
     if cmd.create_pr && owner.is_none() {
         utpm_bail!(ForkNotOnGithub, fork);
     }
@@ -66,7 +68,7 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let branch = format!("{}-{}", spec.name, spec.version);
     let package_dir = format!("packages/preview/{}/{}", spec.name, spec.version);
 
-    prepare_branch(&checkout, &fork, &package_dir, &branch)?;
+    prepare_branch(&checkout, &fork, &package_dir, &branch, token.as_deref()).await?;
 
     let target = checkout.join(&package_dir);
     if target.exists() {
@@ -214,7 +216,13 @@ async fn resolve_fork(fork: Option<&str>, checkout: &Path, token: Option<&str>) 
 
 /// Checks out a fresh `branch` from the fork's `main` in `checkout`, limited to
 /// `package_dir` and the PR template.
-fn prepare_branch(checkout: &Path, fork: &str, package_dir: &str, branch: &str) -> Result<()> {
+async fn prepare_branch(
+    checkout: &Path,
+    fork: &str,
+    package_dir: &str,
+    branch: &str,
+    token: Option<&str>,
+) -> Result<()> {
     if checkout.join(".git").exists() {
         git(checkout, &["remote", "set-url", "origin", fork])?;
     } else {
@@ -225,14 +233,72 @@ fn prepare_branch(checkout: &Path, fork: &str, package_dir: &str, branch: &str) 
         )?;
     }
     git(checkout, &["fetch", "origin"])?;
+    update_fork(checkout, fork, token).await?;
     git(
         checkout,
-        &["sparse-checkout", "set", package_dir, ".github"],
+        &[
+            "sparse-checkout",
+            "set",
+            "--sparse-index",
+            package_dir,
+            ".github",
+        ],
     )?;
     git(
         checkout,
         &["checkout", "--force", "-B", branch, "origin/main"],
     )
+}
+
+/// Ensures the fork's `main` only has commits from typst/packages, and brings it
+/// up to date through the GitHub API when a token allows it.
+async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result<()> {
+    let upstream = env::var(UPSTREAM_URL_ENV).unwrap_or_else(|_| UPSTREAM_URL.to_string());
+    git(
+        checkout,
+        &["fetch", "--filter=tree:0", "--no-tags", &upstream, "main"],
+    )?;
+    let count = |range: &str| -> Result<usize> {
+        let count = git_output(checkout, &["rev-list", "--count", range])?;
+        Ok(count.parse().map_err(anyhow::Error::from)?)
+    };
+
+    let own = count("FETCH_HEAD..origin/main")?;
+    if own > 0 {
+        utpm_bail!(ForkDiverged, own);
+    }
+    let behind = count("origin/main..FETCH_HEAD")?;
+    if behind == 0 {
+        return Ok(());
+    }
+
+    match (token, github_repo(fork)) {
+        (Some(token), Some((owner, repo))) => {
+            #[derive(serde::Serialize)]
+            struct MergeUpstream {
+                branch: &'static str,
+            }
+            let crab = Octocrab::builder()
+                .personal_token(token.to_string())
+                .build()?;
+            let _: serde::de::IgnoredAny = crab
+                .post(
+                    format!("/repos/{owner}/{repo}/merge-upstream"),
+                    Some(&MergeUpstream { branch: "main" }),
+                )
+                .await?;
+            utpm_log!(info, "Synced your fork with typst/packages.");
+            git(checkout, &["fetch", "origin"])
+        },
+        _ => {
+            utpm_log!(
+                warn,
+                "Your fork is {} commits behind typst/packages, so the new branch is based on old files. Sync the fork on GitHub, or set UTPM_GITHUB_TOKEN to let UTPM do it.",
+                behind
+            );
+            Ok(())
+        },
+    }
 }
 
 /// `-c` options that commit as the git identity configured for `project_dir`.
@@ -264,29 +330,31 @@ async fn create_pull_request(token: &str, head: &str, title: &str, body: &str) -
     Ok(pr.html_url.map(String::from).unwrap_or_default())
 }
 
-/// The GitHub account owning `fork`, if it is a github.com URL.
-fn github_owner(fork: &str) -> Option<&str> {
+/// Owner and name of `fork`, if it is a github.com URL.
+fn github_repo(fork: &str) -> Option<(&str, &str)> {
     let path = fork
         .strip_prefix("git@github.com:")
         .or_else(|| fork.strip_prefix("ssh://git@github.com/"))
         .or_else(|| fork.strip_prefix("https://github.com/"))?;
-    path.split('/').next().filter(|owner| !owner.is_empty())
+    let (owner, repo) = path.trim_end_matches('/').split_once('/')?;
+    let repo = repo.strip_suffix(".git").unwrap_or(repo);
+    (!owner.is_empty() && !repo.is_empty() && !repo.contains('/')).then_some((owner, repo))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::github_owner;
+    use super::github_repo;
 
     #[test]
-    fn github_owner_handles_git_url_notations() {
+    fn github_repo_handles_git_url_notations() {
         for url in [
             "git@github.com:you/packages.git",
             "ssh://git@github.com/you/packages.git",
             "https://github.com/you/packages",
         ] {
-            assert_eq!(github_owner(url), Some("you"), "{url}");
+            assert_eq!(github_repo(url), Some(("you", "packages")), "{url}");
         }
-        assert_eq!(github_owner("/tmp/packages.git"), None);
-        assert_eq!(github_owner("https://gitlab.com/you/packages"), None);
+        assert_eq!(github_repo("/tmp/packages.git"), None);
+        assert_eq!(github_repo("https://gitlab.com/you/packages"), None);
     }
 }
