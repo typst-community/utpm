@@ -345,12 +345,40 @@ utpm prj bump 0.2.0
 utpm prj bump --patch
 ```
 
-#### 6. Publish (Coming Soon)
+#### 6. Publish (Experimental)
 
-Publishing to Typst Universe is currently in development. For now, share your package via:
-- GitHub repository
-- Manual installation instructions
-- Git-based installation with `utpm pkg install`
+Check what would be submitted first. This lists the files after applying
+`exclude` and ignore files, and checks that `typst.toml` and the entrypoint are
+included. It needs neither git nor a GitHub account:
+
+```bash
+utpm --dry-run prj publish
+```
+
+To submit, you need a fork of [typst/packages](https://github.com/typst/packages).
+Create it on GitHub, then publish:
+
+```bash
+utpm prj publish --fork git@github.com:<you>/packages.git
+```
+
+UTPM pushes the package to the branch `<name>-<version>` of your fork and opens
+GitHub's pull request page, pre-filled with the typst/packages checklist. Work through the checklist, then publish the pull request.
+
+UTPM remembers the `packages` fork, so later
+publishes no longer need the argument:
+
+```bash
+utpm prj publish
+```
+
+Running it again for the same version updates the branch, and with it the
+pull request.
+
+With a GitHub token in `UTPM_GITHUB_TOKEN`, UTPM can find or create the fork
+itself, keeps it in sync with typst/packages, and `--create-pr` opens the pull
+request automatically. The token needs the `repo` and `workflow` scopes, since
+syncing the fork can update the workflow files of typst/packages.
 
 ---
 

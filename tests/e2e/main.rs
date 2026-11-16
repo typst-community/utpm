@@ -9,5 +9,6 @@ mod install;
 mod link;
 mod list;
 mod metadata;
+mod publish;
 mod sync;
 mod unlink;

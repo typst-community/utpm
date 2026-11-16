@@ -232,9 +232,16 @@ pub struct PublishArgs {
     #[arg(short = 'm')]
     message: Option<String>,
 
-    /// Prepare the package for publishing without creating a pull request.
-    #[arg(short = 'p', default_value_t = false)]
-    prepare_only: bool,
+    /// Your fork of typst/packages, e.g. `git@github.com:you/packages.git`.
+    /// Only needed for the first publish; later runs reuse it. Without it,
+    /// UTPM finds or creates the fork using UTPM_GITHUB_TOKEN.
+    #[arg(long)]
+    fork: Option<String>,
+
+    /// Open the pull request directly instead of handing you GitHub's
+    /// pre-filled pull request page. Needs UTPM_GITHUB_TOKEN.
+    #[arg(long, default_value_t = false)]
+    create_pr: bool,
 }
 
 /// Arguments for the `generate` command.

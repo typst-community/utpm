@@ -1,5 +1,5 @@
-//! Git integration helpers (detect, clone/pull/push, add/commit) built on
-//! shelling out to the `git` CLI. A global state holds the project directory.
+//! Git integration helpers built on shelling out to the `git` CLI. A global
+//! state holds the project directory.
 
 use crate::{
     utils::{paths::get_current_dir, state::Result},
@@ -7,8 +7,8 @@ use crate::{
 };
 use std::{
     io,
-    path::PathBuf,
-    process::Command,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
     sync::{Mutex, OnceLock},
 };
 
@@ -55,155 +55,99 @@ pub fn exist_git() -> Result<bool> {
     }
 }
 
-/// Run `git push origin main` in the project directory.
-///
-/// Returns Ok(true) if the process launches; bubbles categorized errors otherwise.
-pub fn push_git() -> Result<bool> {
+/// Runs `git <args>` in `dir`, failing unless git exits successfully.
+pub fn git(dir: &Path, args: &[&str]) -> Result<()> {
+    git_env(dir, args, &[])
+}
+
+/// Like [`git`], with the extra environment variables `env`.
+pub fn git_env(dir: &Path, args: &[&str], env: &[(String, String)]) -> Result<()> {
+    run(dir, args, env).map(drop)
+}
+
+/// Like [`git`], but returns git's trimmed standard output.
+pub fn git_output(dir: &Path, args: &[&str]) -> Result<String> {
+    run(dir, args, &[])
+}
+
+fn run(dir: &Path, args: &[&str], env: &[(String, String)]) -> Result<String> {
+    let output = match Command::new("git")
+        .current_dir(dir)
+        .args(args)
+        .envs(env.iter().map(|(key, value)| (key, value)))
+        .stderr(Stdio::inherit())
+        .output()
+    {
+        Ok(output) => output,
+        Err(e) => utpm_bail!(Git, e.to_string()),
+    };
+    if !output.status.success() {
+        utpm_bail!(
+            Git,
+            format!("'git {}' failed: {}", args.join(" "), output.status)
+        );
+    }
+    Ok(String::from_utf8(output.stdout)?.trim().to_string())
+}
+
+/// Runs `git <args>` in `dir` with the extra environment variables `env`,
+/// without output or prompts, and reports whether git exited successfully.
+pub fn git_succeeds(dir: &Path, args: &[&str], env: &[(String, String)]) -> Result<bool> {
     match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("push")
-        .arg("origin")
-        .arg("main")
+        .current_dir(dir)
+        .args(args)
+        .envs(env.iter().map(|(key, value)| (key, value)))
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()
     {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
+        Ok(status) => Ok(status.success()),
+        Err(e) => utpm_bail!(Git, e.to_string()),
     }
 }
 
-/// Run `git pull origin main` in the project directory.
-///
-/// Returns Ok(true) if the process launches; bubbles errors otherwise.
-pub fn pull_git() -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("pull")
-        .arg("origin")
-        .arg("main")
-        .status()
-    {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
-}
-
-/// Run `git clone [-b <branch>] <url> <path>` in the project directory.
+/// Runs `git clone [-b <branch>] <url> <path>` in the project directory.
 ///
 /// Arguments:
-/// - `string`: repository URL.
+/// - `repository`: repository URL.
 /// - `path`: destination path (relative to project dir or absolute).
 /// - `branch`: optional branch to clone from.
-///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
-pub fn clone_git(string: &str, path: &str, branch: Option<&str>) -> Result<bool> {
-    let mut command = Command::new("git");
-    let mut clone_command = command
-        .current_dir(&project().lock().unwrap().0)
-        .arg("clone");
-
-    // Add `-b <branch>` if one is specified.
+pub fn clone_git(repository: &str, path: &str, branch: Option<&str>) -> Result<()> {
+    let dir = project().lock().unwrap().0.clone();
+    let mut args = vec!["clone"];
     if let Some(branch) = branch {
-        clone_command = clone_command.arg("-b").arg(branch).arg("--single-branch");
+        args.extend(["-b", branch, "--single-branch"]);
     }
-
-    match clone_command.arg(string).arg(path).status() {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
+    args.extend([repository, path]);
+    git(&dir, &args)
 }
 
-/// Run `git add <path>` in the project directory.
-///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
-pub fn add_git(path: &str) -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("add")
-        .arg(path)
-        .status()
-    {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
-}
-
-/// Run `git commit -m <msg>` in the project directory.
-///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
-pub fn commit_git(msg: &str) -> Result<bool> {
-    match Command::new("git")
-        .current_dir(&project().lock().unwrap().0)
-        .arg("commit")
-        .arg("-m")
-        .arg(msg)
-        .status()
-    {
-        Ok(_) => Ok(true),
-        Err(e) => {
-            utpm_bail!(Git, e.to_string())
-        },
-    }
-}
-
-/// Run a combination of `git clone --filter` + `git sparse-checkout` in the project directory.
+/// Clones only `subdir` of a repository, using `git clone --filter` and
+/// `git sparse-checkout`, in the project directory.
 ///
 /// Arguments:
-/// - `string`: repository URL.
+/// - `repository`: repository URL.
 /// - `path`: destination path (relative to project dir or absolute).
 /// - `subdir`: subdirectory to clone.
 /// - `branch`: specific branch to checkout from.
-///
-/// Returns Ok(true) if the process launches; categorized errors otherwise.
 pub fn sparse_checkout_git(
-    string: &str,
+    repository: &str,
     path: &str,
     subdir: &str,
     branch: Option<&str>,
-) -> Result<bool> {
+) -> Result<()> {
     // https://stackoverflow.com/questions/600079/how-do-i-clone-a-subdirectory-only-of-a-git-repository/52269934#52269934
-    // Step 1: Clone with filter and optional branch.
-    let mut command = Command::new("git");
-    let clone_cmd = command
-        .current_dir(&project().lock().unwrap().0)
-        .arg("clone")
-        .arg(string)
-        .arg(path)
-        .arg("--no-checkout")
-        .arg("--depth=1")
-        .arg("--filter=tree:0");
-
-    // Add `-b <branch>` if one is specified.
-    let clone = if let Some(branch) = branch {
-        clone_cmd.args(["-b", branch, "--single-branch"]).status()
-    } else {
-        clone_cmd.status()
-    };
-
-    // Step 2: Sparse checkout in repository directory and match on subdirectory.
-    let sparse_checkout = Command::new("git")
-        .current_dir(PathBuf::from(path))
-        .arg("sparse-checkout")
-        .arg("set")
-        .arg("--no-cone")
-        .arg(subdir)
-        .status();
-
-    // Step 3: Do final checkout.
-    match clone.and(sparse_checkout).and_then(|_| {
-        Command::new("git")
-            .current_dir(PathBuf::from(path))
-            .arg("checkout")
-            .status()
-    }) {
-        Ok(_) => Ok(true),
-        Err(e) => utpm_bail!(Git, e.to_string()),
+    let dir = project().lock().unwrap().0.clone();
+    let mut args = vec!["clone", "--no-checkout", "--depth=1", "--filter=tree:0"];
+    if let Some(branch) = branch {
+        args.extend(["-b", branch, "--single-branch"]);
     }
+    args.extend([repository, path]);
+    git(&dir, &args)?;
+
+    let repo = dir.join(path);
+    git(&repo, &["sparse-checkout", "set", "--no-cone", subdir])?;
+    git(&repo, &["checkout"])
 }

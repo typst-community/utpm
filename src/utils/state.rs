@@ -69,7 +69,7 @@ pub enum UtpmError {
 
     /// An error from the `octocrab` crate for GitHub API interactions.
 
-    #[error("Octocrab error: {0}")]
+    #[error("GitHub API error: {}", github_message(.0))]
     OctoCrab(#[from] octocrab::Error),
 
     /// An unknown or unexpected error.
@@ -110,6 +110,27 @@ pub enum UtpmError {
 
     #[error("Can't find {0} file in {1}. Did you omit it in your ignored files?")]
     OmitedEntryfile(String, String),
+
+    #[error(
+        "No fork of typst/packages found.\nFork https://github.com/typst/packages on GitHub, then run publish again with `--fork <url of your fork>` (needed only once), or set UTPM_GITHUB_TOKEN to let UTPM find or create the fork."
+    )]
+    NoFork,
+
+    #[error(
+        "The main branch of your fork has {0} commits that are not in typst/packages, and they would end up in the pull request.\nReset it to the main branch of typst/packages, e.g. with \"Discard commits\" in the \"Sync fork\" menu on GitHub."
+    )]
+    ForkDiverged(usize),
+
+    #[error("--create-pr needs a GitHub token in UTPM_GITHUB_TOKEN.")]
+    MissingGithubToken,
+
+    #[error(
+        "No git identity to commit the package with.\nSet one with `git config --global user.name \"Your Name\"` and `git config --global user.email you@example.com`, or through the GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL, GIT_COMMITTER_NAME and GIT_COMMITTER_EMAIL environment variables."
+    )]
+    MissingGitIdentity,
+
+    #[error("--create-pr needs a fork hosted on github.com, but the fork is {0}.")]
+    ForkNotOnGithub(String),
 
     /// An error when a specified package does not exist.
     #[error(
@@ -186,10 +207,23 @@ impl UtpmError {
             ReqwestError(_) => "ReqwestError",
             FromUTF8Error(_) => "FromUTF8Error",
             GitNotFound => "GitNotFound",
+            NoFork => "NoFork",
+            ForkDiverged(_) => "ForkDiverged",
+            MissingGithubToken => "MissingGithubToken",
+            MissingGitIdentity => "MissingGitIdentity",
+            ForkNotOnGithub(_) => "ForkNotOnGithub",
             PackageFormatError => "PackageFormatError",
             NoFiles => "NoFiles",
             OmitedTypstFile(_) => "OmitedTypstFile",
             OmitedEntryfile(_, _) => "OmitedEntryfile",
         }
+    }
+}
+
+/// GitHub's own explanation for a failed API request.
+fn github_message(error: &octocrab::Error) -> String {
+    match error {
+        octocrab::Error::GitHub { source, .. } => source.to_string(),
+        other => other.to_string(),
     }
 }
