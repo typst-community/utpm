@@ -124,6 +124,11 @@ pub enum UtpmError {
     #[error("--create-pr needs a GitHub token in UTPM_GITHUB_TOKEN.")]
     MissingGithubToken,
 
+    #[error(
+        "No git identity to commit the package with.\nSet one with `git config --global user.name \"Your Name\"` and `git config --global user.email you@example.com`, or through the GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL, GIT_COMMITTER_NAME and GIT_COMMITTER_EMAIL environment variables."
+    )]
+    MissingGitIdentity,
+
     #[error("--create-pr needs a fork hosted on github.com, but the fork is {0}.")]
     ForkNotOnGithub(String),
 
@@ -205,6 +210,7 @@ impl UtpmError {
             NoFork => "NoFork",
             ForkDiverged(_) => "ForkDiverged",
             MissingGithubToken => "MissingGithubToken",
+            MissingGitIdentity => "MissingGitIdentity",
             ForkNotOnGithub(_) => "ForkNotOnGithub",
             PackageFormatError => "PackageFormatError",
             NoFiles => "NoFiles",

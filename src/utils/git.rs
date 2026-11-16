@@ -57,14 +57,24 @@ pub fn exist_git() -> Result<bool> {
 
 /// Runs `git <args>` in `dir`, failing unless git exits successfully.
 pub fn git(dir: &Path, args: &[&str]) -> Result<()> {
-    git_output(dir, args).map(drop)
+    git_env(dir, args, &[])
+}
+
+/// Like [`git`], with the extra environment variables `env`.
+pub fn git_env(dir: &Path, args: &[&str], env: &[(String, String)]) -> Result<()> {
+    run(dir, args, env).map(drop)
 }
 
 /// Like [`git`], but returns git's trimmed standard output.
 pub fn git_output(dir: &Path, args: &[&str]) -> Result<String> {
+    run(dir, args, &[])
+}
+
+fn run(dir: &Path, args: &[&str], env: &[(String, String)]) -> Result<String> {
     let output = match Command::new("git")
         .current_dir(dir)
         .args(args)
+        .envs(env.iter().map(|(key, value)| (key, value)))
         .stderr(Stdio::inherit())
         .output()
     {
@@ -80,12 +90,13 @@ pub fn git_output(dir: &Path, args: &[&str]) -> Result<String> {
     Ok(String::from_utf8(output.stdout)?.trim().to_string())
 }
 
-/// Runs `git <args>` in `dir` without output or prompts, and reports whether
-/// git exited successfully.
-pub fn git_succeeds(dir: &Path, args: &[&str]) -> Result<bool> {
+/// Runs `git <args>` in `dir` with the extra environment variables `env`,
+/// without output or prompts, and reports whether git exited successfully.
+pub fn git_succeeds(dir: &Path, args: &[&str], env: &[(String, String)]) -> Result<bool> {
     match Command::new("git")
         .current_dir(dir)
         .args(args)
+        .envs(env.iter().map(|(key, value)| (key, value)))
         .env("GIT_TERMINAL_PROMPT", "0")
         .stdin(Stdio::null())
         .stdout(Stdio::null())

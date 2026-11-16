@@ -205,6 +205,67 @@ fn publish_commits_with_the_identity_of_the_package_repository() {
     );
 }
 
+/// Runs `publish` without any git identity, as on a fresh CI runner. Git is
+/// told not to guess one from the host name, which it may do otherwise.
+fn publish_without_identity(sb: &Sandbox, fork: &Path) -> Run {
+    std::fs::write(
+        sb.home().join(".gitconfig"),
+        "[user]\n\tuseConfigOnly = true\n",
+    )
+    .unwrap();
+    sb.utpm_with(
+        &["prj", "publish", "--fork", fork.to_str().unwrap()],
+        |cmd| {
+            cmd.env("UTPM_PACKAGES_UPSTREAM", upstream(sb))
+                .env("GIT_CONFIG_NOSYSTEM", "1")
+                .env_remove("EMAIL")
+                .env_remove("UTPM_GITHUB_TOKEN");
+            for (var, _) in GIT_IDENTITY {
+                cmd.env_remove(var);
+            }
+        },
+    )
+}
+
+#[test]
+fn publish_falls_back_to_the_author_of_the_last_commit() {
+    let sb = Sandbox::new();
+    write_package(&sb);
+    let fork = fake_fork(&sb);
+    git(&sb.project(), &["init", "-q"]);
+    git(&sb.project(), &["add", "."]);
+    git(
+        &sb.project(),
+        &[
+            "commit",
+            "-q",
+            "--author=Last Author <last@example.com>",
+            "-m",
+            "init",
+        ],
+    );
+
+    publish_without_identity(&sb, &fork).success();
+
+    assert_eq!(
+        git(&fork, &["log", "-1", "--format=%an <%ae>", "my-pkg-0.1.0"]),
+        "Last Author <last@example.com>"
+    );
+}
+
+#[test]
+fn publish_without_identity_fails_before_touching_the_fork() {
+    let sb = Sandbox::new();
+    write_package(&sb);
+    let fork = fake_fork(&sb);
+
+    let run = publish_without_identity(&sb, &fork);
+
+    run.failure();
+    assert!(run.stdout().contains("No git identity"), "{}", run.stdout());
+    assert!(!sb.data().join("git-packages").exists());
+}
+
 #[test]
 fn publish_warns_when_fork_is_behind_without_token() {
     let sb = Sandbox::new();

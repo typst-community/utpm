@@ -7,6 +7,8 @@ use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use ignore::WalkBuilder;
 use ignore::overrides::OverrideBuilder;
 use octocrab::Octocrab;
@@ -17,7 +19,7 @@ use url::Url;
 
 use super::PublishArgs;
 use crate::utils::dryrun::get_dry_run;
-use crate::utils::git::{exist_git, git, git_output, git_succeeds};
+use crate::utils::git::{exist_git, git, git_env, git_output, git_succeeds};
 use crate::utils::paths::{MANIFEST_FILE, check_path_file, get_current_dir, local_package_path};
 use crate::utils::state::{Result, UtpmError};
 use crate::utils::try_find;
@@ -28,12 +30,6 @@ const UPSTREAM_REPO: &str = "packages";
 const UPSTREAM_URL_ENV: &str = "UTPM_PACKAGES_UPSTREAM";
 const UPSTREAM_URL: &str = "https://github.com/typst/packages.git";
 const TOKEN_ENV: &str = "UTPM_GITHUB_TOKEN";
-const GITHUB_CREDENTIALS: [&str; 4] = [
-    "-c",
-    "credential.https://github.com.helper=",
-    "-c",
-    "credential.https://github.com.helper=!f() { test \"$1\" = get && echo username=x-access-token && echo \"password=$UTPM_GITHUB_TOKEN\"; }; f",
-];
 const FORK_READY_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[instrument(skip(cmd))]
@@ -61,7 +57,9 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     exist_git()?;
+    let identity = commit_identity(&project_dir)?;
     let token = env::var(TOKEN_ENV).ok();
+    let auth = github_auth(token.as_deref());
     if cmd.create_pr && token.is_none() {
         utpm_bail!(MissingGithubToken);
     }
@@ -77,7 +75,15 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     let branch = format!("{}-{}", spec.name, spec.version);
     let package_dir = format!("packages/preview/{}/{}", spec.name, spec.version);
 
-    prepare_branch(&checkout, &fork, &package_dir, &branch, token.as_deref()).await?;
+    prepare_branch(
+        &checkout,
+        &fork,
+        &package_dir,
+        &branch,
+        token.as_deref(),
+        &auth,
+    )
+    .await?;
 
     let target = checkout.join(&package_dir);
     if target.exists() {
@@ -90,23 +96,20 @@ pub async fn run(cmd: &PublishArgs) -> Result<bool> {
     }
 
     git(&checkout, &["add", &package_dir])?;
-    let identity = commit_identity(&project_dir);
     let mut commit: Vec<&str> = identity.iter().map(String::as_str).collect();
     commit.extend(["commit", "-m", cmd.message.as_deref().unwrap_or(&title)]);
     git(&checkout, &commit)?;
     // Each run rebuilds the branch, so a later run replaces the earlier commit.
-    git(
+    git_env(
         &checkout,
-        &with_token(
-            token.as_deref(),
-            &[
-                "push",
-                "--force-with-lease",
-                "--set-upstream",
-                "origin",
-                &branch,
-            ],
-        ),
+        &[
+            "push",
+            "--force-with-lease",
+            "--set-upstream",
+            "origin",
+            &branch,
+        ],
+        &auth,
     )?;
 
     let Some(owner) = owner else {
@@ -228,16 +231,14 @@ async fn resolve_fork(fork: Option<&str>, checkout: &Path, token: Option<&str>) 
 
 /// Waits until `url` serves a `main` branch.
 async fn wait_for_fork(url: &str, token: &str) -> Result<()> {
-    let args = with_token(
-        Some(token),
-        &["ls-remote", "--exit-code", url, "refs/heads/main"],
-    );
+    let args = ["ls-remote", "--exit-code", url, "refs/heads/main"];
+    let auth = github_auth(Some(token));
     let dir = env::temp_dir();
     let deadline = Instant::now() + FORK_READY_TIMEOUT;
     let mut delay = Duration::from_secs(1);
     let mut waiting = false;
     while Instant::now() < deadline {
-        if git_succeeds(&dir, &args)? {
+        if git_succeeds(&dir, &args, &auth)? {
             return Ok(());
         }
         if !waiting {
@@ -248,15 +249,37 @@ async fn wait_for_fork(url: &str, token: &str) -> Result<()> {
         delay = (delay * 2).min(Duration::from_secs(8));
     }
     // One last try that shows git error.
-    git(&dir, &args)
+    git_env(&dir, &args, &auth)
 }
 
-/// `args` with the options to log in to github.com with `token`, if there is one.
-fn with_token<'a>(token: Option<&str>, args: &[&'a str]) -> Vec<&'a str> {
-    match token {
-        Some(_) => GITHUB_CREDENTIALS.iter().chain(args).copied().collect(),
-        None => args.to_vec(),
+/// Environment variables that make git log in to github.com over https with
+/// `token`, if there is one.
+fn github_auth(token: Option<&str>) -> Vec<(String, String)> {
+    let Some(token) = token else {
+        return vec![];
+    };
+    let credentials = BASE64_STANDARD.encode(format!("x-access-token:{token}"));
+    let config = [
+        // Never ask other credential helpers, which might prompt.
+        ("credential.https://github.com.helper", String::new()),
+        (
+            "http.https://github.com/.extraheader",
+            format!("AUTHORIZATION: basic {credentials}"),
+        ),
+    ];
+    let start: usize = env::var("GIT_CONFIG_COUNT")
+        .ok()
+        .and_then(|count| count.parse().ok())
+        .unwrap_or(0);
+    let mut env = vec![(
+        "GIT_CONFIG_COUNT".to_string(),
+        (start + config.len()).to_string(),
+    )];
+    for (i, (key, value)) in config.into_iter().enumerate() {
+        env.push((format!("GIT_CONFIG_KEY_{}", start + i), key.to_string()));
+        env.push((format!("GIT_CONFIG_VALUE_{}", start + i), value));
     }
+    env
 }
 
 /// Checks out a fresh `branch` from the fork's `main` in `checkout`, limited to
@@ -267,24 +290,20 @@ async fn prepare_branch(
     package_dir: &str,
     branch: &str,
     token: Option<&str>,
+    auth: &[(String, String)],
 ) -> Result<()> {
     if checkout.join(".git").exists() {
         git(checkout, &["remote", "set-url", "origin", fork])?;
     } else {
         create_dir_all(checkout)?;
-        git(
+        git_env(
             checkout,
-            &with_token(
-                token,
-                &["clone", "--filter=tree:0", "--no-checkout", fork, "."],
-            ),
+            &["clone", "--filter=tree:0", "--no-checkout", fork, "."],
+            auth,
         )?;
     }
-    git(
-        checkout,
-        &with_token(token, &["fetch", "--prune", "origin"]),
-    )?;
-    update_fork(checkout, fork, token).await?;
+    git_env(checkout, &["fetch", "--prune", "origin"], auth)?;
+    update_fork(checkout, fork, token, auth).await?;
     git(
         checkout,
         &[
@@ -303,7 +322,12 @@ async fn prepare_branch(
 
 /// Ensures the fork's `main` only has commits from typst/packages, and brings it
 /// up to date through the GitHub API when a token allows it.
-async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result<()> {
+async fn update_fork(
+    checkout: &Path,
+    fork: &str,
+    token: Option<&str>,
+    auth: &[(String, String)],
+) -> Result<()> {
     let upstream = env::var(UPSTREAM_URL_ENV).unwrap_or_else(|_| UPSTREAM_URL.to_string());
     git(
         checkout,
@@ -337,10 +361,7 @@ async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result
                 )
                 .await?;
             utpm_log!(info, "Synced your fork with typst/packages.");
-            git(
-                checkout,
-                &with_token(Some(token), &["fetch", "--prune", "origin"]),
-            )
+            git_env(checkout, &["fetch", "--prune", "origin"], auth)
         },
         _ => {
             utpm_log!(
@@ -353,19 +374,53 @@ async fn update_fork(checkout: &Path, fork: &str, token: Option<&str>) -> Result
     }
 }
 
-/// `-c` options that commit as the git identity configured for `project_dir`.
+/// `-c` options that commit as the git identity of `project_dir`.
 ///
-/// The checkout lives in UTPM's data directory, where directory-based git
-/// config (`includeIf "gitdir:..."`) of the user may not apply.
-fn commit_identity(project_dir: &Path) -> Vec<String> {
-    ["user.name", "user.email"]
-        .into_iter()
-        .filter_map(|key| {
-            let value = git_output(project_dir, &["config", key]).ok()?;
-            Some(["-c".to_string(), format!("{key}={value}")])
-        })
-        .flatten()
-        .collect()
+/// Without a configured identity, e.g. in CI, this
+/// falls back to the author of the last
+/// commit of the project.
+fn commit_identity(project_dir: &Path) -> Result<Vec<String>> {
+    let options = |name: &str, email: &str| {
+        vec![
+            "-c".to_string(),
+            format!("user.name={name}"),
+            "-c".to_string(),
+            format!("user.email={email}"),
+        ]
+    };
+    let config = |key| git_output(project_dir, &["config", key]).ok();
+    let mut identity = match (config("user.name"), config("user.email")) {
+        (Some(name), Some(email)) => options(&name, &email),
+        _ => vec![],
+    };
+    let known = |identity: &[String]| -> Result<bool> {
+        for var in ["GIT_AUTHOR_IDENT", "GIT_COMMITTER_IDENT"] {
+            let mut args: Vec<&str> = identity.iter().map(String::as_str).collect();
+            args.extend(["var", var]);
+            if !git_succeeds(project_dir, &args, &[])? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    };
+    if known(&identity)? {
+        return Ok(identity);
+    }
+    if let Ok(last) = git_output(project_dir, &["log", "-1", "--format=%an%n%ae"])
+        && let Some((name, email)) = last.split_once('\n')
+    {
+        identity = options(name, email);
+        if known(&identity)? {
+            utpm_log!(
+                info,
+                "No git identity configured, committing as {} <{}>, the author of the last commit.",
+                name,
+                email
+            );
+            return Ok(identity);
+        }
+    }
+    utpm_bail!(MissingGitIdentity);
 }
 
 /// Opens the pull request, or returns the open one for `head`.
@@ -400,7 +455,30 @@ fn github_repo(fork: &str) -> Option<(&str, &str)> {
 
 #[cfg(test)]
 mod tests {
-    use super::github_repo;
+    use super::{github_auth, github_repo};
+
+    #[test]
+    fn github_auth_sends_token_as_basic_auth_header() {
+        assert!(github_auth(None).is_empty());
+        let env = github_auth(Some("secret"));
+        let value = |key: &str| {
+            let (index, _) = env
+                .iter()
+                .find(|(_, value)| value == key)
+                .and_then(|(var, _)| var.strip_prefix("GIT_CONFIG_KEY_").map(|i| (i, ())))
+                .expect(key);
+            env.iter()
+                .find(|(var, _)| *var == format!("GIT_CONFIG_VALUE_{index}"))
+                .map(|(_, value)| value.as_str())
+                .unwrap()
+        };
+        // base64 of "x-access-token:secret"
+        assert_eq!(
+            value("http.https://github.com/.extraheader"),
+            "AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46c2VjcmV0"
+        );
+        assert_eq!(value("credential.https://github.com.helper"), "");
+    }
 
     #[test]
     fn github_repo_handles_git_url_notations() {
